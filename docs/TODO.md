@@ -272,6 +272,21 @@
 - ☑ Destination edit dan lifecycle sesuai applied migration
 - ☑ Destination validation, normalization, hidden slug generation, dan duplicate handling
 - ☑ Destination lightweight application tests dan focused pgTAP coverage
+
+### Destination Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/destinasi`.
+- ☑ Administrator dapat membuat destinasi baru sebagai `draft`.
+- ☑ Pembuatan yang berhasil melakukan redirect secara konsisten dan menampilkan feedback sukses.
+- ☑ Data destinasi yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah nama, ringkasan, koordinat, kategori, dan urutan tampilan destinasi.
+- ☑ Administrator dapat mengubah status destinasi dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan destinasi dari `archived` menjadi `draft`.
+- ☑ Koordinat yang kosong atau tidak valid ditolak.
+- ☑ Konflik nama atau slug duplikat menghasilkan pesan error aman dalam bahasa Indonesia.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit destinasi.
+
 - ☐ CRUD Traditional House
 - ☐ CRUD Pranata Adat Bayan
 - ☐ CRUD Cultural Articles
