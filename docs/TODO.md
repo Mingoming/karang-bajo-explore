@@ -3,7 +3,7 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 1 — Project Foundation
+- **Fase Saat Ini:** Phase 2C.1 — Coordinate Integrity Correction and Test Completion
 - **Progress Implementasi:** 76%
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
@@ -17,12 +17,10 @@
 
 ## Blockers Aktif
 
-- ⚠ Mekanisme aman untuk menetapkan satu UUID administrator pada RLS belum diputuskan.
 - ⚠ Region Supabase belum dipilih.
 - ⚠ Strategi visibilitas Storage untuk media draft belum diputuskan.
 - ⚠ Batas validasi upload tepercaya belum diputuskan.
 - ⚠ Spesifikasi final ukuran, jumlah, dan kewajiban gambar belum disetujui.
-- ⚠ Zona waktu dan aturan event tanpa tanggal pasti belum disetujui.
 - ⚠ Pemilik akun produksi dan prosedur backup belum ditetapkan.
 - ⚠ Provider tile OpenStreetMap, caching, monitoring, dan retensi log belum diputuskan.
 
@@ -79,36 +77,53 @@
 - ☑ Definisikan RLS dan kebijakan administrator dalam draft
 - ☑ Definisikan public-safe views yang mengecualikan private fields dalam draft
 - ☑ Tambahkan deterministic seed untuk Alam, Budaya, dan Religi
-- ⚠ Eksekusi migration pada database lokal — Docker belum tersedia
+- ☑ Docker lokal tersedia; initial migration dan seed berhasil diterapkan dari database kosong
 - ☐ Terapkan migration ke remote development project
-- ☐ Jalankan pengujian RLS terhadap database lokal
+- ☑ Jalankan pengujian RLS terhadap database lokal
 
 - ☐ Buat Supabase development project
 - ⚠ Pilih region Supabase
 - ☐ Konfigurasi environment variables
 - ☐ Konfigurasi server Supabase client
 - ☐ Konfigurasi browser Supabase client
-- ⚠ Tetapkan mekanisme UUID administrator tunggal
+- ☑ Tetapkan mekanisme UUID administrator tunggal melalui `private.app_config` dan `public.is_admin()`
+- ☑ Tetapkan timezone event `Asia/Makassar` dan aturan event tanpa tanggal pasti tetap draft
 - ☐ Konfigurasi Supabase Auth
 - ☐ Buat akun administrator awal
 - ☐ Konfigurasi session refresh
 - ☐ Konfigurasi Storage buckets
 - ⚠ Tetapkan strategi media draft dan public
 - ⚠ Tetapkan trusted upload-validation boundary
-- ☐ Buat initial migrations
-- ☐ Aktifkan RLS
-- ☐ Buat public read policies
-- ☐ Buat administrator mutation policies
+- ☑ Buat initial migration lokal
+- ☑ Aktifkan RLS pada application tables
+- ☑ Buat public-safe read views dan policies
+- ☑ Buat administrator mutation policies
 - ☐ Buat Storage policies
 - ☐ Generate database types
 
+## Phase 2C — Local Database and RLS Test Suite
+
+- ☑ Buat deterministic pgTAP database test suite
+- ☑ Uji sole-administrator authorization dan denied identities
+- ☑ Uji anonymous published-only exposure dan private-field isolation
+- ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
+- ☑ Jalankan 84 assertions terhadap database lokal dengan 0 failure
+- ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
+
+## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
+
+- ☑ Perbaiki seluruh nullable latitude/longitude pair constraints pada initial migration
+- ☑ Verifikasi both-null, complete pair, half-null, dan coordinate ranges melalui pgTAP
+- ☑ Terapkan initial migration dan seed dari database lokal kosong
+- ☑ Selesaikan pgTAP suite dengan 84 assertions lulus
+
 ## Phase 2 Completion Gate
 
-- ☐ Migration dapat dijalankan dari database kosong.
-- ☐ Anonymous hanya dapat membaca konten published.
-- ☐ Anonymous tidak dapat melakukan mutation.
-- ☐ Identity selain administrator tidak mendapat akses dashboard.
-- ☐ Draft dan archived tidak dapat dibaca publik.
+- ☑ Migration dapat dijalankan dari database kosong.
+- ☑ Anonymous hanya dapat membaca konten published.
+- ☑ Anonymous tidak dapat melakukan mutation.
+- ☑ Identity selain administrator tidak mendapat akses administratif pada database.
+- ☑ Draft dan archived tidak dapat dibaca publik.
 - ☐ Storage policies lulus pengujian izin.
 
 ---

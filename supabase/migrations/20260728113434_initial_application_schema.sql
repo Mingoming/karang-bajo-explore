@@ -148,7 +148,12 @@ create table public.village_profiles (
   updated_by uuid not null references auth.users (id) on delete restrict,
   constraint village_profiles_coordinate_pair check (
     (latitude is null and longitude is null)
-    or (latitude between -90 and 90 and longitude between -180 and 180)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
   ),
   constraint village_profiles_publication_fields check (
     status <> 'published' or description is not null and btrim(description) <> ''
@@ -350,7 +355,12 @@ create table public.homestays (
   updated_by uuid not null references auth.users (id) on delete restrict,
   constraint homestays_coordinate_pair check (
     (latitude is null and longitude is null)
-    or (latitude between -90 and 90 and longitude between -180 and 180)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
   ),
   constraint homestays_thumbnail_pair check (
     (thumbnail_bucket is null and thumbnail_path is null)
@@ -414,7 +424,12 @@ create table public.umkms (
   updated_by uuid not null references auth.users (id) on delete restrict,
   constraint umkms_coordinate_pair check (
     (latitude is null and longitude is null)
-    or (latitude between -90 and 90 and longitude between -180 and 180)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
   ),
   constraint umkms_thumbnail_pair check (
     (thumbnail_bucket is null and thumbnail_path is null)
@@ -485,7 +500,12 @@ create table public.traditional_houses (
   updated_by uuid not null references auth.users (id) on delete restrict,
   constraint traditional_houses_coordinate_pair check (
     (latitude is null and longitude is null)
-    or (latitude between -90 and 90 and longitude between -180 and 180)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
   ),
   constraint traditional_houses_thumbnail_pair check (
     (thumbnail_bucket is null and thumbnail_path is null)
@@ -653,7 +673,12 @@ create table public.cultural_events (
   ),
   constraint cultural_events_coordinate_pair check (
     (latitude is null and longitude is null)
-    or (latitude between -90 and 90 and longitude between -180 and 180)
+    or (
+      latitude is not null
+      and longitude is not null
+      and latitude between -90 and 90
+      and longitude between -180 and 180
+    )
   ),
   constraint cultural_events_thumbnail_pair check (
     (thumbnail_bucket is null and thumbnail_path is null)
