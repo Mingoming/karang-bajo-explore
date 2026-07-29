@@ -311,7 +311,12 @@
 
 - ☐ CRUD Pranata Adat Bayan
 - ☐ CRUD Cultural Articles
-- ☐ CRUD Cultural Events
+- ☑ Cultural Event admin list
+- ☑ Cultural Event create sebagai draft
+- ☑ Cultural Event edit dan lifecycle sesuai applied migration
+- ☑ Cultural Event timezone WITA, exact-date, dan uncertain-date handling
+- ☑ Cultural Event validation, placeholder checks, hidden slug generation, contact consent, dan duplicate handling
+- ☑ Cultural Event lightweight application tests dan focused pgTAP coverage
 - ☐ CRUD Tourism Packages
 - ☑ Homestay admin list
 - ☑ Homestay create sebagai draft
@@ -613,6 +618,9 @@
 - ⚠ The applied migration hard-requires a thumbnail pair before traditional-house publication, while the narrative documentation describes images more generally. Media remains outside this module, so records without existing thumbnail metadata cannot be published here.
 - ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` require a traditional-house map picker. The approved administration task excludes maps and GIS, so this module supports manual nullable coordinate pairs only.
 - ⚠ The applied traditional-house schema contains no contact, publication-consent, opening-hours, price, donation, facilities, or source-note fields. The administrator module does not represent these concepts through unrelated fields.
+- ⚠ `PRD.md` permits a cultural event without a confirmed date to be published when an approved `date_note` exists, while the applied migration requires `start_at` for every published event. The administrator module follows the applied migration: date-note-only events remain draft and are never upcoming.
+- ⚠ `DESIGN.md` still lists event timezone and uncertain-date classification as pending even though the approved rules, `SCHEMA.md`, and applied migration establish `Asia/Makassar`, `all_day`, and date-note-only records remaining draft. The administrator module follows those resolved rules.
+- ⚠ `DESIGN.md` proposes an event location picker and public preview. The approved Cultural Event administration task excludes maps, GIS, and preview routes, so this module supports manual nullable coordinate pairs only.
 
 ---
 
