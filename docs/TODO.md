@@ -320,6 +320,23 @@
 - ☑ UMKM edit dan lifecycle sesuai applied migration
 - ☑ UMKM validation, normalization, hidden slug generation, contact-consent handling, dan duplicate handling
 - ☑ UMKM lightweight application tests dan focused pgTAP coverage
+
+### UMKM Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/umkm`.
+- ☑ Administrator dapat membuat record UMKM baru sebagai `draft`.
+- ☑ Data UMKM yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah nama usaha, kategori, deskripsi, alamat, kontak, dan urutan tampilan.
+- ☑ Latitude dan longitude dapat dibiarkan kosong bersama-sama.
+- ☑ Pengisian hanya latitude atau hanya longitude ditolak.
+- ☑ Administrator dapat mengubah status UMKM dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan UMKM dari `archived` menjadi `draft`.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Publikasi ditolak ketika koordinat, nomor telepon, dan nomor WhatsApp semuanya tidak tersedia.
+- ☑ Publikasi informasi kontak tanpa persetujuan yang tercatat ditolak.
+- ☑ Nama usaha atau slug yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit UMKM.
+
 - ☐ CRUD Gallery
 - ☐ CRUD Contact
 - ☐ Website Settings
