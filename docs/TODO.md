@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile, Destination, Homestay, and UMKM Management)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, dan UMKM selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
+- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile, Destination, Homestay, UMKM, and Traditional House Management)
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, dan Rumah Adat selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -108,7 +108,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 143 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi, homestay, dan UMKM
+- ☑ Jalankan 166 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi, homestay, UMKM, dan rumah adat
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -287,7 +287,11 @@
 - ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
 - ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit destinasi.
 
-- ☐ CRUD Traditional House
+- ☑ Traditional House admin list
+- ☑ Traditional House create sebagai draft
+- ☑ Traditional House edit dan lifecycle sesuai applied migration
+- ☑ Traditional House validation, normalization, cultural placeholder checks, hidden slug generation, dan duplicate handling
+- ☑ Traditional House lightweight application tests dan focused pgTAP coverage
 - ☐ CRUD Pranata Adat Bayan
 - ☐ CRUD Cultural Articles
 - ☐ CRUD Cultural Events
@@ -588,6 +592,10 @@
 - ⚠ `SCHEMA.md` describes UMKM category as controlled text, but neither the documents nor the applied migration define an approved value list or reference table. The administrator form follows the applied migration by accepting required nonblank category text without inventing a taxonomy.
 - ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` require a UMKM map picker. The approved UMKM administration task excludes maps and GIS, so this module supports manual nullable coordinate pairs only.
 - ⚠ The applied UMKM schema contains no price, product, service, or inventory fields. The administrator module does not represent these concepts through unrelated fields.
+- ⚠ `PRD.md` permits incomplete traditional-house drafts, while the applied migration requires both `name` and `description` on every row. The administrator form follows the applied migration.
+- ⚠ The applied migration hard-requires a thumbnail pair before traditional-house publication, while the narrative documentation describes images more generally. Media remains outside this module, so records without existing thumbnail metadata cannot be published here.
+- ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` require a traditional-house map picker. The approved administration task excludes maps and GIS, so this module supports manual nullable coordinate pairs only.
+- ⚠ The applied traditional-house schema contains no contact, publication-consent, opening-hours, price, donation, facilities, or source-note fields. The administrator module does not represent these concepts through unrelated fields.
 
 ---
 
