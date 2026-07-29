@@ -342,6 +342,33 @@
 - ☑ Tourism Package duration, price, facilities, hidden slug, dan publication-readiness validation
 - ☑ Tourism Package ordered destination association dengan pencegahan duplikasi dan normalisasi urutan
 - ☑ Tourism Package lightweight application tests dan focused pgTAP coverage
+
+### Tourism Package Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/paket-wisata`.
+- ☑ Administrator dapat membuat paket wisata baru sebagai `draft`.
+- ☑ Data paket wisata yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah nama, jenis, durasi, satuan durasi, harga, catatan harga, fasilitas, suvenir, ringkasan, deskripsi, status unggulan, dan urutan tampilan.
+- ☑ Administrator dapat menambahkan beberapa destinasi ke paket berstatus `draft`.
+- ☑ Administrator dapat mengubah urutan destinasi terpilih.
+- ☑ Destinasi duplikat ditolak.
+- ☑ Catatan dan urutan destinasi tetap tersimpan setelah refresh.
+- ☑ Harga kosong diterima sebagai tidak tersedia.
+- ☑ Harga `0` diterima sebagai gratis.
+- ☑ Harga positif diterima.
+- ☑ Durasi nol, pecahan, atau tidak valid ditolak.
+- ☑ Relasi destinasi hanya dapat diubah ketika paket berstatus `draft`.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Publikasi tidak tersedia atau ditolak tanpa sedikitnya satu destinasi.
+- ☑ Publikasi tidak tersedia atau ditolak ketika salah satu destinasi terpilih belum berstatus `published`.
+- ☑ Konten paket yang masih berupa placeholder ditolak untuk publikasi.
+- ☑ Administrator dapat mengubah status paket dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan paket dari `archived` menjadi `draft`.
+- ☑ Nama paket atau slug hasil generasi yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit paket wisata.
+- ☑ Antarmuka tidak melaporkan penulisan parent atau relasi yang parsial sebagai penyimpanan berhasil.
+- ⚠ Fault-injected browser validation untuk jalur kegagalan kompensasi: NOT TESTED.
+
 - ☑ Homestay admin list
 - ☑ Homestay create sebagai draft
 - ☑ Homestay edit dan lifecycle sesuai applied migration
