@@ -297,6 +297,24 @@
 - ☑ Homestay edit dan lifecycle sesuai applied migration
 - ☑ Homestay validation, normalization, hidden slug generation, dan duplicate handling
 - ☑ Homestay lightweight application tests dan focused pgTAP coverage
+
+### Homestay Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/homestay`.
+- ☑ Administrator dapat membuat homestay baru sebagai `draft`.
+- ☑ Data homestay yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah nama, deskripsi, alamat, harga per malam, fasilitas, dan urutan tampilan.
+- ☑ Latitude dan longitude dapat dibiarkan kosong bersama-sama.
+- ☑ Pengisian hanya latitude atau hanya longitude ditolak.
+- ☑ Harga per malam negatif atau tidak valid ditolak.
+- ☑ Fasilitas multiline dinormalisasi dan baris kosong dihapus.
+- ☑ Administrator dapat mengubah status homestay dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan homestay dari `archived` menjadi `draft`.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Publikasi informasi kontak tanpa persetujuan yang tercatat ditolak.
+- ☑ Nama homestay atau slug yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit homestay.
+
 - ☐ CRUD UMKM
 - ☐ CRUD Gallery
 - ☐ CRUD Contact
