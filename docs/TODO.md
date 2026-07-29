@@ -317,6 +317,25 @@
 - ☑ Cultural Event timezone WITA, exact-date, dan uncertain-date handling
 - ☑ Cultural Event validation, placeholder checks, hidden slug generation, contact consent, dan duplicate handling
 - ☑ Cultural Event lightweight application tests dan focused pgTAP coverage
+
+### Cultural Event Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/acara-budaya`.
+- ☑ Administrator dapat membuat acara budaya baru sebagai `draft`.
+- ☑ Data acara budaya yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah judul, deskripsi, jenis acara, lokasi, penyelenggara, kontak, informasi pengunjung, status unggulan, dan waktu acara.
+- ☑ Waktu acara yang disimpan dan ditampilkan tetap benar dalam WITA (`Asia/Makassar`).
+- ☑ Tanggal kalender yang tidak valid ditolak.
+- ☑ Waktu selesai yang lebih awal daripada waktu mulai ditolak.
+- ☑ Acara yang hanya memiliki catatan tanggal tetap berstatus `draft`.
+- ☑ Administrator dapat mengubah status acara dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan acara dari `archived` menjadi `draft`.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Publikasi tidak tersedia atau ditolak tanpa waktu mulai yang telah dikonfirmasi.
+- ☑ Publikasi informasi kontak tanpa persetujuan yang tercatat ditolak.
+- ☑ Slug hasil generasi yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit acara budaya.
+
 - ☐ CRUD Tourism Packages
 - ☑ Homestay admin list
 - ☑ Homestay create sebagai draft
