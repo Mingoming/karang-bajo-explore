@@ -292,6 +292,23 @@
 - ☑ Traditional House edit dan lifecycle sesuai applied migration
 - ☑ Traditional House validation, normalization, cultural placeholder checks, hidden slug generation, dan duplicate handling
 - ☑ Traditional House lightweight application tests dan focused pgTAP coverage
+
+### Traditional House Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka `/admin/rumah-adat`.
+- ☑ Administrator dapat membuat record rumah adat baru sebagai `draft`.
+- ☑ Data rumah adat yang dibuat tetap tersimpan setelah refresh.
+- ☑ Administrator dapat mengubah nama, deskripsi, sejarah, makna budaya, lokasi, informasi kunjungan, status unggulan, dan urutan tampilan.
+- ☑ Latitude dan longitude dapat dibiarkan kosong bersama-sama.
+- ☑ Pengisian hanya latitude atau hanya longitude ditolak.
+- ☑ Tautan Google Maps selain HTTP/HTTPS ditolak.
+- ☑ Administrator dapat mengubah status rumah adat dari `draft` menjadi `archived`.
+- ☑ Administrator dapat memulihkan rumah adat dari `archived` menjadi `draft`.
+- ☑ Publikasi tidak tersedia atau ditolak selama metadata thumbnail wajib belum tersedia.
+- ☑ Informasi budaya atau kunjungan yang masih berupa placeholder ditolak untuk publikasi.
+- ☑ Nama atau slug yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
+- ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit rumah adat.
+
 - ☐ CRUD Pranata Adat Bayan
 - ☐ CRUD Cultural Articles
 - ☐ CRUD Cultural Events
