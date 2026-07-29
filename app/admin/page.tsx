@@ -1,15 +1,26 @@
-export default function AdminPage() {
+import { requireAdministrator } from "@/lib/auth/admin";
+
+export default async function AdminPage() {
+  const administrator = await requireAdministrator();
+
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-12">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-          Dashboard Administrator
-        </h1>
-        <p className="mt-4 leading-7 text-slate-600">
-          Autentikasi administrator telah aktif. Modul produk dan pengelolaan
-          konten belum diimplementasikan pada fase ini.
-        </p>
-      </section>
-    </main>
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <p className="text-sm font-semibold tracking-wide text-emerald-800 uppercase">
+        Selamat datang
+      </p>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+        Dashboard Administrator
+      </h1>
+      <p className="mt-4 max-w-2xl leading-7 text-slate-600">
+        Anda masuk sebagai administrator Karang Bajo Explore dengan email:
+      </p>
+      <p className="mt-2 font-semibold break-all text-slate-900">
+        {administrator.email ?? "Email administrator tidak tersedia"}
+      </p>
+      <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+        Modul operasional dan pengelolaan konten belum diimplementasikan.
+        Gunakan navigasi untuk melihat struktur modul yang akan tersedia.
+      </p>
+    </section>
   );
 }

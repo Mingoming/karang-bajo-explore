@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write app config constants lib README.md \"*.{json,mjs,ts}\"",
-    "format:check": "prettier --check app config constants lib README.md \"*.{json,mjs,ts}\""
+    "test:admin-shell": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/admin-navigation.test.mjs",
+    "format": "prettier --write app components config constants lib tests README.md \"*.{json,mjs,ts}\"",
+    "format:check": "prettier --check app components config constants lib tests README.md \"*.{json,mjs,ts}\""
   },
   "engines": {
     "node": ">=22.0.0"

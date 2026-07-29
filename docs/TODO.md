@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 3A — Supabase Application Clients and Authentication Foundation
-- **Progress Implementasi:** Fondasi autentikasi administrator selesai; modul produk belum dimulai
+- **Fase Saat Ini:** Phase 3 — Authentication and Protected Application (Admin Shell)
+- **Progress Implementasi:** Shell administrator selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -23,7 +23,6 @@
 - ⚠ Spesifikasi final ukuran, jumlah, dan kewajiban gambar belum disetujui.
 - ⚠ Pemilik akun produksi dan prosedur backup belum ditetapkan.
 - ⚠ Provider tile OpenStreetMap, caching, monitoring, dan retensi log belum diputuskan.
-- ⚠ Runtime lokal masih Node.js 20.20.0; dependency Supabase terbaru mensyaratkan Node.js 22 atau lebih baru.
 
 ---
 
@@ -244,14 +243,26 @@
 - ☑ Session expiration handling
 - ☑ Protected admin routes
 
+### Authentication Validation
+
+- ☑ Administrator login succeeds.
+- ☑ Authenticated administrator session persists after refresh.
+- ☑ Logout removes administrator access.
+- ☑ Invalid credentials are rejected with a generic response.
+- ☑ An authenticated non-administrator is denied access.
+- ⚠ Password recovery end-to-end validation: NOT TESTED
+
 ## Dashboard
 
-- ☐ Admin layout
+- ☑ Admin layout shell
+- ☑ Desktop sidebar and active navigation
+- ☑ Responsive mobile navigation
+- ☑ Dashboard header and administrator identity display
+- ☑ Protected placeholder module routes
 - ☐ Dashboard summary
 - ☐ Draft content summary
 - ☐ Upcoming events summary
 - ☐ Recently updated content
-- ☐ Responsive admin navigation
 
 ## Content Management
 
@@ -492,7 +503,19 @@
 
 # Known Issues
 
-- Runtime lokal Node.js 20 masih dapat membangun aplikasi, tetapi tidak memenuhi engine requirement dependency Supabase terbaru. Gunakan Node.js 22 atau lebih baru.
+## Dependency Audit Status
+
+- ⚠ Full npm audit: 12 high-severity findings.
+- ⚠ Production-only audit: 3 high-severity findings.
+- ⚠ Development-only findings include the ESLint dependency chain.
+- ⚠ Production transitive findings originate from PostCSS and Sharp bundled through Next.js.
+- ⚠ No compatible stable Next.js upgrade is currently available.
+- ⚠ `npm audit fix --force` must not be used because it proposes an incompatible breaking downgrade.
+- ⚠ Reassess these findings before media processing or production deployment.
+
+## Deferred Documentation Reconciliation
+
+- ⚠ `DESIGN.md` uses `/admin/event-adat`, while the approved implementation remains `/admin/acara-budaya`. Reconcile the documentation naming separately without renaming the implemented route or adding modules outside the approved dashboard shell.
 
 ---
 
