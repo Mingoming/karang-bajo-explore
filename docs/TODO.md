@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile and Destination Management)
-- **Progress Implementasi:** Shell administrator, modul pengelolaan Profil Desa, serta daftar, create, dan edit Destinasi selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
+- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile, Destination, and Homestay Management)
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, dan Homestay selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -108,7 +108,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 96 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi
+- ☑ Jalankan 119 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi dan homestay
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -292,7 +292,11 @@
 - ☐ CRUD Cultural Articles
 - ☐ CRUD Cultural Events
 - ☐ CRUD Tourism Packages
-- ☐ CRUD Homestays
+- ☑ Homestay admin list
+- ☑ Homestay create sebagai draft
+- ☑ Homestay edit dan lifecycle sesuai applied migration
+- ☑ Homestay validation, normalization, hidden slug generation, dan duplicate handling
+- ☑ Homestay lightweight application tests dan focused pgTAP coverage
 - ☐ CRUD UMKM
 - ☐ CRUD Gallery
 - ☐ CRUD Contact
@@ -539,6 +543,9 @@
 - ⚠ The applied migration hard-requires a thumbnail pair before destination publication and permits `draft → archived`; general lifecycle documentation presents a narrower typical flow. Media remains outside the current module, so destinations without existing thumbnail metadata cannot be published here.
 - ⚠ `DESIGN.md` proposes `/admin/destinasi/baru`, React Hook Form/Zod, and a map picker. The approved destination task uses `/admin/destinasi/tambah`, typed native validation, and manual coordinates without GIS or new form dependencies.
 - ⚠ The initial migration header still describes the file as a draft that has not been pushed, while the migration is already applied to the hosted development project. Reconcile that stale comment separately without changing the applied schema.
+- ⚠ `SCHEMA.md` says a published homestay should normally have an image, while the applied migration hard-requires a thumbnail pair before publication. The administrator form follows the applied migration; media and thumbnail creation remain deferred.
+- ⚠ `DESIGN.md` still lists facilities representation as pending even though the applied migration and approved rules use `text[]`. Homestay facilities follow the applied schema.
+- ⚠ `DESIGN.md` proposes a homestay map picker. The approved homestay administration task excludes GIS, so this module supports manual nullable coordinate pairs only.
 
 ---
 

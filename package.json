@@ -10,6 +10,7 @@
     "test:admin-shell": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/admin-navigation.test.mjs",
     "test:village-profile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/village-profile.test.mjs",
     "test:destinations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/destinations.test.mjs",
+    "test:homestays": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/homestays.test.mjs",
     "format": "prettier --write app components config constants features lib tests README.md \"*.{json,mjs,ts}\"",
     "format:check": "prettier --check app components config constants features lib tests README.md \"*.{json,mjs,ts}\""
   },
