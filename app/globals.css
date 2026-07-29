@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8faf9;
+  --foreground: #0f172a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--background);
 }
 
 body {
+  min-height: 100vh;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.application-state {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.application-state__content {
+  width: 100%;
+  max-width: 32rem;
+}
+
+.application-state__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.application-state__message {
+  margin: 1rem 0 0;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.application-state__action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #166534;
+  padding: 0.75rem 1.25rem;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.application-state__action:hover {
+  background: #14532d;
+}
+
+.application-state__action:focus-visible {
+  outline: 3px solid #86efac;
+  outline-offset: 3px;
 }

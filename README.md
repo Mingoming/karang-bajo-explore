@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Karang Bajo Explore
 
-## Getting Started
+Karang Bajo Explore adalah fondasi platform informasi pariwisata Desa Karang Bajo. Versi 1 akan menyajikan informasi alam, budaya, tradisi, dan layanan wisata dalam bahasa Indonesia.
 
-First, run the development server:
+## Status
+
+Fase saat ini adalah **Phase 1 — Project Foundation**. Repository ini baru berisi fondasi aplikasi; fitur produk, Supabase, autentikasi, database, dan GIS belum diimplementasikan.
+
+## Stack yang Disetujui
+
+- Next.js 16 dengan App Router pada root `app/`
+- React 19
+- TypeScript dalam strict mode
+- Tailwind CSS 4
+- ESLint 9
+- Prettier 3
+- npm dan `package-lock.json`
+
+## Menjalankan Secara Lokal
+
+Prasyarat: Node.js 20.9 atau lebih baru dan npm.
+
+```bash
+npm ci
+npm run dev
+```
+
+Buka `http://localhost:3000` pada browser. Phase 1 belum memerlukan environment variable.
+
+## Perintah Pengembangan
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run format
+npm run format:check
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Dokumentasi
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Dokumentasi produk dan teknis berada di [`docs/`](docs/). Baca dokumen yang relevan sebelum mengubah arsitektur, schema, desain, aturan, atau urutan implementasi.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Aturan Konten
 
-## Learn More
+Fakta budaya tidak boleh dibuat, ditebak, atau diterbitkan tanpa verifikasi dari pihak desa atau sumber adat yang berwenang. Placeholder dan informasi yang belum terverifikasi tidak boleh menjadi konten publik.
 
-To learn more about Next.js, take a look at the following resources:
+## Logo Sementara
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Aplikasi masih menggunakan logo KKN Desa Karang Bajo. Logo ini wajib diganti dengan identitas resmi sebelum deployment produksi.
