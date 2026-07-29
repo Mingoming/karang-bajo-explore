@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 2C.1 — Coordinate Integrity Correction and Test Completion
-- **Progress Implementasi:** 76%
+- **Fase Saat Ini:** Phase 3A — Supabase Application Clients and Authentication Foundation
+- **Progress Implementasi:** Fondasi autentikasi administrator selesai; modul produk belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -23,6 +23,7 @@
 - ⚠ Spesifikasi final ukuran, jumlah, dan kewajiban gambar belum disetujui.
 - ⚠ Pemilik akun produksi dan prosedur backup belum ditetapkan.
 - ⚠ Provider tile OpenStreetMap, caching, monitoring, dan retensi log belum diputuskan.
+- ⚠ Runtime lokal masih Node.js 20.20.0; dependency Supabase terbaru mensyaratkan Node.js 22 atau lebih baru.
 
 ---
 
@@ -35,7 +36,7 @@
 - ☑ Prettier dikonfigurasi
 - ☑ Tailwind CSS foundation
 - ☑ Shared configuration
-- ☐ Environment validation
+- ☑ Environment validation
 - ☑ `.env.example`
 - ☑ Git repository diinisialisasi
 - ☑ npm dan `package-lock.json` tersedia
@@ -78,19 +79,20 @@
 - ☑ Definisikan public-safe views yang mengecualikan private fields dalam draft
 - ☑ Tambahkan deterministic seed untuk Alam, Budaya, dan Religi
 - ☑ Docker lokal tersedia; initial migration dan seed berhasil diterapkan dari database kosong
-- ☐ Terapkan migration ke remote development project
+- ☑ Terapkan migration ke remote development project
+- ☑ Jalankan database lint pada remote development project tanpa error
 - ☑ Jalankan pengujian RLS terhadap database lokal
 
-- ☐ Buat Supabase development project
+- ☑ Buat Supabase development project
 - ⚠ Pilih region Supabase
-- ☐ Konfigurasi environment variables
-- ☐ Konfigurasi server Supabase client
-- ☐ Konfigurasi browser Supabase client
+- ☑ Konfigurasi environment variables lokal
+- ☑ Konfigurasi server Supabase client
+- ☑ Konfigurasi browser Supabase client
 - ☑ Tetapkan mekanisme UUID administrator tunggal melalui `private.app_config` dan `public.is_admin()`
 - ☑ Tetapkan timezone event `Asia/Makassar` dan aturan event tanpa tanggal pasti tetap draft
-- ☐ Konfigurasi Supabase Auth
-- ☐ Buat akun administrator awal
-- ☐ Konfigurasi session refresh
+- ☑ Konfigurasi Supabase Auth untuk administrator tunggal
+- ☑ Buat akun administrator awal
+- ☑ Konfigurasi session refresh melalui Next.js Proxy
 - ☐ Konfigurasi Storage buckets
 - ⚠ Tetapkan strategi media draft dan public
 - ⚠ Tetapkan trusted upload-validation boundary
@@ -234,13 +236,13 @@
 
 ## Authentication
 
-- ☐ Login
-- ☐ Logout
-- ☐ Forgot Password
-- ☐ Reset Password
-- ☐ Auth callback
-- ☐ Session expiration
-- ☐ Protected admin routes
+- ☑ Login
+- ☑ Logout
+- ☑ Forgot Password
+- ☑ Reset Password
+- ☑ Auth callback
+- ☑ Session expiration handling
+- ☑ Protected admin routes
 
 ## Dashboard
 
@@ -490,7 +492,7 @@
 
 # Known Issues
 
-_Belum ada issue implementasi yang dicatat._
+- Runtime lokal Node.js 20 masih dapat membangun aplikasi, tetapi tidak memenuhi engine requirement dependency Supabase terbaru. Gunakan Node.js 22 atau lebih baru.
 
 ---
 
