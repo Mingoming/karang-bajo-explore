@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile, Destination, Homestay, UMKM, and Traditional House Management)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, dan Rumah Adat selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
+- **Fase Saat Ini:** Phase 5 — Admin Dashboard (content management in progress)
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, dan Paket Wisata selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -108,7 +108,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 166 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi, homestay, UMKM, dan rumah adat
+- ☑ Jalankan 209 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi, homestay, UMKM, rumah adat, acara budaya, dan paket wisata
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -336,7 +336,12 @@
 - ☑ Slug hasil generasi yang duplikat ditolak dengan pesan aman dalam bahasa Indonesia.
 - ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit acara budaya.
 
-- ☐ CRUD Tourism Packages
+- ☑ Tourism Package admin list
+- ☑ Tourism Package create sebagai draft
+- ☑ Tourism Package edit dan lifecycle sesuai applied migration
+- ☑ Tourism Package duration, price, facilities, hidden slug, dan publication-readiness validation
+- ☑ Tourism Package ordered destination association dengan pencegahan duplikasi dan normalisasi urutan
+- ☑ Tourism Package lightweight application tests dan focused pgTAP coverage
 - ☑ Homestay admin list
 - ☑ Homestay create sebagai draft
 - ☑ Homestay edit dan lifecycle sesuai applied migration
@@ -640,6 +645,10 @@
 - ⚠ `PRD.md` permits a cultural event without a confirmed date to be published when an approved `date_note` exists, while the applied migration requires `start_at` for every published event. The administrator module follows the applied migration: date-note-only events remain draft and are never upcoming.
 - ⚠ `DESIGN.md` still lists event timezone and uncertain-date classification as pending even though the approved rules, `SCHEMA.md`, and applied migration establish `Asia/Makassar`, `all_day`, and date-note-only records remaining draft. The administrator module follows those resolved rules.
 - ⚠ `DESIGN.md` proposes an event location picker and public preview. The approved Cultural Event administration task excludes maps, GIS, and preview routes, so this module supports manual nullable coordinate pairs only.
+- ⚠ Trigger publikasi pada applied migration memastikan sedikitnya satu destinasi berstatus `published`, tetapi tidak menolak destinasi tambahan berstatus `draft` yang sudah terhubung. Modul administrator menerapkan aturan dokumentasi yang lebih ketat dengan mewajibkan semua destinasi terpilih berstatus `published` sebelum publikasi; migration tidak diubah dalam tahap ini.
+- ⚠ Penyimpanan parent paket dan `package_destinations` belum transaksional. Create memvalidasi seluruh input sebelum parent ditulis, memakai satu batch insert relasi, lalu mencoba kompensasi terverifikasi bila batch gagal. Applied RLS tidak memberi administrator izin hard-delete pada `tourism_packages` dan foreign key relasi memakai `ON DELETE RESTRICT`; karena itu fallback terkuat tanpa perubahan database adalah mengarsipkan parent draft secara terverifikasi, mengganti slug draft gagal agar submission dapat dicoba ulang, dan melaporkan kegagalan, bukan success.
+- ⚠ Update relasi draft menyimpan snapshot server-side, menyinkronkan relasi sebelum parent, dan mencoba memulihkan snapshot bila sinkronisasi atau parent update gagal. Kompensasi ini memperkecil state parsial tetapi bukan jaminan atomic; RPC database transaksional yang tetap menghormati sole-admin authorization masih direkomendasikan sebelum production.
+- ⚠ Applied migration mengizinkan perubahan catatan pada relasi destinasi paket yang sudah `published`, sedangkan antarmuka administrator membatasi seluruh penyuntingan susunan dan catatan relasi ke status `draft` agar workflow lebih aman dan konsisten.
 
 ---
 
