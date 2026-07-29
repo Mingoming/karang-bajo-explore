@@ -4,7 +4,7 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** Phase 3 — Authentication and Protected Application (Admin Shell)
-- **Progress Implementasi:** Shell administrator selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk belum dimulai
+- **Progress Implementasi:** Shell administrator dan modul pengelolaan Profil Desa selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -266,7 +266,7 @@
 
 ## Content Management
 
-- ☐ CRUD Village Profile
+- ☑ Create, view, and update singleton Village Profile (tanpa deletion, media, atau workflow publikasi)
 - ☐ CRUD Destination
 - ☐ CRUD Traditional House
 - ☐ CRUD Pranata Adat Bayan
