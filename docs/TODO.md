@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 3 — Authentication and Protected Application (Admin Shell)
-- **Progress Implementasi:** Shell administrator dan modul pengelolaan Profil Desa selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
+- **Fase Saat Ini:** Phase 5 — Admin Dashboard (Village Profile and Destination Management)
+- **Progress Implementasi:** Shell administrator, modul pengelolaan Profil Desa, serta daftar, create, dan edit Destinasi selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -108,7 +108,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 84 assertions terhadap database lokal dengan 0 failure
+- ☑ Jalankan 96 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -267,7 +267,11 @@
 ## Content Management
 
 - ☑ Create, view, and update singleton Village Profile (tanpa deletion, media, atau workflow publikasi)
-- ☐ CRUD Destination
+- ☑ Destination admin list dan pencarian nama berbasis server
+- ☑ Destination create sebagai draft
+- ☑ Destination edit dan lifecycle sesuai applied migration
+- ☑ Destination validation, normalization, hidden slug generation, dan duplicate handling
+- ☑ Destination lightweight application tests dan focused pgTAP coverage
 - ☐ CRUD Traditional House
 - ☐ CRUD Pranata Adat Bayan
 - ☐ CRUD Cultural Articles
@@ -516,6 +520,10 @@
 ## Deferred Documentation Reconciliation
 
 - ⚠ `DESIGN.md` uses `/admin/event-adat`, while the approved implementation remains `/admin/acara-budaya`. Reconcile the documentation naming separately without renaming the implemented route or adding modules outside the approved dashboard shell.
+- ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` allow incomplete destination drafts and describe coordinates as publication requirements, while the applied migration requires `summary`, `description`, `latitude`, and `longitude` on every destination row. The administrator form follows the applied migration.
+- ⚠ The applied migration hard-requires a thumbnail pair before destination publication and permits `draft → archived`; general lifecycle documentation presents a narrower typical flow. Media remains outside the current module, so destinations without existing thumbnail metadata cannot be published here.
+- ⚠ `DESIGN.md` proposes `/admin/destinasi/baru`, React Hook Form/Zod, and a map picker. The approved destination task uses `/admin/destinasi/tambah`, typed native validation, and manual coordinates without GIS or new form dependencies.
+- ⚠ The initial migration header still describes the file as a draft that has not been pushed, while the migration is already applied to the hosted development project. Reconcile that stale comment separately without changing the applied schema.
 
 ---
 
