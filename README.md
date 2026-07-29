@@ -18,7 +18,7 @@ Fase saat ini adalah **Phase 1 — Project Foundation**. Repository ini baru ber
 
 ## Menjalankan Secara Lokal
 
-Prasyarat: Node.js 20.9 atau lebih baru dan npm.
+Prasyarat: Node.js 22+ dan npm.
 
 ```bash
 npm ci
