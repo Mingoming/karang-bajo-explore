@@ -124,9 +124,6 @@ The following decisions are not final and must not be silently resolved in code.
 | Production account ownership         | Do not hand over through personal student-owned accounts                       |
 | Backup procedure                      | Owner, frequency, retention, location, and restore test must be documented before production |
 | Public database column exposure       | Source notes remain administrator-only; choose grants, views, or server-only access before RLS |
-| Storage bucket visibility             | Do not place draft media in a publicly readable path before the strategy is approved |
-| Trusted upload validation boundary    | Browser validation alone is not an approved security boundary                 |
-| Media dimensions, byte limits, counts, and image requirement | Do not treat conflicting recommendations as final                 |
 | Original media archive location       | Assign a village-owned external archive before handover                       |
 | Analytics                             | Excluded unless privacy, ownership, and provider are approved                  |
 | Preview URL behavior                  | Preview must remain authenticated and `noindex` until finalized                |
@@ -1222,42 +1219,38 @@ Archiving must not physically delete the record. Restoring returns it to draft.
 
 ## 21.1 Storage Responsibility
 
-* Store image files in Supabase Storage.
+* Store entity-owned image files in the private `tourism-media` Supabase Storage bucket.
 * Store paths and metadata in PostgreSQL.
 * Do not store image binaries in PostgreSQL.
 * Do not use the repository for managed public uploads.
 * Original high-resolution archives must remain outside Supabase production storage.
+* Anonymous and non-administrator identities have no direct bucket access.
+* Future public delivery must generate short-lived signed URLs server-side only after verifying the parent is published.
 
 ## 21.2 Approved Formats
 
-Preferred:
-
-* WebP
-
 Allowed:
 
-* JPEG for photographs when conversion is unavailable
-* PNG when transparency or lossless rendering is required
+* JPEG
+* PNG
+* WebP
 
 Rejected:
 
 * SVG through the dashboard
-* Executable formats
-* Video
-* Animated media unless separately approved
+* GIF, AVIF, PDF, and `application/octet-stream`
+* Executable formats, audio, and video
 * Files whose actual content does not match the declared type
+* Empty files and files larger than 5 MiB
 
 ## 21.3 File Validation
 
 Validate:
 
 * MIME type
-* File signature where practical
+* Deterministic JPEG, PNG, or WebP file signature
 * Extension
 * Source size
-* Dimensions
-* Resulting compressed size
-* Image decode success
 
 Do not trust the original filename or browser-provided MIME type alone.
 
@@ -1268,7 +1261,6 @@ Use:
 * Stable entity ownership
 * Deterministic folder structure
 * Unique generated identifier
-* Normalized safe filename suffix
 
 Do not use:
 
@@ -1280,10 +1272,7 @@ Do not use:
 Recommended patterns:
 
 ```text
-destinations/{destination_id}/thumbnail-{uuid}.webp
-destinations/{destination_id}/gallery/{uuid}.webp
-events/{event_id}/{uuid}.webp
-traditional-houses/{house_id}/{uuid}.webp
+{entity-type}/{entity-id}/{generated-uuid}.{extension}
 ```
 
 ## 21.5 Image Metadata
@@ -1308,11 +1297,10 @@ Image replacement must follow this sequence:
 1. Validate new image.
 2. Upload new image.
 3. Confirm upload success.
-4. Save new metadata.
-5. Update primary or thumbnail reference.
-6. Confirm new public reference.
-7. Remove previous association.
-8. Perform safe old-file cleanup.
+4. Transactionally update metadata and primary or thumbnail references.
+5. Remove the new object if the database update fails.
+6. Remove the old object only after the database points to the replacement.
+7. Record safe orphan-cleanup context if old-object removal fails.
 
 Do not delete the valid previous image before the replacement succeeds.
 
@@ -1324,7 +1312,7 @@ Do not leave orphaned files indefinitely.
 
 Do not delete a Storage object until the system confirms that no valid record references it.
 
-Orphan cleanup must:
+Orphan cleanup maintenance must eventually:
 
 * Be authorized
 * Use a grace period
@@ -1334,42 +1322,15 @@ Orphan cleanup must:
 
 ---
 
-# 22. Provisional Image Size Targets
+# 22. Approved Image Limits
 
-The values below are a prior proposal, not an approved Version 1 contract. They conflict with `prd.md` and `design.md` recommendations and must not be implemented until one canonical media specification is approved.
+* Maximum source-file size: 5 MiB.
+* Maximum images per supported parent: 10.
+* Maximum primary images per parent: 1.
+* Display order starts at 0.
+* No pixel-dimension constraint or image transformation is implemented in this phase.
 
-## 22.1 Thumbnail
-
-* Recommended maximum width: `800 px`
-* Target file size: `80–200 KB`
-
-## 22.2 Gallery Image
-
-* Recommended maximum width: `1600 px`
-* Target file size: `150–500 KB`
-
-## 22.3 Hero Image
-
-* Recommended maximum width: `1920 px`
-* Target file size: `300–700 KB`
-
-## 22.4 Hard Limits
-
-* Initial source-file hard limit: `10 MB`
-* Files above the hard limit must be rejected before upload.
-* Do not silently degrade an image to unusable quality.
-* Do not use full-size gallery images as card thumbnails.
-* Use responsive image delivery where supported.
-
-If approved limits change, update:
-
-* `prd.md`
-* `design.md`
-* `rules.md`
-* Client validation
-* Server validation
-* Administrator guidance
-* Tests
+Direct authenticated `INSERT`, `UPDATE`, and `DELETE` on supported entity-image tables are prohibited. Mutations must use the approved administrator-only media functions; authenticated table access is read-only, and `PUBLIC` or `anon` cannot execute mutation functions.
 
 ---
 

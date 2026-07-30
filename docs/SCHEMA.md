@@ -1985,7 +1985,7 @@ image_3
 
 Dedicated image tables are required because they support:
 
-* Unlimited practical image counts
+* Bounded image collections with a maximum of ten images per parent
 * Explicit ownership
 * Individual captions
 * Individual alt text
@@ -2000,15 +2000,13 @@ Dedicated image tables are required because they support:
 
 A storage path should be stable and unique within its bucket.
 
-A path may follow an organizational convention such as:
+A path uses the approved server-generated convention:
 
 ```text
-destinations/{destination_id}/{file_name}
-homestays/{homestay_id}/{file_name}
-umkms/{umkm_id}/{file_name}
+{entity-type}/{entity-id}/{generated-uuid}.{extension}
 ```
 
-The exact path format belongs in `rules.md`.
+The private bucket is `tourism-media`. Supported extensions are `jpg`, `png`, and `webp`; original filenames are not stored in paths.
 
 ---
 
@@ -2028,6 +2026,12 @@ The authoritative gallery relationship remains in the relevant image table.
 When a primary image changes, the thumbnail reference must remain synchronized.
 
 This deliberate denormalization is allowed because it simplifies frequent listing queries, provided synchronization is enforced consistently.
+
+Narrow transactional functions enforce synchronization. Selecting a primary image clears the prior primary row and copies the selected bucket/path to the parent. Deleting a primary image selects the remaining lowest-order image or clears both parent thumbnail fields when no image remains and the parent lifecycle constraints permit it.
+
+For the six supported image tables, authenticated administration retains `SELECT` but direct `INSERT`, `UPDATE`, and `DELETE` are revoked. All metadata mutations pass through administrator-only database functions with fixed `search_path`, static entity mappings, and explicit parent/image ownership checks. Table constraints independently require the `tourism-media` bucket and an owning entity/parent path.
+
+The first federated administrator implementation supports `destination_images`, `package_images`, `homestay_images`, `umkm_images`, `traditional_house_images`, and `cultural_event_images`. Article-image tables remain part of the schema but are not exposed by the media administrator until their parent administrator modules exist.
 
 For content types that expose thumbnail references, both `thumbnail_bucket` and `thumbnail_path` are required before publication. Additional gallery images remain optional. Image pixel and byte limits are application/upload validation rules and are not encoded as database constraints.
 

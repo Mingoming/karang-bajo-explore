@@ -2923,13 +2923,10 @@ Historical event descriptions may remain archived or published as documentation 
 Admin selects image
         |
         v
-Browser checks format, dimensions, and size
+Authenticated Server Action validates size, MIME, and binary signature
         |
         v
-Browser compresses when appropriate
-        |
-        v
-Authenticated upload to Supabase Storage
+Authenticated server uploads to private Supabase Storage
         |
         v
 Server mutation saves media metadata
@@ -2946,76 +2943,42 @@ Accepted input:
 
 * WebP
 * JPEG
-* PNG only when transparency or source characteristics require it
+* PNG
 
-Preferred stored output:
-
-* WebP for photographs
-* PNG only for approved transparency requirements
-
-Animated images are excluded unless explicitly approved.
+GIF, AVIF, video, audio, PDF, SVG, `application/octet-stream`, empty files, and MIME/signature mismatches are rejected.
 
 SVG upload by administrators is excluded because of script and sanitization risk.
 
 ---
 
-## 12.3 Provisional Limits
+## 12.3 Approved Limits
 
-The values below remain a design proposal. They must not be implemented as authoritative limits until reconciled with `prd.md`, `rules.md`, the production service plan, and the Open Decisions table.
-
-These are application defaults pending operational validation.
-
-| Media use          | Recommended maximum dimensions | Recommended maximum stored size |                  Maximum count |
-| ------------------ | -----------------------------: | ------------------------------: | -----------------------------: |
-| Thumbnail          |                     1200 × 900 |                          800 KB |             1 selected primary |
-| Gallery image      |                    1920 × 1440 |                          1.5 MB |                  12 per entity |
-| Hero image         |                    2400 × 1350 |                            2 MB |                  1 active hero |
-| Standalone gallery |                    1920 × 1440 |                          1.5 MB | Controlled by admin pagination |
-
-Hard browser input limit before processing:
-
-```text
-10 MB per selected source file
-```
-
-Files above the input limit are rejected before upload.
-
-These limits should be reviewed against the Supabase plan before production launch.
+Each image is limited to 5 MiB. Each supported parent may contain at most ten images and zero or one primary image. Display order is normalized from zero. This phase does not impose pixel-dimension rules or perform image transformation.
 
 ---
 
-## 12.4 Compression
+## 12.4 Validation Boundary
 
-Browser compression should:
-
-* Preserve reasonable visual quality
-* Correct image orientation
-* Reduce dimensions above the target
-* Convert photographic JPEG or PNG input to WebP
-* Avoid repeatedly recompressing an already optimized image unnecessarily
-
-The administrator sees the resulting file size before upload where practical.
+Validation runs in authenticated Server Actions before upload. The application checks the `File` shape, nonzero size, 5 MiB limit, allowlisted MIME type, and deterministic JPEG, PNG, or WebP binary signature. The private bucket independently enforces the byte limit and MIME allowlist. No image-processing dependency is used.
 
 ---
 
 ## 12.5 Storage Paths
 
-Recommended deterministic structure:
+Approved deterministic structure:
 
 ```text
-{entity_type}/{entity_id}/{image_id}-{normalized_filename}.webp
+{entity-type}/{entity-id}/{generated-uuid}.{extension}
 ```
 
 Examples:
 
 ```text
-destinations/{destination_id}/{image_id}-lokok-bajo.webp
-homestays/{homestay_id}/{image_id}-front-view.webp
+destination/{destination-id}/{generated-uuid}.webp
+homestay/{homestay-id}/{generated-uuid}.jpg
 ```
 
-The UUID prevents collisions.
-
-Human-readable suffixes improve administration but are not treated as identifiers.
+Entity types are selected from a server allowlist. Parent IDs come from server-read records, and original filenames are never included in object paths.
 
 ---
 
@@ -3083,6 +3046,8 @@ Gallery images support:
 
 Order updates are persisted as one controlled mutation.
 
+The database normalizes order values from zero and limits each parent to ten rows. A partial unique index permits at most one primary row per parent.
+
 ---
 
 ## 12.10 Replacing Images
@@ -3090,34 +3055,20 @@ Order updates are persisted as one controlled mutation.
 When replacing an image:
 
 1. Upload and validate the new object.
-2. Save new metadata.
-3. Update primary or thumbnail references.
-4. Confirm successful rendering.
-5. Remove the previous metadata association.
-6. Queue or perform safe deletion of the old storage object.
+2. Run one database function that updates metadata and the parent thumbnail when applicable.
+3. Remove the old object only after the database points to the new object.
+4. Remove the new object if the database function fails.
+5. Record safe orphan-cleanup context if old-object removal fails.
 
 Never delete the old object before the replacement is confirmed.
 
 ---
 
-## 12.11 Orphaned Files
+## 12.11 Deletion and Orphaned Files
 
 An orphan is a Storage object without a valid database association.
 
-Cleanup design:
-
-* Do not delete immediately after a failed metadata write.
-* Record or log suspected orphan path.
-* Provide an admin-only maintenance view or controlled script.
-* Delete only after a grace period and reference check.
-
-Recommended grace period:
-
-```text
-7 days
-```
-
-This is an operational recommendation pending approval.
+Deletion first removes metadata transactionally, reorders remaining images, assigns the lowest-order fallback primary, and synchronizes the parent thumbnail. Storage removal follows. A Storage-removal failure is reported as incomplete cleanup and logged without raw errors, credentials, or identifiers.
 
 ---
 
@@ -4719,11 +4670,6 @@ Deliver:
 | Production account ownership             | Personal student accounts create handover risk                       | Use an official village or institution-controlled email as owner                                   | Pending approval |
 | Backup procedure                         | Owner, frequency, retention, location, and restore testing are not final | Assign each operational responsibility before production                                       | Pending approval |
 | Public database column exposure          | Row visibility does not protect private columns such as `source_note` | Choose column grants, public views, or server-only public access before RLS implementation          | Pending approval |
-| Storage bucket visibility                | A public bucket can expose draft media by URL                        | Choose private/signed versus separated public/pending bucket strategy                               | Pending approval |
-| Trusted upload validation boundary       | Browser-only validation can be bypassed                              | Choose the server or trusted-platform verification path before media implementation                 | Pending approval |
-| Media dimensions, byte limits, and counts | Existing document recommendations differ and affect storage and validation | Approve one canonical media specification against the service plan                            | Pending approval |
-| Published destination image requirement  | Fallback behavior and publication validation are not aligned         | Decide whether a primary image is required for publication                                         | Pending approval |
-| Thumbnail and orphan synchronization     | Denormalized paths and failed uploads can drift                      | Finalize transaction and cleanup ownership before media implementation                              | Pending approval |
 | Original media archive location          | Supabase optimized images are not sufficient archives                | Assign an external village-owned archive before handover                                           | Pending approval |
 | Event time zone and uncertain-date classification | Upcoming/past classification can be wrong                     | Define time zone, all-day semantics, and classification for `date_note`-only events                 | Pending approval |
 | Package-map requirement                  | PRD describes the map as optional while delivery plans treat it as required | Decide whether the Version 1 package map is mandatory                                          | Pending approval |

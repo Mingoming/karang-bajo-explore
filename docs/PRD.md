@@ -1597,7 +1597,7 @@ Allow administrators to prepare, upload, organize, replace, and remove public im
 
 ## Description
 
-Media Management supports images for destinations, packages, traditional houses, cultural articles, customary institution articles, events, homestays, UMKM, and the standalone gallery.
+Media ownership remains federated through entity-specific image tables. The first administrator implementation supports destinations, packages, traditional houses, events, homestays, and UMKM. Article and standalone-gallery media remain deferred until their parent administrator modules exist.
 
 ## Users
 
@@ -1632,37 +1632,35 @@ Unsupported in Version 1:
 * Executable files
 * Video uploads
 * Animated-image workflows
+* AVIF, PDF, audio, and `application/octet-stream`
 
 ## Functional Requirements
 
 1. The administrator must be able to select approved image files.
 2. The product must reject unsupported formats.
 3. The product must reject files above the approved source-file limit.
-4. The product must reduce excessive image dimensions or reject the file.
-5. Images should be compressed before final storage.
-6. Uploaded images must show a preview.
-7. Every public image must have alt text.
-8. Captions must be optional.
-9. The administrator must be able to reorder images.
-10. The administrator must be able to select a primary image where supported.
-11. The administrator must be able to replace an image.
-12. The administrator must be able to remove an image association.
-13. Replacing an image must not remove the old valid image before the replacement succeeds.
-14. Failed uploads must not clear unrelated form data.
-15. Missing stored images must use a fallback.
-16. The system must support controlled orphan-file cleanup.
-17. Original high-resolution files must be retained outside the production media store by the content owner.
-18. A published record should not expose an image whose metadata or file is unavailable.
+4. Uploaded images must show a preview.
+5. Every image must have nonblank alt text.
+6. Captions must be optional.
+7. The administrator must be able to reorder images from display order zero.
+8. The administrator must be able to select one primary image where supported.
+9. The administrator must be able to replace an image.
+10. The administrator must be able to remove an owned image.
+11. Replacing an image must not remove the old valid image before the replacement succeeds.
+12. Failed metadata writes must compensate by removing the newly uploaded object.
+13. The database must synchronize primary-image state and parent thumbnail references transactionally.
+14. The system must report incomplete Storage cleanup without reporting complete success.
+15. Original high-resolution files must be retained outside the production media store by the content owner.
+16. A published record should not expose an image whose metadata or file is unavailable.
 
-## Recommended Product Limits
+## Approved Product Limits
 
-| Media type    | Source limit | Stored target |   Recommended count |
-| ------------- | -----------: | ------------: | ------------------: |
-| Thumbnail     |  10 MB input |  Up to 800 KB |           1 primary |
-| Gallery image |  10 MB input |  Up to 1.5 MB | Up to 12 per entity |
-| Hero image    |  10 MB input |    Up to 2 MB |            1 active |
-
-These limits require approval against the production service plan.
+* One private bucket: `tourism-media`.
+* Allowed types: JPEG, PNG, and WebP with matching binary signatures.
+* Maximum source-file size: 5 MiB.
+* Maximum images per supported parent: 10.
+* Maximum primary images per parent: 1.
+* No image cropping, compression, dimension transformation, or bulk upload in this phase.
 
 ## Acceptance Criteria
 

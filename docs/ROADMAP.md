@@ -81,10 +81,7 @@ The following decisions must be resolved at the specified phase gate.
 | Supabase, Vercel, repository ownership | Deployment and handover   | No personal student ownership at handover                  | Assign official institutional owner                  |
 | Backup frequency and owner            | Deployment and handover    | Not finalized                                              | Approve operational procedure                       |
 | Source-note public exposure           | Phase 2 security           | Administrator-only                                        | Select column grant, public view, or server-only path |
-| Storage bucket visibility             | Phase 2 and media          | Draft media must not be publicly readable                  | Select bucket and signed/public URL strategy          |
-| Trusted upload validation             | Media phase                | Browser validation alone is insufficient                   | Select trusted validation boundary                   |
-| Media specifications and image requirement | Media phase           | Conflicting recommendations are not final                  | Approve dimensions, bytes, counts, and publication image rule |
-| Media synchronization and archive     | Media phase and handover   | Preserve referenced files and optimized assets             | Define thumbnail/orphan transactions and village-owned original archive |
+| Original media archive                | Media phase and handover   | Production assets still require an independent village-owned archive | Assign archive ownership and procedure before handover |
 | Event temporal semantics              | Event implementation      | Do not infer uncertain dates                               | Define time zone, all-day, and upcoming/past rules   |
 | Package map and public search         | Feature implementation    | Treat as optional                                          | Decide required Version 1 behavior                   |
 | Settings keys and import provenance   | Database and import        | Only central WhatsApp key is fixed                         | Approve additional keys and report-only versus stored provenance |
@@ -956,7 +953,6 @@ Some dashboard capabilities are introduced earlier to support vertical slices. T
 
 * Upload
 * Preview
-* Compression
 * Alt text
 * Caption
 * Ordering

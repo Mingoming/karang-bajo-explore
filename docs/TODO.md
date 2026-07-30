@@ -4,7 +4,7 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** Phase 5 — Admin Dashboard (content management in progress)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, dan Paket Wisata selesai; validasi autentikasi manual selesai kecuali password recovery; modul produk lain belum dimulai
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi selesai secara lokal; migration Media belum diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -18,9 +18,6 @@
 ## Blockers Aktif
 
 - ⚠ Region Supabase belum dipilih.
-- ⚠ Strategi visibilitas Storage untuk media draft belum diputuskan.
-- ⚠ Batas validasi upload tepercaya belum diputuskan.
-- ⚠ Spesifikasi final ukuran, jumlah, dan kewajiban gambar belum disetujui.
 - ⚠ Pemilik akun produksi dan prosedur backup belum ditetapkan.
 - ⚠ Provider tile OpenStreetMap, caching, monitoring, dan retensi log belum diputuskan.
 
@@ -92,14 +89,15 @@
 - ☑ Konfigurasi Supabase Auth untuk administrator tunggal
 - ☑ Buat akun administrator awal
 - ☑ Konfigurasi session refresh melalui Next.js Proxy
-- ☐ Konfigurasi Storage buckets
-- ⚠ Tetapkan strategi media draft dan public
-- ⚠ Tetapkan trusted upload-validation boundary
+- ☑ Definisikan private bucket `tourism-media` dalam forward-only migration lokal
+- ☑ Tetapkan private Storage dan future server-side signed URL delivery
+- ☑ Tetapkan Server Action dan platform Storage sebagai trusted upload-validation boundary
 - ☑ Buat initial migration lokal
 - ☑ Aktifkan RLS pada application tables
 - ☑ Buat public-safe read views dan policies
 - ☑ Buat administrator mutation policies
-- ☐ Buat Storage policies
+- ☑ Buat dan uji Storage policies administrator secara lokal
+- ☐ Terapkan migration Media ke hosted development project setelah review
 - ☐ Generate database types
 
 ## Phase 2C — Local Database and RLS Test Suite
@@ -108,7 +106,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 209 assertions terhadap database lokal dengan 0 failure, termasuk integritas khusus pengelolaan destinasi, homestay, UMKM, rumah adat, acara budaya, dan paket wisata
+- ☑ Jalankan 274 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, penolakan direct table mutation, sinkronisasi thumbnail, fallback primary, dan batas 10 gambar
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -125,7 +123,8 @@
 - ☑ Anonymous tidak dapat melakukan mutation.
 - ☑ Identity selain administrator tidak mendapat akses administratif pada database.
 - ☑ Draft dan archived tidak dapat dibaca publik.
-- ☐ Storage policies lulus pengujian izin.
+- ☑ Storage policies lokal lulus pengujian izin.
+- ☐ Storage policies Media diterapkan dan diverifikasi pada hosted development.
 
 ---
 
@@ -434,20 +433,24 @@
 
 ## Media
 
-- ☐ Media Upload
-- ☐ Browser preview
+- ☑ Federated Media overview untuk enam modul induk yang didukung
+- ☑ Media Upload melalui authenticated server client
+- ☑ Browser preview lokal dan administrator signed URL berumur pendek
 - ☐ Image compression
-- ☐ File-type validation
-- ☐ File-size validation
+- ☑ File-type dan binary-signature validation untuk JPEG, PNG, dan WebP
+- ☑ File-size validation maksimal 5 MiB
 - ☐ Dimension validation
-- ☐ Alt text
-- ☐ Caption
-- ☐ Image ordering
-- ☐ Primary image
-- ☐ Replace image safely
-- ☐ Remove image
+- ☑ Alt text wajib dan caption opsional
+- ☑ Image ordering mulai dari 0
+- ☑ Maksimal 10 gambar dan satu primary image per parent
+- ☑ RPC-only metadata mutation; direct `INSERT`, `UPDATE`, dan `DELETE` untuk role `authenticated` dicabut pada enam image table yang didukung
+- ☑ Sinkronisasi transactional primary image dan parent thumbnail
+- ☑ Replace image dengan kompensasi objek baru saat metadata gagal
+- ☑ Remove image, fallback primary, dan thumbnail clearing
 - ☐ Missing-image warning
-- ☐ Orphan-file cleanup
+- ◐ Orphan-file cleanup dicatat aman saat Storage cleanup gagal; maintenance cleanup belum dibuat
+- ☐ Public signed-URL delivery setelah verifikasi parent published
+- ☑ Lightweight Media tests dan focused pgTAP Storage/RPC coverage
 
 ## Phase 5 Completion Gate
 

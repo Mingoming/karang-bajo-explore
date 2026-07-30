@@ -15,6 +15,7 @@
     "test:traditional-houses": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/traditional-houses.test.mjs",
     "test:cultural-events": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/cultural-events.test.mjs",
     "test:tourism-packages": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/tourism-packages.test.mjs",
+    "test:media": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/media.test.mjs",
     "format": "prettier --write app components config constants features lib tests README.md \"*.{json,mjs,ts}\"",
     "format:check": "prettier --check app components config constants features lib tests README.md \"*.{json,mjs,ts}\""
   },

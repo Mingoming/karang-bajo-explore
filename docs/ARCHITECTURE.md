@@ -315,19 +315,21 @@ Detailed table structures, constraints, relationships, and indexes belong in `sc
 
 ## 5.5 Storage
 
-Supabase Storage stores images and other approved media assets.
+Supabase Storage stores approved entity-owned images in one private bucket named `tourism-media`.
 
 Its responsibilities are:
 
 * Persistent object storage
 * Controlled administrative uploads
-* Public or restricted media delivery
+* Private media delivery through short-lived signed URLs
 * Stable media references
 * Integration with Supabase authorization policies
 
 Storage must remain separate from structured database records.
 
 The database stores media references and metadata, while Storage contains the actual files.
+
+Anonymous visitors and non-administrator Auth identities have no direct bucket access. Administrator access is enforced by Storage policies through `public.is_admin()`. Future public pages must verify that the owning parent is published before generating a short-lived signed URL server-side; signed URLs are never persisted.
 
 ---
 
@@ -379,11 +381,20 @@ Its responsibilities include:
 * Validating supported formats
 * Restricting invalid or unsafe files
 * Enforcing practical file-size limits
-* Converting or requiring images in WebP format
+* Accepting JPEG, PNG, and WebP images up to 5 MiB
+* Verifying deterministic binary signatures rather than trusting filenames or browser MIME values
 * Storing files in Supabase Storage
 * Recording media metadata
 * Associating media with content
 * Supporting replacement and removal
+
+Media ownership is federated through the existing entity-specific image tables. Every object belongs to exactly one parent and is stored at `{entity-type}/{entity-id}/{generated-uuid}.{extension}`. Entity types come from a server allowlist, while parent and image ownership are re-read on the server.
+
+Each parent may have at most ten images and one primary image. Transactional database functions synchronize primary-image state with the parent's cached thumbnail bucket and path, normalize ordering, select a fallback primary after deletion, and clear the thumbnail pair when a draft or archived gallery becomes empty.
+
+The `authenticated` role retains administrator read access to the six supported image tables but has no direct `INSERT`, `UPDATE`, or `DELETE` privilege. Metadata mutations use narrowly scoped `SECURITY DEFINER` functions owned by the database owner. Each function fixes its `search_path`, checks `public.is_admin()`, accepts only statically mapped entity/table combinations, and validates parent and image ownership before writing. `PUBLIC` and `anon` cannot execute these functions.
+
+Uploads, replacements, and deletions use authenticated server mutations. Failed metadata writes remove newly uploaded objects. Replacement removes the old object only after the database points to the new object. Failed Storage cleanup is treated as an orphan-cleanup failure and is never reported as complete success.
 
 Media management should remain understandable to non-technical administrators.
 

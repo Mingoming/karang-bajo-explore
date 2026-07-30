@@ -217,26 +217,15 @@ select is(
 );
 
 -- Child-image public visibility follows its parent publication status.
-insert into public.destination_images (
-  id, destination_id, storage_bucket, storage_path, alt_text, created_by
-)
-values
-  (
-    'e4000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000001',
-    'test-media',
-    'phase-2c/draft-child.webp',
-    'Test-only draft child image',
-    'b0000000-0000-4000-8000-000000000001'
-  ),
-  (
-    'e4000000-0000-4000-8000-000000000002',
-    'e0000000-0000-4000-8000-000000000002',
-    'test-media',
-    'phase-2c/published-child.webp',
-    'Test-only published child image',
-    'b0000000-0000-4000-8000-000000000001'
-  );
+select lives_ok(
+  $$select public.media_insert('destination', 'e0000000-0000-4000-8000-000000000001', 'e4000000-0000-4000-8000-000000000001', 'destination/e0000000-0000-4000-8000-000000000001/e4000000-0000-4000-8000-000000000001.webp', 'Test-only draft child image', null, 0, true, array['e4000000-0000-4000-8000-000000000001'::uuid])$$,
+  'administrator adds the draft child image through the approved media RPC'
+);
+
+select lives_ok(
+  $$select public.media_insert('destination', 'e0000000-0000-4000-8000-000000000002', 'e4000000-0000-4000-8000-000000000002', 'destination/e0000000-0000-4000-8000-000000000002/e4000000-0000-4000-8000-000000000002.webp', 'Test-only published child image', null, 0, true, array['e4000000-0000-4000-8000-000000000002'::uuid])$$,
+  'administrator adds the published child image through the approved media RPC'
+);
 
 update public.destinations
 set thumbnail_bucket = 'test-media',
