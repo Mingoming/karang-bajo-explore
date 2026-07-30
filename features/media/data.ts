@@ -239,3 +239,44 @@ export async function getMediaEditorData(
   if (!image) return { kind: "not-found" as const };
   return { kind: "ready" as const, parent, image, images };
 }
+
+export async function getMediaGalleryData(
+  entityTypeValue?: string,
+  parentIdValue?: string,
+) {
+  await requireAdministrator();
+
+  const identity = parseMediaRouteIdentity(entityTypeValue, parentIdValue);
+
+  if (!identity) {
+    return { kind: "invalid-id" as const };
+  }
+
+  const supabase = await createClient();
+
+  const parent = await queryMediaParentById(
+    supabase,
+    identity.entityType,
+    identity.parentId,
+  );
+
+  if (parent === undefined) {
+    return { kind: "read-error" as const };
+  }
+
+  if (!parent) {
+    return { kind: "not-found" as const };
+  }
+
+  const images = await queryMediaImages(supabase, parent.entityType, parent.id);
+
+  if (!images) {
+    return { kind: "read-error" as const };
+  }
+
+  return {
+    kind: "ready" as const,
+    parent,
+    images,
+  };
+}

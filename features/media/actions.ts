@@ -82,6 +82,23 @@ function mediaEditPath(
   return `${LIST_PATH}/${imageId}/edit?${query.toString()}`;
 }
 
+function mediaGalleryPath(
+  entityType: string,
+  parentId: string,
+  success?: string,
+) {
+  const query = new URLSearchParams({
+    entityType,
+    parentId,
+  });
+
+  if (success) {
+    query.set("success", success);
+  }
+
+  return `${LIST_PATH}/kelola?${query.toString()}`;
+}
+
 async function readTrustedContext(entityType: string, parentId: string) {
   if (!isMediaEntityType(entityType) || !isValidMediaUuid(parentId))
     return { kind: "not-found" as const };
@@ -236,13 +253,9 @@ export async function createMedia(
   }
 
   revalidatePath(LIST_PATH);
+  revalidatePath(`${LIST_PATH}/kelola`);
   redirect(
-    mediaEditPath(
-      context.parent.entityType,
-      context.parent.id,
-      imageId,
-      "created",
-    ),
+    mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
 }
 

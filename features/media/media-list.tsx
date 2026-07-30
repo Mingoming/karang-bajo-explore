@@ -16,8 +16,8 @@ export function MediaList({ parents }: { parents: MediaParentOption[] }) {
           entityType: parent.entityType,
           parentId: parent.id,
         });
-        const href = parent.primaryImageId
-          ? `/admin/media/${parent.primaryImageId}/edit?${query.toString()}`
+        const href = parent.imageCount
+          ? `/admin/media/kelola?${query.toString()}`
           : `/admin/media/tambah?${query.toString()}`;
         return (
           <article

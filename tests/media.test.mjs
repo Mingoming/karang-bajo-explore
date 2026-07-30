@@ -337,3 +337,51 @@ test("create and edit pages bind mutations to the server-read owner", () => {
   assert.doesNotMatch(form, /name=["']entity_type["']/);
   assert.doesNotMatch(form, /name=["']parent_id["']/);
 });
+
+test("media list routes existing parents to the gallery page", () => {
+  const source = readFileSync("features/media/media-list.tsx", "utf8");
+
+  assert.match(source, /\/admin\/media\/kelola/);
+  assert.doesNotMatch(
+    source,
+    /parent\.primaryImageId\s*\?\s*`\/admin\/media\/\$\{parent\.primaryImageId\}\/edit/,
+  );
+});
+
+test("gallery page loads server-read parent and image data", () => {
+  const source = readFileSync("app/admin/media/kelola/page.tsx", "utf8");
+
+  assert.match(source, /getMediaGalleryData/);
+  assert.match(source, /result\.parent\.entityType/);
+  assert.match(source, /result\.parent\.id/);
+  assert.match(source, /MediaGallery/);
+});
+
+test("media gallery provides add and edit navigation", () => {
+  const source = readFileSync("features/media/media-gallery.tsx", "utf8");
+
+  assert.match(source, /admin\/media\/tambah/);
+  assert.match(source, /admin\/media\/\$\{image\.id\}\/edit/);
+  assert.match(source, /Gambar utama/);
+});
+
+test("successful media creation redirects back to the parent gallery", () => {
+  const actions = readFileSync("features/media/actions.ts", "utf8");
+  const galleryPage = readFileSync("app/admin/media/kelola/page.tsx", "utf8");
+
+  const createStart = actions.indexOf("export async function createMedia");
+  const updateStart = actions.indexOf("export async function updateMedia");
+
+  assert.notEqual(createStart, -1);
+  assert.notEqual(updateStart, -1);
+
+  const createSource = actions.slice(createStart, updateStart);
+
+  assert.match(createSource, /redirect\(\s*mediaGalleryPath\(/);
+  assert.doesNotMatch(createSource, /redirect\(\s*mediaEditPath\(/);
+  assert.match(createSource, /"created"/);
+
+  assert.match(galleryPage, /success\?: string \| string\[\]/);
+  assert.match(galleryPage, /query\.success === "created"/);
+  assert.match(galleryPage, /Gambar berhasil ditambahkan ke galeri/);
+});
