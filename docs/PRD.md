@@ -856,7 +856,7 @@ The product does not process bookings or payments.
 * [ ] Participant-limit fields are not presented in Version 1.
 * [x] Local database tests confirm package create, metadata update, relationship replacement, removal, and reordering roll back as one operation on failure.
 * [x] Direct authenticated mutations are revoked and both package mutation RPCs enforce sole-administrator authorization.
-* [ ] The new transactional RPC migration and administrator/non-administrator behavior are credential-backed against hosted development.
+* [x] The transactional RPC migration is applied to hosted development; credential-backed administrator operations, non-administrator rejection, and atomic rollback on invalid destination or ordering input are verified.
 
 ---
 

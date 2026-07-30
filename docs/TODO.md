@@ -4,7 +4,7 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** Phase 5 — Admin Dashboard (content management in progress)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; migration Media telah diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; migration Media dan transactional Tourism Package telah diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -344,7 +344,10 @@
 - ☑ Transactional `tourism_package_create` dan `tourism_package_update` RPC dengan sole-admin authorization, row locking, complete-set validation, dan atomic rollback
 - ☑ Direct mutation `tourism_packages` dan `package_destinations` dicabut dari `authenticated`; aplikasi menggunakan RPC untuk seluruh create dan edit
 - ☑ Tourism Package lightweight application tests 19/19 dan focused pgTAP coverage
-- ☐ Terapkan migration transactional Tourism Package ke hosted development dan jalankan credential-backed administrator/non-administrator validation
+- ☑ Terapkan migration transactional Tourism Package `20260730044746_tourism_package_transactional_rpcs.sql` ke hosted development; local dan remote migration history tersinkronisasi
+- ☑ Credential-backed hosted administrator validation untuk create, metadata update, penambahan, penghapusan, pengurutan, dan publikasi paket valid
+- ☑ Credential-backed hosted non-administrator rejection untuk `tourism_package_create` dan `tourism_package_update`
+- ☑ Credential-backed hosted atomic rollback validation untuk input destinasi atau urutan yang tidak valid
 
 ### Tourism Package Credential-Backed Browser Validation
 
