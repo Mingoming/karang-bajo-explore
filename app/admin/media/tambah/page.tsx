@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { createMedia } from "@/features/media/actions";
 import { getMediaCreateData } from "@/features/media/data";
@@ -19,9 +20,10 @@ export default async function AddMediaPage({ searchParams }: Props) {
   const parentId =
     typeof query.parentId === "string" ? query.parentId : undefined;
   const result = await getMediaCreateData(entityType, parentId);
-  const selected =
+  if (result.kind === "invalid-id" || result.kind === "not-found") notFound();
+  const createAction =
     result.kind === "ready"
-      ? (result.selected ?? result.parents[0] ?? null)
+      ? createMedia.bind(null, result.selected.entityType, result.selected.id)
       : null;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -39,15 +41,15 @@ export default async function AddMediaPage({ searchParams }: Props) {
         Pilih konten pemilik, lalu unggah satu gambar JPEG, PNG, atau WebP
         maksimal 5 MiB.
       </p>
-      {result.kind === "ready" ? (
+      {result.kind === "ready" && createAction ? (
         <MediaForm
-          action={createMedia}
+          action={createAction}
           initialState={createMediaInitialState(
-            selected?.entityType ?? "",
-            selected?.id ?? "",
+            result.selected.entityType,
+            result.selected.id,
           )}
           mode="create"
-          parents={result.parents}
+          parent={result.selected}
         />
       ) : (
         <div

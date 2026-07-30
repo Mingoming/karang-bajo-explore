@@ -1,8 +1,4 @@
-import type { MediaEntityType } from "./model";
-
 export const MEDIA_MAX_FILE_SIZE = 5 * 1024 * 1024;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const MEDIA_MIME_EXTENSIONS = {
   "image/jpeg": "jpg",
@@ -87,20 +83,4 @@ export async function validateMediaFileField(
     };
   }
   return validateMediaFile(entries[0], required);
-}
-
-export function createMediaStoragePath(
-  entityType: MediaEntityType,
-  parentId: string,
-  imageId: string,
-  extension: string,
-) {
-  if (
-    !UUID_PATTERN.test(parentId) ||
-    !UUID_PATTERN.test(imageId) ||
-    !["jpg", "png", "webp"].includes(extension)
-  ) {
-    throw new Error("Invalid media storage path input");
-  }
-  return `${entityType}/${parentId}/${imageId}.${extension}`;
 }

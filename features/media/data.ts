@@ -7,6 +7,7 @@ import {
   MEDIA_ENTITY_TYPES,
   isMediaEntityType,
   isValidMediaUuid,
+  parseMediaRouteIdentity,
   type MediaEntityType,
   type MediaImageRecord,
   type MediaParentOption,
@@ -199,24 +200,17 @@ export async function getMediaCreateData(
   parentIdValue?: string,
 ) {
   await requireAdministrator();
+  const identity = parseMediaRouteIdentity(entityTypeValue, parentIdValue);
+  if (!identity) return { kind: "invalid-id" as const };
   const supabase = await createClient();
-  const groups = await Promise.all(
-    MEDIA_ENTITY_TYPES.map((entityType) =>
-      queryMediaParents(supabase, entityType),
-    ),
+  const selected = await queryMediaParentById(
+    supabase,
+    identity.entityType,
+    identity.parentId,
   );
-  if (groups.some((group) => group === null))
-    return { kind: "read-error" as const };
-  const parents = groups.flatMap((group) => group ?? []);
-  const selected =
-    entityTypeValue && isMediaEntityType(entityTypeValue) && parentIdValue
-      ? (parents.find(
-          (parent) =>
-            parent.entityType === entityTypeValue &&
-            parent.id === parentIdValue,
-        ) ?? null)
-      : null;
-  return { kind: "ready" as const, parents, selected };
+  if (selected === undefined) return { kind: "read-error" as const };
+  if (!selected) return { kind: "not-found" as const };
+  return { kind: "ready" as const, selected };
 }
 
 export async function getMediaEditorData(

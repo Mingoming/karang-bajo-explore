@@ -7,21 +7,25 @@ import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import { queryMediaImages, queryMediaParentById } from "./data";
-import {
-  createMediaStoragePath,
-  validateMediaFileField,
-} from "./file-validation";
+import { validateMediaFileField } from "./file-validation";
 import {
   canAddMediaImage,
+  createMediaStoragePath,
+  isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidMediaUuid,
   moveMediaImageToOrder,
+  parseMediaRouteIdentity,
   shouldMakeMediaPrimary,
-  validateMediaFormData,
+  validateTrustedMediaFormData,
   type MediaActionState,
   type MediaFormValues,
 } from "./model";
-import { removeMediaObject, uploadMediaObject } from "./storage";
+import {
+  logMediaStorageFailure,
+  removeMediaObject,
+  uploadMediaObject,
+} from "./storage";
 
 const LIST_PATH = "/admin/media";
 
@@ -50,7 +54,7 @@ function failure(
 function validationFailure(
   previous: MediaActionState,
   validation: Extract<
-    ReturnType<typeof validateMediaFormData>,
+    ReturnType<typeof validateTrustedMediaFormData>,
     { success: false }
   >,
   fileError?: string,
@@ -91,11 +95,21 @@ async function readTrustedContext(entityType: string, parentId: string) {
 }
 
 export async function createMedia(
+  entityType: string,
+  parentId: string,
   previous: MediaActionState,
   formData: FormData,
 ): Promise<MediaActionState> {
   await requireAdministrator();
-  const validation = validateMediaFormData(formData);
+  const identity = parseMediaRouteIdentity(entityType, parentId);
+  if (!identity)
+    return failure(
+      previous,
+      previous.values,
+      "not-found",
+      "Induk konten tidak ditemukan.",
+    );
+  const validation = validateTrustedMediaFormData(formData, identity);
   const fileValidation = await validateMediaFileField(formData, true);
   if (!validation.success)
     return validationFailure(
@@ -122,8 +136,8 @@ export async function createMedia(
   }
 
   const context = await readTrustedContext(
-    validation.data.entityType,
-    validation.data.parentId,
+    identity.entityType,
+    identity.parentId,
   );
   if (context.kind !== "ready")
     return failure(
@@ -172,10 +186,12 @@ export async function createMedia(
     fileValidation.file,
   );
   if (upload.error) {
-    console.error("Unggah objek media gagal.", {
-      code: upload.error.name,
-      entityType: context.parent.entityType,
-    });
+    logMediaStorageFailure(
+      "upload-new-object",
+      context.parent.entityType,
+      upload.error,
+      "not-required",
+    );
     return failure(
       previous,
       validation.values,
@@ -202,9 +218,15 @@ export async function createMedia(
     console.error("Penyimpanan metadata media gagal.", {
       code: error.code,
       compensation: cleanup.success ? "succeeded" : "failed",
-      cleanupCode: cleanup.code,
       entityType: context.parent.entityType,
     });
+    if (!cleanup.success)
+      logMediaStorageFailure(
+        "compensate-new-object",
+        context.parent.entityType,
+        cleanup.error,
+        "failed",
+      );
     return failure(
       previous,
       validation.values,
@@ -232,7 +254,15 @@ export async function updateMedia(
   formData: FormData,
 ): Promise<MediaActionState> {
   await requireAdministrator();
-  const validation = validateMediaFormData(formData);
+  const identity = parseMediaRouteIdentity(entityType, parentId);
+  if (!identity || !isValidMediaUuid(imageId))
+    return failure(
+      previous,
+      previous.values,
+      "not-found",
+      "Media tidak ditemukan. Muat ulang halaman daftar.",
+    );
+  const validation = validateTrustedMediaFormData(formData, identity);
   const fileValidation = await validateMediaFileField(formData, false);
   if (!validation.success)
     return validationFailure(
@@ -249,19 +279,10 @@ export async function updateMedia(
       message: "Periksa kembali berkas pengganti.",
     });
   }
-  if (
-    validation.data.entityType !== entityType ||
-    validation.data.parentId !== parentId ||
-    !isValidMediaUuid(imageId)
-  ) {
-    return failure(
-      previous,
-      validation.values,
-      "not-found",
-      "Media tidak ditemukan. Muat ulang halaman daftar.",
-    );
-  }
-  const context = await readTrustedContext(entityType, parentId);
+  const context = await readTrustedContext(
+    identity.entityType,
+    identity.parentId,
+  );
   if (context.kind !== "ready")
     return failure(
       previous,
@@ -271,7 +292,9 @@ export async function updateMedia(
         ? "Media tidak ditemukan."
         : "Data media belum dapat dimuat.",
     );
-  const image = context.images.find((item) => item.id === imageId);
+  const image = context.images.find(
+    (item) => item.id === imageId && isMediaRecordOwnedBy(item, identity),
+  );
   if (!image)
     return failure(
       previous,
@@ -329,10 +352,12 @@ export async function updateMedia(
       fileValidation.file,
     );
     if (upload.error) {
-      console.error("Unggah pengganti media gagal.", {
-        code: upload.error.name,
-        entityType: context.parent.entityType,
-      });
+      logMediaStorageFailure(
+        "upload-replacement-object",
+        context.parent.entityType,
+        upload.error,
+        "not-required",
+      );
       return failure(
         previous,
         validation.values,
@@ -359,9 +384,15 @@ export async function updateMedia(
       console.error("Penggantian metadata media gagal.", {
         code: error?.code ?? "invalid-response",
         compensation: cleanup.success ? "succeeded" : "failed",
-        cleanupCode: cleanup.code,
         entityType: context.parent.entityType,
       });
+      if (!cleanup.success)
+        logMediaStorageFailure(
+          "compensate-replacement-object",
+          context.parent.entityType,
+          cleanup.error,
+          "failed",
+        );
       return failure(
         previous,
         validation.values,
@@ -371,11 +402,12 @@ export async function updateMedia(
     }
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
-      console.error("Pembersihan objek media lama gagal.", {
-        cleanupCode: oldCleanup.code,
-        entityType: context.parent.entityType,
-        orphanCleanup: true,
-      });
+      logMediaStorageFailure(
+        "remove-replaced-object",
+        context.parent.entityType,
+        oldCleanup.error,
+        "failed",
+      );
       return failure(
         previous,
         validation.values,
@@ -419,7 +451,14 @@ export async function deleteMedia(
   const context = await readTrustedContext(entityType, parentId);
   if (
     context.kind !== "ready" ||
-    !context.images.some((image) => image.id === imageId)
+    !context.images.some(
+      (image) =>
+        image.id === imageId &&
+        isMediaRecordOwnedBy(image, {
+          entityType: context.parent.entityType,
+          parentId: context.parent.id,
+        }),
+    )
   ) {
     return failure(
       previous,
@@ -449,11 +488,12 @@ export async function deleteMedia(
   }
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
-    console.error("Penghapusan objek media gagal.", {
-      cleanupCode: cleanup.code,
-      entityType: context.parent.entityType,
-      orphanCleanup: true,
-    });
+    logMediaStorageFailure(
+      "remove-deleted-object",
+      context.parent.entityType,
+      cleanup.error,
+      "failed",
+    );
     return failure(
       previous,
       previous.values,

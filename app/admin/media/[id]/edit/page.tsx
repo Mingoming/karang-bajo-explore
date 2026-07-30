@@ -91,7 +91,7 @@ export default async function EditMediaPage({ params, searchParams }: Props) {
           result.image,
         )}
         mode="update"
-        parents={[result.parent]}
+        parent={result.parent}
         record={result.image}
       />
       {result.images.length > 1 ? (

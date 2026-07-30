@@ -12,6 +12,10 @@ export const MEDIA_ENTITY_TYPES = [
 
 export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
 export type MediaMutationMode = "create" | "update";
+export type MediaTrustedIdentity = {
+  entityType: MediaEntityType;
+  parentId: string;
+};
 
 export const MEDIA_ENTITY_LABELS: Record<MediaEntityType, string> = {
   destination: "Destinasi",
@@ -101,6 +105,45 @@ export function isMediaEntityType(value: string): value is MediaEntityType {
 
 export function isValidMediaUuid(value: string) {
   return UUID_PATTERN.test(value);
+}
+
+export function parseMediaRouteIdentity(
+  entityType: unknown,
+  parentId: unknown,
+): MediaTrustedIdentity | null {
+  if (
+    typeof entityType !== "string" ||
+    !isMediaEntityType(entityType) ||
+    typeof parentId !== "string" ||
+    !isValidMediaUuid(parentId)
+  ) {
+    return null;
+  }
+  return { entityType, parentId };
+}
+
+export function createMediaStoragePath(
+  entityType: MediaEntityType,
+  parentId: string,
+  imageId: string,
+  extension: string,
+) {
+  if (
+    !isMediaEntityType(entityType) ||
+    !isValidMediaUuid(parentId) ||
+    !isValidMediaUuid(imageId) ||
+    !["jpg", "png", "webp"].includes(extension)
+  ) {
+    throw new Error("Invalid media storage path input");
+  }
+  return `${entityType}/${parentId}/${imageId}.${extension}`;
+}
+
+export function isMediaRecordOwnedBy(
+  record: MediaImageRecord,
+  identity: MediaTrustedIdentity,
+) {
+  return record.parentId === identity.parentId;
 }
 
 export function getMediaMutationMode(
@@ -240,6 +283,35 @@ export function validateMediaFormData(formData: FormData) {
     input[field] = submitted.length === 1 ? submitted[0] : submitted;
   }
   return validateMediaMetadataInput(input);
+}
+
+export function validateTrustedMediaFormData(
+  formData: FormData,
+  identity: MediaTrustedIdentity,
+) {
+  const hasSubmittedIdentity =
+    formData.has("entity_type") || formData.has("parent_id");
+  const input: Record<string, unknown> = {
+    entity_type: identity.entityType,
+    parent_id: identity.parentId,
+  };
+  for (const field of new Set(formData.keys())) {
+    if (field === "file" || field === "entity_type" || field === "parent_id")
+      continue;
+    const submitted = formData.getAll(field);
+    input[field] = submitted.length === 1 ? submitted[0] : submitted;
+  }
+  const validation = validateMediaMetadataInput(input);
+  if (!hasSubmittedIdentity) return validation;
+  return {
+    success: false as const,
+    values: validation.values,
+    fieldErrors: validation.success ? {} : validation.fieldErrors,
+    formErrors: [
+      ...(validation.success ? [] : validation.formErrors),
+      "Identitas pemilik media tidak boleh dikirim dari formulir.",
+    ],
+  };
 }
 
 export function getUploadCompensationDecision(

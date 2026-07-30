@@ -1,22 +1,26 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
   canAddMediaImage,
   classifyMediaDeletion,
+  createMediaStoragePath,
   createMediaInitialState,
   getMediaMutationMode,
   getReplacementCompensationDecision,
   getUploadCompensationDecision,
+  isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidMediaUuid,
   moveMediaImageToOrder,
+  parseMediaRouteIdentity,
   shouldMakeMediaPrimary,
   validateMediaInput,
+  validateTrustedMediaFormData,
 } from "../features/media/model.ts";
 import {
   MEDIA_MAX_FILE_SIZE,
-  createMediaStoragePath,
   signatureMatchesMime,
   validateMediaFile,
   validateMediaFileField,
@@ -24,6 +28,20 @@ import {
 
 const parentId = "10000000-0000-4000-8000-000000000001";
 const imageId = "20000000-0000-4000-8000-000000000001";
+const otherParentId = "10000000-0000-4000-8000-000000000002";
+
+function trustedForm(overrides = {}) {
+  const formData = new FormData();
+  for (const [key, value] of Object.entries({
+    alt_text: "Pemandangan desa",
+    caption: "Keterangan",
+    display_order: "0",
+    ...overrides,
+  })) {
+    formData.set(key, value);
+  }
+  return formData;
+}
 
 function metadata(overrides = {}) {
   return {
@@ -176,6 +194,61 @@ test("safe extension mapping and deterministic paths ignore original filenames",
   assert.throws(() =>
     createMediaStoragePath("destination", parentId, imageId, "svg"),
   );
+  assert.throws(() =>
+    createMediaStoragePath("../../storage", parentId, imageId, "webp"),
+  );
+});
+
+test("trusted bound identity is used when the form submits no ownership fields", () => {
+  const identity = parseMediaRouteIdentity("destination", parentId);
+  assert.deepEqual(identity, { entityType: "destination", parentId });
+  assert.ok(identity);
+  const result = validateTrustedMediaFormData(trustedForm(), identity);
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.equal(result.data.entityType, "destination");
+  assert.equal(result.data.parentId, parentId);
+});
+
+test("injected entity or parent identity is rejected without overriding the bound owner", () => {
+  const identity = { entityType: "destination", parentId };
+  for (const injection of [
+    { entity_type: "homestay" },
+    { parent_id: otherParentId },
+    { entity_type: "destination", parent_id: parentId },
+  ]) {
+    const result = validateTrustedMediaFormData(
+      trustedForm(injection),
+      identity,
+    );
+    assert.equal(result.success, false);
+    assert.equal(result.values.entity_type, "destination");
+    assert.equal(result.values.parent_id, parentId);
+    assert.match(result.formErrors.join(" "), /tidak boleh dikirim/);
+  }
+});
+
+test("destination and homestay contexts cannot cross storage path prefixes", () => {
+  const destinationIdentity = parseMediaRouteIdentity("destination", parentId);
+  const homestayIdentity = parseMediaRouteIdentity("homestay", otherParentId);
+  assert.ok(destinationIdentity);
+  assert.ok(homestayIdentity);
+  const destinationPath = createMediaStoragePath(
+    destinationIdentity.entityType,
+    destinationIdentity.parentId,
+    imageId,
+    "jpg",
+  );
+  const homestayPath = createMediaStoragePath(
+    homestayIdentity.entityType,
+    homestayIdentity.parentId,
+    imageId,
+    "webp",
+  );
+  assert.match(destinationPath, /^destination\//);
+  assert.doesNotMatch(destinationPath, /^homestay\//);
+  assert.match(homestayPath, /^homestay\//);
+  assert.doesNotMatch(homestayPath, /^destination\//);
 });
 
 test("image limit and primary decision behavior are deterministic", () => {
@@ -225,4 +298,42 @@ test("create versus update mode is based on server-read records", () => {
     createMediaInitialState("destination", parentId, record).values.parent_id,
     parentId,
   );
+  assert.equal(
+    isMediaRecordOwnedBy(record, { entityType: "destination", parentId }),
+    true,
+  );
+  assert.equal(
+    isMediaRecordOwnedBy(record, {
+      entityType: "destination",
+      parentId: otherParentId,
+    }),
+    false,
+  );
+});
+
+test("function-action media forms do not set method or encType manually", () => {
+  for (const filePath of [
+    "features/media/media-form.tsx",
+    "features/media/media-delete-button.tsx",
+  ]) {
+    const source = readFileSync(filePath, "utf8");
+    assert.doesNotMatch(source, /\bmethod\s*=/);
+    assert.doesNotMatch(source, /\bencType\s*=/);
+    assert.match(source, /action=\{formAction\}/);
+  }
+});
+
+test("create and edit pages bind mutations to the server-read owner", () => {
+  const createPage = readFileSync("app/admin/media/tambah/page.tsx", "utf8");
+  const editPage = readFileSync("app/admin/media/[id]/edit/page.tsx", "utf8");
+  const form = readFileSync("features/media/media-form.tsx", "utf8");
+  assert.match(createPage, /createMedia\.bind\(/);
+  assert.match(createPage, /result\.selected\.entityType/);
+  assert.match(createPage, /result\.selected\.id/);
+  assert.match(editPage, /updateMedia\.bind\(/);
+  assert.match(editPage, /result\.parent\.entityType/);
+  assert.match(editPage, /result\.parent\.id/);
+  assert.match(editPage, /result\.image\.id/);
+  assert.doesNotMatch(form, /name=["']entity_type["']/);
+  assert.doesNotMatch(form, /name=["']parent_id["']/);
 });

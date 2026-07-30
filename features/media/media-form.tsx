@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import type {
   MediaActionState,
-  MediaEntityType,
   MediaImageRecord,
   MediaParentOption,
 } from "./model";
-import { MEDIA_ENTITY_LABELS, MEDIA_ENTITY_TYPES } from "./model";
+import { MEDIA_ENTITY_LABELS } from "./model";
 
 type Props = {
   action: (
@@ -18,7 +17,7 @@ type Props = {
   ) => Promise<MediaActionState>;
   initialState: MediaActionState;
   mode: "create" | "update";
-  parents: MediaParentOption[];
+  parent: MediaParentOption;
   record?: MediaImageRecord;
 };
 
@@ -29,24 +28,10 @@ export function MediaForm({
   action,
   initialState,
   mode,
-  parents,
+  parent,
   record,
 }: Props) {
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const [entityType, setEntityType] = useState<MediaEntityType>(
-    (state.values.entity_type as MediaEntityType) ||
-      parents[0]?.entityType ||
-      "destination",
-  );
-  const availableParents = useMemo(
-    () => parents.filter((parent) => parent.entityType === entityType),
-    [entityType, parents],
-  );
-  const selectedParentId = availableParents.some(
-    (parent) => parent.id === state.values.parent_id,
-  )
-    ? state.values.parent_id
-    : (availableParents[0]?.id ?? "");
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     record?.previewUrl ?? null,
   );
@@ -70,12 +55,7 @@ export function MediaForm({
     state.fieldErrors[field] ? `${field}-error` : undefined;
 
   return (
-    <form
-      key={state.revision}
-      action={formAction}
-      className="mt-8 space-y-7"
-      encType="multipart/form-data"
-    >
+    <form key={state.revision} action={formAction} className="mt-8 space-y-7">
       {state.message ? (
         <div
           role="alert"
@@ -100,87 +80,11 @@ export function MediaForm({
 
       <fieldset disabled={isPending} className="space-y-6 disabled:opacity-70">
         <legend className="text-xl font-bold">Kepemilikan media</legend>
-        {mode === "create" ? (
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="entity_type"
-                className="font-semibold text-slate-800"
-              >
-                Jenis konten <span className="text-red-700">*</span>
-              </label>
-              <select
-                id="entity_type"
-                name="entity_type"
-                value={entityType}
-                onChange={(event) =>
-                  setEntityType(event.target.value as MediaEntityType)
-                }
-                className={inputClasses}
-                aria-describedby={describedBy("entity_type")}
-              >
-                {MEDIA_ENTITY_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {MEDIA_ENTITY_LABELS[type]}
-                  </option>
-                ))}
-              </select>
-              {state.fieldErrors.entity_type ? (
-                <p id="entity_type-error" className="mt-2 text-sm text-red-700">
-                  {state.fieldErrors.entity_type}
-                </p>
-              ) : null}
-            </div>
-            <div>
-              <label
-                htmlFor="parent_id"
-                className="font-semibold text-slate-800"
-              >
-                Konten induk <span className="text-red-700">*</span>
-              </label>
-              <select
-                id="parent_id"
-                name="parent_id"
-                defaultValue={selectedParentId}
-                required
-                className={inputClasses}
-                aria-describedby={describedBy("parent_id")}
-              >
-                {availableParents.length ? (
-                  availableParents.map((parent) => (
-                    <option key={parent.id} value={parent.id}>
-                      {parent.label} ({parent.status})
-                    </option>
-                  ))
-                ) : (
-                  <option value="">Belum ada konten tersedia</option>
-                )}
-              </select>
-              {state.fieldErrors.parent_id ? (
-                <p id="parent_id-error" className="mt-2 text-sm text-red-700">
-                  {state.fieldErrors.parent_id}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <>
-            <input
-              type="hidden"
-              name="entity_type"
-              value={state.values.entity_type}
-            />
-            <input
-              type="hidden"
-              name="parent_id"
-              value={state.values.parent_id}
-            />
-            <p className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-              Media ini dimiliki oleh {MEDIA_ENTITY_LABELS[entityType]}.
-              Kepemilikan tidak dapat dipindahkan.
-            </p>
-          </>
-        )}
+        <p className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
+          Media ini dimiliki oleh {MEDIA_ENTITY_LABELS[parent.entityType]}:{" "}
+          <span className="font-semibold">{parent.label}</span>. Kepemilikan
+          ditetapkan oleh server dan tidak dapat dipindahkan dari formulir.
+        </p>
       </fieldset>
 
       <fieldset
@@ -320,7 +224,7 @@ export function MediaForm({
         </Link>
         <button
           type="submit"
-          disabled={isPending || (mode === "create" && parents.length === 0)}
+          disabled={isPending}
           className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-5 font-semibold text-white disabled:cursor-wait disabled:bg-slate-400"
         >
           {isPending
