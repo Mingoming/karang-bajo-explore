@@ -15,13 +15,13 @@ select ok(
    from pg_proc as routine
    join pg_namespace as namespace on namespace.oid = routine.pronamespace
    where namespace.nspname = 'public'
-     and routine.proname = 'can_read_published_destination_media'),
-  'published destination media predicate is a fixed-search-path security definer'
+     and routine.proname = 'can_read_published_media'),
+  'federated published media predicate is a fixed-search-path security definer'
 );
 select ok(
   has_function_privilege(
     'anon',
-    'public.can_read_published_destination_media(text)',
+    'public.can_read_published_media(text)',
     'EXECUTE'
   ),
   'anonymous Storage requests may execute the narrow policy predicate'
