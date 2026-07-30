@@ -1659,6 +1659,8 @@ Unsupported in Version 1:
 17. The administrator must be able to open a parent-level gallery showing every owned image and the current image count out of ten.
 18. Parent gallery image cards must identify the primary image and link to image editing.
 19. Create and edit mutations must use server-bound parent ownership and reject submitted entity or parent identity.
+20. Public media signing must accept only database-owned paths for published destination, tourism package, homestay, UMKM, traditional-house, and cultural-event parents through a fixed server allowlist.
+21. Draft, archived, orphaned, malformed, and cross-entity media paths must not be eligible for public signing or anonymous object reads.
 
 ## Approved Product Limits
 
@@ -1685,6 +1687,9 @@ Unsupported in Version 1:
 * [ ] Missing files do not break public pages.
 * [ ] Removed images no longer appear publicly.
 * [ ] Orphaned-file cleanup does not remove referenced files.
+* [x] The federated six-parent public-media authorization and batch-signing boundary passes local application and database tests.
+* [ ] The federated public-media migration and credential-backed access behavior are validated on hosted development.
+* [ ] Public pages for package, homestay, UMKM, traditional house, and cultural event media consume the shared delivery boundary.
 
 ---
 

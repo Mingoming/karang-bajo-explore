@@ -4,7 +4,7 @@ Karang Bajo Explore adalah fondasi platform informasi pariwisata Desa Karang Baj
 
 ## Status
 
-Fase saat ini mencakup **Admin Dashboard** dan **Public Website Milestone 2**. Fondasi Supabase dan autentikasi administrator tersedia bersama modul Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, serta Media federasi untuk enam jenis konten. Halaman publik daftar dan detail destinasi sudah menggunakan data published-only serta signed URL berumur pendek dari bucket privat. Homepage live data, domain publik lain, signed media federasi lengkap, dan GIS masih tertunda.
+Fase saat ini mencakup **Admin Dashboard** dan **Public Website Milestone 3**. Fondasi Supabase dan autentikasi administrator tersedia bersama modul Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, serta Media federasi untuk enam jenis konten. Halaman publik daftar dan detail destinasi sudah menggunakan data published-only, sedangkan federated public-media boundary untuk enam parent dan signed URL berumur pendek telah selesai divalidasi secara lokal. Hosted validation, homepage live data, route publik untuk lima domain lain, dan GIS masih tertunda.
 
 ## Stack yang Disetujui
 
@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-Salin nama variabel dari `.env.example` ke `.env.local`, lalu isi URL dan publishable key Supabase development. Buka `http://localhost:3000` pada browser. Migration Media `20260730001921_federated_admin_media.sql`, Tourism Package transactional RPC `20260730044746_tourism_package_transactional_rpcs.sql`, dan public destination signed media `20260730072852_public_destination_signed_media.sql` harus tersedia pada project Supabase yang digunakan.
+Salin nama variabel dari `.env.example` ke `.env.local`, lalu isi URL dan publishable key Supabase development. Buka `http://localhost:3000` pada browser. Migration Media `20260730001921_federated_admin_media.sql`, Tourism Package transactional RPC `20260730044746_tourism_package_transactional_rpcs.sql`, public destination signed media `20260730072852_public_destination_signed_media.sql`, dan federated public media `20260730094319_federated_public_media_delivery.sql` harus tersedia pada project Supabase yang digunakan. Migration federated public media baru tervalidasi lokal dan belum diterapkan pada hosted development.
 
 ## Perintah Pengembangan
 
