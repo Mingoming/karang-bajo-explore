@@ -125,7 +125,7 @@
 - ☑ Draft dan archived tidak dapat dibaca publik.
 - ☑ Storage policies lokal lulus pengujian izin.
 - ☑ Storage policies Media diterapkan pada hosted development dan upload administrator berhasil.
-- ☐ Verifikasi credential-backed bahwa identity non-administrator ditolak oleh Media dan object private tidak dapat dibaca melalui URL publik biasa.
+- ☑ Verifikasi credential-backed bahwa identity non-administrator ditolak oleh Media dan object private tidak dapat dibaca melalui URL publik biasa.
 
 ---
 
@@ -465,8 +465,8 @@
 - ☑ Administrator dapat mengganti primary image dan galeri menampilkan state primary yang sesuai.
 - ☑ Administrator dapat kembali dari edit ke galeri parent.
 - ☑ Administrator dapat menghapus gambar tanpa merusak konsistensi galeri dan primary image.
-- ⚠ Credential-backed non-administrator Media authorization validation: NOT TESTED
-- ⚠ Akses object private melalui URL publik biasa: NOT TESTED
+- ☑ Credential-backed non-administrator Media authorization validation: PASS
+- ☑ Akses object private melalui URL publik biasa ditolak: PASS
 
 ## Phase 5 Completion Gate
 
