@@ -4,7 +4,7 @@ Karang Bajo Explore adalah fondasi platform informasi pariwisata Desa Karang Baj
 
 ## Status
 
-Fase saat ini adalah **Phase 5 — Admin Dashboard**. Fondasi Supabase dan autentikasi administrator tersedia bersama modul Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, serta Media federasi untuk enam jenis konten. Halaman publik dan GIS belum diimplementasikan.
+Fase saat ini mencakup **Admin Dashboard** dan **Public Foundation Milestone 1**. Fondasi Supabase dan autentikasi administrator tersedia bersama modul Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, serta Media federasi untuk enam jenis konten. Shell publik dan fondasi visual homepage telah tersedia; integrasi data terbit, signed media publik, halaman domain publik, dan GIS belum diimplementasikan.
 
 ## Stack yang Disetujui
 

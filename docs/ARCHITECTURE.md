@@ -461,6 +461,8 @@ It may present selected published content from other sections, but it must not b
 
 Featured items should reference the same managed data used by destination, event, culture, package, and accommodation sections.
 
+Milestone 1 provides the public route-group shell, responsive navigation, footer, reusable presentation primitives, and homepage composition. Until published-data queries and parent-verified signed media delivery are implemented, domain sections render explicit integration or empty states rather than fabricated records. Public domain routes, live homepage queries, and signed media delivery remain subsequent milestones.
+
 ---
 
 ### 6.3 Village Profile

@@ -175,17 +175,18 @@
 
 ## Foundation
 
-- ☐ Public layout
-- ☐ Public navigation
-- ☐ Mobile navigation
-- ☐ Footer
-- ☐ Shared loading states
-- ☐ Shared empty states
-- ☐ Shared error states
+- ☑ Public layout
+- ☑ Public navigation foundation dengan in-page links untuk domain yang belum diimplementasikan
+- ☑ Mobile navigation yang keyboard-accessible
+- ☑ Footer tanpa informasi kontak yang dibuat-buat
+- ☑ Shared loading presentation primitive
+- ☑ Shared empty-state presentation primitive
+- ☑ Shared error presentation primitive
 
 ## Pages
 
-- ☐ Homepage
+- ☑ Homepage visual foundation dan komposisi placeholder eksplisit
+- ☐ Homepage published-data dan signed-media integration
 - ☐ Village Profile
 - ☐ Destination List
 - ☐ Destination category filter
