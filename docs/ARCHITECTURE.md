@@ -329,7 +329,7 @@ Storage must remain separate from structured database records.
 
 The database stores media references and metadata, while Storage contains the actual files.
 
-Anonymous visitors and non-administrator Auth identities have no direct bucket access. Administrator access is enforced by Storage policies through `public.is_admin()`. Future public pages must verify that the owning parent is published before generating a short-lived signed URL server-side; signed URLs are never persisted.
+Unauthenticated object URLs without a signed token or Supabase API authorization remain unavailable because the bucket is private. Administrator access is enforced by Storage policies through `public.is_admin()`. Destination pages use a narrow anonymous Storage `SELECT` policy that verifies an object is referenced by an image row owned by a published destination before a server-side batch request creates a signed URL with a 600-second TTL. Because Supabase uses the same `SELECT` privilege for signing and download, a caller with the public API key and an exact eligible path can also fetch those published bytes directly; this does not extend to draft, archived, orphaned, or non-destination objects. Paths used by the application originate from public-safe database rows, never visitor input, and signed URLs are never persisted. Signed destination images bypass the Next.js image optimizer so its cache cannot outlive the signed URL. Equivalent public delivery for the other five Media parent types remains pending.
 
 ---
 
@@ -461,7 +461,7 @@ It may present selected published content from other sections, but it must not b
 
 Featured items should reference the same managed data used by destination, event, culture, package, and accommodation sections.
 
-Milestone 1 provides the public route-group shell, responsive navigation, footer, reusable presentation primitives, and homepage composition. Until published-data queries and parent-verified signed media delivery are implemented, domain sections render explicit integration or empty states rather than fabricated records. Public domain routes, live homepage queries, and signed media delivery remain subsequent milestones.
+Milestone 1 provides the public route-group shell, responsive navigation, footer, reusable presentation primitives, and homepage composition. Milestone 2 adds the destination list and detail routes, published-safe query models, category filtering, not-found/error/empty states, and parent-verified signed destination media. Homepage live queries, GIS, and every other public domain remain subsequent milestones and continue to use explicit integration or empty states rather than fabricated records.
 
 ---
 

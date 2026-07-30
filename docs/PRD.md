@@ -585,15 +585,15 @@ Administrators manage destination information and publication state through the 
 
 ## Acceptance Criteria
 
-* [ ] Visitors can discover all published destinations.
-* [ ] Category filtering changes the visible destination set.
-* [ ] An empty category result shows a clear message.
-* [ ] Draft destinations never appear publicly.
-* [ ] Archived destinations never appear publicly.
+* [x] Visitors can discover all published destinations.
+* [x] Category filtering changes the visible destination set.
+* [x] An empty category result shows a clear message.
+* [x] Draft destinations never appear publicly.
+* [x] Archived destinations never appear publicly.
 * [ ] A newly published destination appears publicly.
 * [ ] A destination without valid coordinates cannot be published.
-* [ ] A destination card links to the correct detail page.
-* [ ] Missing thumbnails use the approved fallback image.
+* [x] A destination card links to the correct detail page.
+* [x] Missing thumbnails use the approved fallback image.
 * [ ] Administrators can search destination records by name.
 
 ---
@@ -660,14 +660,14 @@ The destination detail page presents approved information such as description, d
 
 ## Acceptance Criteria
 
-* [ ] A published destination opens through its public URL.
-* [ ] Its category and main description are visible.
+* [x] A published destination opens through its public URL.
+* [x] Its category and main description are visible.
 * [ ] The map location matches the saved coordinates.
-* [ ] The gallery respects the administrator-defined order.
-* [ ] A Google Maps action is visible only when a valid link exists.
-* [ ] Missing optional fields do not create empty headings.
-* [ ] Draft and archived destinations return a not-found result.
-* [ ] Visitors can access location information without relying only on the interactive map.
+* [x] The gallery respects the administrator-defined order.
+* [x] A Google Maps action is visible only when a valid link exists.
+* [x] Missing optional fields do not create empty headings.
+* [x] Draft and archived destinations return a not-found result.
+* [x] Visitors can access location information without relying only on the interactive map.
 
 ---
 

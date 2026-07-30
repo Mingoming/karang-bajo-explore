@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 5 — Admin Dashboard (content management in progress)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; migration Media dan transactional Tourism Package telah diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
+- **Fase Saat Ini:** Phase 4 — Public Website (Milestone 2 destination browsing complete)
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; public destination list/detail dengan published-only query dan signed media khusus destinasi selesai; domain publik lain masih dalam tahap berikutnya
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -106,7 +106,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 306 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, dan batas 10 gambar
+- ☑ Jalankan 318 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, dan akses Storage terbatas untuk media destinasi published
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -188,9 +188,9 @@
 - ☑ Homepage visual foundation dan komposisi placeholder eksplisit
 - ☐ Homepage published-data dan signed-media integration
 - ☐ Village Profile
-- ☐ Destination List
-- ☐ Destination category filter
-- ☐ Destination Detail
+- ☑ Destination List
+- ☑ Destination category filter
+- ☑ Destination Detail
 - ☐ Interactive Map page
 - ☐ Traditional House list
 - ☐ Traditional House detail
@@ -221,6 +221,16 @@
 - ☐ Robots rules
 - ☐ Open Graph fallback
 - ☐ Structured data yang relevan
+
+### Destination Public Milestone 2
+
+- ☑ Query list dan detail menggunakan public-safe view yang hanya memuat destinasi `published`.
+- ☑ Slug yang tidak dikenal serta destinasi draft/archived menghasilkan not-found tanpa membocorkan konten.
+- ☑ Primary image dan galeri mengikuti urutan tersimpan dengan fallback aman ketika signed URL gagal.
+- ☑ Signed URL destinasi dibuat server-side secara batch dengan TTL 600 detik hanya untuk path database yang dimiliki destinasi published.
+- ☑ Metadata list/detail menggunakan nama dan ringkasan terverifikasi tanpa signed URL sementara sebagai Open Graph image.
+- ☐ Integrasi data destinasi dan signed media pada homepage.
+- ☐ Signed-media publik untuk lima jenis parent lain.
 
 ## Phase 4 Completion Gate
 
@@ -459,7 +469,7 @@
 - ☑ Remove image, fallback primary, dan thumbnail clearing
 - ☐ Missing-image warning
 - ◐ Orphan-file cleanup dicatat aman saat Storage cleanup gagal; maintenance cleanup belum dibuat
-- ☐ Public signed-URL delivery setelah verifikasi parent published
+- ◐ Public signed-URL delivery: destinasi selesai; lima jenis parent lain belum diimplementasikan
 - ☑ Lightweight Media tests 24/24 dan focused pgTAP Storage/RPC coverage
 
 ### Media Credential-Backed Browser Validation
