@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { PUBLIC_NAVIGATION } from "@/config/public-navigation";
+import {
+  isPublicNavigationItemActive,
+  PUBLIC_NAVIGATION,
+} from "@/config/public-navigation";
 
 export function PublicMobileNavigation() {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,6 +65,11 @@ export function PublicMobileNavigation() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    aria-current={
+                      isPublicNavigationItemActive(pathname, item.href)
+                        ? "page"
+                        : undefined
+                    }
                     onClick={() => setIsOpen(false)}
                     className="flex min-h-12 items-center rounded-lg px-3 py-2 font-semibold text-slate-800 hover:bg-emerald-100 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                   >

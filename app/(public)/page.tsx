@@ -57,6 +57,12 @@ export default function HomePage() {
               />
             ))}
           </div>
+          <Link
+            href="/destinasi"
+            className="mt-8 inline-flex min-h-11 items-center rounded-full bg-emerald-900 px-5 py-2.5 font-bold text-white hover:bg-emerald-800 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-emerald-700"
+          >
+            Buka daftar destinasi terbit
+          </Link>
         </PublicContainer>
       </section>
 
@@ -158,7 +164,7 @@ export default function HomePage() {
               terisi seiring integrasi konten publik.
             </p>
             <Link
-              href="/#destinasi"
+              href="/destinasi"
               className="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-amber-300 px-6 py-3 font-bold text-emerald-950 transition-colors hover:bg-amber-200 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-amber-200 motion-reduce:transition-none"
             >
               Lihat ruang destinasi

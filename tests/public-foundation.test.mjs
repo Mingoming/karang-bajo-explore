@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -81,9 +80,6 @@ test("mobile navigation exposes explicit controls and closes on navigation", () 
   );
 });
 
-test("Milestone 1 introduces no database migration", () => {
-  const status = execFileSync("git", ["status", "--short"], {
-    encoding: "utf8",
-  });
-  assert.doesNotMatch(status, /supabase[\\/]migrations/);
+test("public foundation presentation has no migration dependency", () => {
+  assert.doesNotMatch(publicSources, /supabase[\\/]migrations|\.sql["']/);
 });
