@@ -390,6 +390,8 @@ Its responsibilities include:
 
 Media ownership is federated through the existing entity-specific image tables. Every object belongs to exactly one parent and is stored at `{entity-type}/{entity-id}/{generated-uuid}.{extension}`. Entity types come from a server allowlist, while parent and image ownership are re-read on the server.
 
+The administrator overview routes each supported parent to `/admin/media/kelola`. That parent gallery reads all owned image metadata server-side, obtains short-lived signed URLs for administrator previews, and links to the trusted create and edit flows. Route identity is validated and bound on the server; entity or parent ownership submitted through form data is rejected.
+
 Each parent may have at most ten images and one primary image. Transactional database functions synchronize primary-image state with the parent's cached thumbnail bucket and path, normalize ordering, select a fallback primary after deletion, and clear the thumbnail pair when a draft or archived gallery becomes empty.
 
 The `authenticated` role retains administrator read access to the six supported image tables but has no direct `INSERT`, `UPDATE`, or `DELETE` privilege. Metadata mutations use narrowly scoped `SECURITY DEFINER` functions owned by the database owner. Each function fixes its `search_path`, checks `public.is_admin()`, accepts only statically mapped entity/table combinations, and validates parent and image ownership before writing. `PUBLIC` and `anon` cannot execute these functions.
@@ -931,7 +933,8 @@ Authorized Administrator
  File Type and Size Validation
           |
           v
-  WebP Optimization Requirement
+ Server-side MIME, Signature,
+    and Size Validation
           |
           v
    Supabase Storage
@@ -1418,45 +1421,34 @@ Other serverless platforms may work but generally require more adaptation for Ne
 
 ---
 
-## 10.11 WebP
+## 10.11 Managed Image Formats
 
 ### Purpose
 
-WebP is the standard image format for uploaded website media.
+Managed uploads accept JPEG, PNG, and WebP when the declared MIME type matches the binary signature.
 
 ### Responsibility
 
-It reduces file size while preserving suitable visual quality.
+The application preserves an accepted source format. It does not resize, compress, or convert images in the current phase.
 
 ### Why It Was Chosen
 
 Tourism websites are image-heavy.
 
-WebP helps reduce:
+The approved format set provides:
 
-* Storage usage
-* Bandwidth usage
-* Page load time
-* Pressure on free or low-cost service limits
+* Common browser compatibility
+* Deterministic server-side validation
+* Support for photographic and transparency use cases
+* A bounded format surface for Storage policies
 
-### Alternatives Considered
+### Deferred Processing
 
-* JPEG
-* PNG
-* AVIF
-* Original uploaded formats
+Image resizing, compression, conversion, and dimension metadata are not implemented. AVIF and other formats remain unsupported.
 
-### Why Alternatives Were Rejected
+The current boundary limits each accepted source to 5 MiB and each supported parent to ten images.
 
-JPEG is less efficient for many website images.
-
-PNG is unnecessarily large for photographic content.
-
-AVIF may provide better compression but can add processing and compatibility considerations that are not required for the first version.
-
-Allowing unrestricted original formats would create inconsistent storage and performance behavior.
-
-Exceptions may be allowed for assets that require transparency or cannot be represented appropriately, but WebP remains the default.
+Allowing formats outside JPEG, PNG, and WebP would create an unbounded validation and Storage-policy surface. WebP is supported, but the current workflow does not select a default format or convert accepted source files.
 
 ---
 
@@ -1862,7 +1854,7 @@ They are not required for the current web-based information platform.
 | No PostGIS in Version 1                                         | Current requirements do not justify spatial database complexity                                                 |
 | Use QGIS only for preparation and validation                    | Preserves GIS accuracy without making desktop GIS part of daily operations                                      |
 | Use Vercel                                                      | Minimizes operational burden for Next.js deployment                                                             |
-| Use WebP for standard media                                     | Reduces storage and bandwidth usage                                                                             |
+| Accept validated JPEG, PNG, and WebP media                      | Matches the implemented server validation and avoids unimplemented conversion requirements                     |
 | No custom server infrastructure                                 | The village should not need to operate or patch servers                                                         |
 | No microservices                                                | The project scale and team do not justify distributed-service complexity                                        |
 | Public and admin concerns remain logically separated            | Protects administrative workflows and keeps visitor navigation focused                                          |

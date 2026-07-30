@@ -897,9 +897,9 @@ Examples:
 * Unique object-name generation
 * Storage-path building
 * Allowed MIME types
-* Dimension limits
-* Image compression configuration
-* Orphan-cleanup helpers
+* File-size and signature validation
+* Safe Storage-failure diagnostics
+* Compensation helpers for failed metadata mutations
 
 Feature-specific database association remains in feature modules.
 
@@ -1119,19 +1119,19 @@ Normal content CRUD must not be split arbitrarily between Server Actions and Rou
 
 ---
 
-## 4.5 Browser-to-Storage Upload
+## 4.5 Authenticated Server-to-Storage Upload
 
-Large media files should not be passed through a Server Action as the default path.
+The implemented administrator workflow submits media through a Server Action. The server binds and verifies the parent identity, validates the file, generates the object path, uploads through the authenticated Supabase client, and records metadata through the approved RPC.
 
-Recommended upload sequence:
+Implemented upload sequence:
 
-1. Server verifies authenticated user and permission.
-2. Browser validates and compresses the image.
-3. Browser uploads using an authenticated Supabase client.
-4. Server Action records or updates image metadata.
-5. Failed metadata persistence triggers cleanup or marks the object as orphaned.
+1. Server verifies the authenticated administrator and parent ownership.
+2. Server validates size, declared MIME type, and file signature.
+3. Server generates the trusted object path and uploads the accepted JPEG, PNG, or WebP source.
+4. The approved RPC records image metadata and synchronizes primary-image state.
+5. A failed metadata mutation triggers compensating Storage cleanup and is not reported as complete success.
 
-Browser upload does not bypass Storage policies.
+The authenticated server client remains subject to Storage policies. Automated maintenance for any object that survives failed cleanup remains deferred.
 
 ---
 
@@ -3036,15 +3036,16 @@ Captions do not replace alt text.
 
 ## 12.9 Image Ordering
 
-Gallery images support:
+The Media overview links each supported content parent to `/admin/media/kelola`. The parent gallery provides:
 
-* Move up
-* Move down
-* Drag reorder where practical
-* Set as primary
-* Remove association
+* A responsive grid of every image owned by that parent
+* Image cards using short-lived administrator preview URLs
+* A visible badge on the primary image
+* A count displayed as `n/10`
+* An add-image action while the parent has fewer than ten images
+* An edit action for each image and navigation back to the parent gallery
 
-Order updates are persisted as one controlled mutation.
+Alt text, caption, display order, and primary state are edited in the image form. Successful creation returns to the owning parent gallery. Order updates are persisted through a controlled mutation.
 
 The database normalizes order values from zero and limits each parent to ten rows. A partial unique index permits at most one primary row per parent.
 
@@ -4530,13 +4531,15 @@ Authentication, schema, public rendering, and map behavior are already stable.
 Implement:
 
 * Media validation
-* Compression
-* Direct authenticated upload
+* Authenticated server upload
 * Metadata association
 * Image ordering
 * Primary image
 * Thumbnail synchronization
-* Missing and orphan handling
+* Parent media gallery
+* Compensating cleanup and safe orphan diagnostics
+
+Image resizing, compression, format conversion, and automated orphan maintenance remain later hardening work.
 
 Dependency:
 

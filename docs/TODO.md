@@ -4,7 +4,7 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** Phase 5 — Admin Dashboard (content management in progress)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi selesai secara lokal; migration Media belum diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
+- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; migration Media telah diterapkan ke hosted development; validasi autentikasi manual selesai kecuali password recovery
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -89,7 +89,7 @@
 - ☑ Konfigurasi Supabase Auth untuk administrator tunggal
 - ☑ Buat akun administrator awal
 - ☑ Konfigurasi session refresh melalui Next.js Proxy
-- ☑ Definisikan private bucket `tourism-media` dalam forward-only migration lokal
+- ☑ Definisikan dan terapkan private bucket `tourism-media`
 - ☑ Tetapkan private Storage dan future server-side signed URL delivery
 - ☑ Tetapkan Server Action dan platform Storage sebagai trusted upload-validation boundary
 - ☑ Buat initial migration lokal
@@ -97,7 +97,7 @@
 - ☑ Buat public-safe read views dan policies
 - ☑ Buat administrator mutation policies
 - ☑ Buat dan uji Storage policies administrator secara lokal
-- ☐ Terapkan migration Media ke hosted development project setelah review
+- ☑ Terapkan migration Media `20260730001921_federated_admin_media.sql` ke hosted development project
 - ☐ Generate database types
 
 ## Phase 2C — Local Database and RLS Test Suite
@@ -124,7 +124,8 @@
 - ☑ Identity selain administrator tidak mendapat akses administratif pada database.
 - ☑ Draft dan archived tidak dapat dibaca publik.
 - ☑ Storage policies lokal lulus pengujian izin.
-- ☐ Storage policies Media diterapkan dan diverifikasi pada hosted development.
+- ☑ Storage policies Media diterapkan pada hosted development dan upload administrator berhasil.
+- ☐ Verifikasi credential-backed bahwa identity non-administrator ditolak oleh Media dan object private tidak dapat dibaca melalui URL publik biasa.
 
 ---
 
@@ -434,6 +435,8 @@
 ## Media
 
 - ☑ Federated Media overview untuk enam modul induk yang didukung
+- ☑ Parent Media Gallery `/admin/media/kelola` dengan seluruh gambar milik parent, badge primary, jumlah `n/10`, dan grid responsif
+- ☑ Navigasi overview → galeri parent → tambah/edit; create berhasil kembali ke galeri parent
 - ☑ Media Upload melalui authenticated server client
 - ☑ Browser preview lokal dan administrator signed URL berumur pendek
 - ☐ Image compression
@@ -450,7 +453,20 @@
 - ☐ Missing-image warning
 - ◐ Orphan-file cleanup dicatat aman saat Storage cleanup gagal; maintenance cleanup belum dibuat
 - ☐ Public signed-URL delivery setelah verifikasi parent published
-- ☑ Lightweight Media tests dan focused pgTAP Storage/RPC coverage
+- ☑ Lightweight Media tests 24/24 dan focused pgTAP Storage/RPC coverage
+
+### Media Credential-Backed Browser Validation
+
+- ☑ Administrator dapat membuka galeri Media per parent.
+- ☑ Galeri menampilkan seluruh gambar yang dimiliki parent dan jumlah gambar yang benar.
+- ☑ Administrator dapat menambahkan gambar kedua dan kembali ke galeri setelah upload berhasil.
+- ☑ Data gambar dan jumlah galeri tetap konsisten setelah upload.
+- ☑ Administrator dapat membuka dan mengubah metadata gambar.
+- ☑ Administrator dapat mengganti primary image dan galeri menampilkan state primary yang sesuai.
+- ☑ Administrator dapat kembali dari edit ke galeri parent.
+- ☑ Administrator dapat menghapus gambar tanpa merusak konsistensi galeri dan primary image.
+- ⚠ Credential-backed non-administrator Media authorization validation: NOT TESTED
+- ⚠ Akses object private melalui URL publik biasa: NOT TESTED
 
 ## Phase 5 Completion Gate
 

@@ -1652,6 +1652,9 @@ Unsupported in Version 1:
 14. The system must report incomplete Storage cleanup without reporting complete success.
 15. Original high-resolution files must be retained outside the production media store by the content owner.
 16. A published record should not expose an image whose metadata or file is unavailable.
+17. The administrator must be able to open a parent-level gallery showing every owned image and the current image count out of ten.
+18. Parent gallery image cards must identify the primary image and link to image editing.
+19. Create and edit mutations must use server-bound parent ownership and reject submitted entity or parent identity.
 
 ## Approved Product Limits
 
@@ -1664,15 +1667,17 @@ Unsupported in Version 1:
 
 ## Acceptance Criteria
 
-* [ ] Supported images can be uploaded.
-* [ ] Unsupported files are rejected before publication.
-* [ ] Oversized images are compressed or rejected clearly.
-* [ ] Every public image requires alt text.
-* [ ] Upload failure identifies the failed file.
-* [ ] Successful uploads remain after another upload fails.
-* [ ] Images can be reordered.
-* [ ] A primary image can be selected where supported.
-* [ ] Replacement preserves the previous image until success.
+* [x] Supported JPEG, PNG, and WebP images can be uploaded through the administrator workflow.
+* [x] Unsupported files and MIME/signature mismatches are rejected before Storage upload.
+* [x] Images larger than 5 MiB are rejected clearly.
+* [x] Every managed image requires nonblank alt text.
+* [x] A parent gallery displays all owned images, the `n/10` count, and a primary badge.
+* [x] Successful creation returns to the owning parent gallery and updates its count.
+* [x] Image display order can be edited.
+* [x] A primary image can be selected and remains synchronized with the parent thumbnail.
+* [x] Replacement preserves the previous image until the database accepts its replacement.
+* [x] Deleting a primary image selects a deterministic fallback; deleting the last image clears the parent thumbnail.
+* [ ] Credential-backed fault injection confirms failed upload and compensation paths without corrupting existing images.
 * [ ] Missing files do not break public pages.
 * [ ] Removed images no longer appear publicly.
 * [ ] Orphaned-file cleanup does not remove referenced files.

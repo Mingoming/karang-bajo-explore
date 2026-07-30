@@ -160,7 +160,7 @@ The following technologies have been selected for the project:
 | Database                     | PostgreSQL through Supabase |
 | Authentication               | Supabase Auth               |
 | File and image storage       | Supabase Storage            |
-| Standard image format        | WebP                        |
+| Accepted managed image formats | JPEG, PNG, and WebP       |
 | Application deployment       | Vercel                      |
 | Initial GIS data preparation | QGIS                        |
 
@@ -242,7 +242,7 @@ All project decisions must follow these principles:
 6. Keep public information clear, accessible, and easy to navigate.
 7. Maintain a clear separation between public content and administrative capabilities.
 8. Treat cultural and customary information as official content that requires responsible management.
-9. Optimize stored images and media to control storage and bandwidth usage.
+9. Validate and bound managed media to control storage and bandwidth usage; image processing remains separate future work.
 10. Support future growth without prematurely implementing speculative features.
 11. Ensure architectural decisions remain aligned with the actual scale of the village tourism platform.
 12. Record significant scope or technology changes in the appropriate project documentation.

@@ -2029,6 +2029,8 @@ This deliberate denormalization is allowed because it simplifies frequent listin
 
 Narrow transactional functions enforce synchronization. Selecting a primary image clears the prior primary row and copies the selected bucket/path to the parent. Deleting a primary image selects the remaining lowest-order image or clears both parent thumbnail fields when no image remains and the parent lifecycle constraints permit it.
 
+The approved RPC responsibilities are divided across `media_insert`, `media_update`, `media_set_primary`, `media_replace`, `media_reorder`, and `media_delete`. Together they validate ownership, maintain normalized order, preserve exactly one primary while images remain, synchronize parent thumbnails, return replaced or deleted paths for Storage cleanup, and apply deterministic fallback behavior.
+
 For the six supported image tables, authenticated administration retains `SELECT` but direct `INSERT`, `UPDATE`, and `DELETE` are revoked. All metadata mutations pass through administrator-only database functions with fixed `search_path`, static entity mappings, and explicit parent/image ownership checks. Table constraints independently require the `tourism-media` bucket and an owning entity/parent path.
 
 The first federated administrator implementation supports `destination_images`, `package_images`, `homestay_images`, `umkm_images`, `traditional_house_images`, and `cultural_event_images`. Article-image tables remain part of the schema but are not exposed by the media administrator until their parent administrator modules exist.

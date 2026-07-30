@@ -4,7 +4,7 @@ Karang Bajo Explore adalah fondasi platform informasi pariwisata Desa Karang Baj
 
 ## Status
 
-Fase saat ini adalah **Phase 1 — Project Foundation**. Repository ini baru berisi fondasi aplikasi; fitur produk, Supabase, autentikasi, database, dan GIS belum diimplementasikan.
+Fase saat ini adalah **Phase 5 — Admin Dashboard**. Fondasi Supabase dan autentikasi administrator tersedia bersama modul Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, serta Media federasi untuk enam jenis konten. Halaman publik dan GIS belum diimplementasikan.
 
 ## Stack yang Disetujui
 
@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-Buka `http://localhost:3000` pada browser. Phase 1 belum memerlukan environment variable.
+Salin nama variabel dari `.env.example` ke `.env.local`, lalu isi URL dan publishable key Supabase development. Buka `http://localhost:3000` pada browser. Migration Media `20260730001921_federated_admin_media.sql` harus tersedia pada project Supabase yang digunakan.
 
 ## Perintah Pengembangan
 
