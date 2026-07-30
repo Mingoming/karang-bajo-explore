@@ -538,6 +538,8 @@ It provides information only.
 
 It does not process reservations, availability, payments, or transactions.
 
+Package creation and editing cross the database boundary through administrator-only `tourism_package_create` and `tourism_package_update` RPCs. Each function verifies `public.is_admin()`, uses a fixed `search_path`, validates and locks referenced rows, and commits the package parent with its complete ordered destination set in one PostgreSQL transaction. Any validation or write failure rolls back the entire mutation. Authenticated clients retain administrative reads but have no direct mutation privilege on `tourism_packages` or `package_destinations`.
+
 ---
 
 ### 6.8 Traditional Houses

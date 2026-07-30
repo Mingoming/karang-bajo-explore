@@ -336,7 +336,9 @@ reset role;
 
 -- Package relationship integrity and explicitly omitted Version 1 structures.
 select set_config('request.jwt.claim.sub', 'b0000000-0000-4000-8000-000000000001', true);
-set local role authenticated;
+-- These assertions describe underlying table constraints. Application clients
+-- cannot use these direct writes after the transactional package RPC migration.
+reset role;
 
 insert into public.tourism_packages (
   id,

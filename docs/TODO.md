@@ -106,7 +106,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 274 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, penolakan direct table mutation, sinkronisasi thumbnail, fallback primary, dan batas 10 gambar
+- ☑ Jalankan 306 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, dan batas 10 gambar
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -250,7 +250,7 @@
 - ☑ Logout removes administrator access.
 - ☑ Invalid credentials are rejected with a generic response.
 - ☑ An authenticated non-administrator is denied access.
-- ⚠ Password recovery end-to-end validation: NOT TESTED
+- ☐ Password recovery credential-backed validation — deferred because the Supabase built-in email provider reached its fixed email rate limit.
 
 ## Dashboard
 
@@ -341,7 +341,10 @@
 - ☑ Tourism Package edit dan lifecycle sesuai applied migration
 - ☑ Tourism Package duration, price, facilities, hidden slug, dan publication-readiness validation
 - ☑ Tourism Package ordered destination association dengan pencegahan duplikasi dan normalisasi urutan
-- ☑ Tourism Package lightweight application tests dan focused pgTAP coverage
+- ☑ Transactional `tourism_package_create` dan `tourism_package_update` RPC dengan sole-admin authorization, row locking, complete-set validation, dan atomic rollback
+- ☑ Direct mutation `tourism_packages` dan `package_destinations` dicabut dari `authenticated`; aplikasi menggunakan RPC untuk seluruh create dan edit
+- ☑ Tourism Package lightweight application tests 19/19 dan focused pgTAP coverage
+- ☐ Terapkan migration transactional Tourism Package ke hosted development dan jalankan credential-backed administrator/non-administrator validation
 
 ### Tourism Package Credential-Backed Browser Validation
 
@@ -691,10 +694,9 @@
 - ⚠ `PRD.md` permits a cultural event without a confirmed date to be published when an approved `date_note` exists, while the applied migration requires `start_at` for every published event. The administrator module follows the applied migration: date-note-only events remain draft and are never upcoming.
 - ⚠ `DESIGN.md` still lists event timezone and uncertain-date classification as pending even though the approved rules, `SCHEMA.md`, and applied migration establish `Asia/Makassar`, `all_day`, and date-note-only records remaining draft. The administrator module follows those resolved rules.
 - ⚠ `DESIGN.md` proposes an event location picker and public preview. The approved Cultural Event administration task excludes maps, GIS, and preview routes, so this module supports manual nullable coordinate pairs only.
-- ⚠ Trigger publikasi pada applied migration memastikan sedikitnya satu destinasi berstatus `published`, tetapi tidak menolak destinasi tambahan berstatus `draft` yang sudah terhubung. Modul administrator menerapkan aturan dokumentasi yang lebih ketat dengan mewajibkan semua destinasi terpilih berstatus `published` sebelum publikasi; migration tidak diubah dalam tahap ini.
-- ⚠ Penyimpanan parent paket dan `package_destinations` belum transaksional. Create memvalidasi seluruh input sebelum parent ditulis, memakai satu batch insert relasi, lalu mencoba kompensasi terverifikasi bila batch gagal. Applied RLS tidak memberi administrator izin hard-delete pada `tourism_packages` dan foreign key relasi memakai `ON DELETE RESTRICT`; karena itu fallback terkuat tanpa perubahan database adalah mengarsipkan parent draft secara terverifikasi, mengganti slug draft gagal agar submission dapat dicoba ulang, dan melaporkan kegagalan, bukan success.
-- ⚠ Update relasi draft menyimpan snapshot server-side, menyinkronkan relasi sebelum parent, dan mencoba memulihkan snapshot bila sinkronisasi atau parent update gagal. Kompensasi ini memperkecil state parsial tetapi bukan jaminan atomic; RPC database transaksional yang tetap menghormati sole-admin authorization masih direkomendasikan sebelum production.
-- ⚠ Applied migration mengizinkan perubahan catatan pada relasi destinasi paket yang sudah `published`, sedangkan antarmuka administrator membatasi seluruh penyuntingan susunan dan catatan relasi ke status `draft` agar workflow lebih aman dan konsisten.
+- ☑ Transactional Tourism Package RPC menutup perbedaan trigger lama dengan mewajibkan seluruh destinasi berstatus `published` sebelum publikasi; direct client mutation telah dicabut.
+- ☑ Transactional Tourism Package RPC menggantikan kompensasi aplikasi: parent dan complete ordered destination set sekarang commit atau rollback bersama.
+- ☑ Penyuntingan relasi paket non-draft ditolak pada RPC database dan antarmuka administrator.
 
 ---
 

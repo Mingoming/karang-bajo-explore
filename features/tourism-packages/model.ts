@@ -110,20 +110,10 @@ export type TourismPackageMutationValues = {
   status: TourismPackageStatus;
 };
 
-export type TourismPackageInsertPayload = TourismPackageMutationValues & {
-  slug: string;
-  created_by: string;
-  updated_by: string;
-};
-export type TourismPackageUpdatePayload = TourismPackageMutationValues & {
-  updated_by: string;
-};
-export type PackageDestinationInsertPayload = {
-  package_id: string;
+export type TourismPackageRpcDestination = {
   destination_id: string;
   display_order: number;
   notes: string | null;
-  created_by: string;
 };
 
 export type TourismPackageFieldErrors = Partial<
@@ -324,6 +314,16 @@ export function arePackageDestinationValuesEqual(
       );
     })
   );
+}
+
+export function tourismPackageDestinationsToRpcValue(
+  destinations: PackageDestinationValue[],
+): TourismPackageRpcDestination[] {
+  return destinations.map((destination) => ({
+    destination_id: destination.destinationId,
+    display_order: destination.displayOrder,
+    notes: destination.notes.trim() || null,
+  }));
 }
 
 export function isValidTourismPackageId(value: string) {

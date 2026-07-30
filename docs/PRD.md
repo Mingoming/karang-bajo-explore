@@ -838,6 +838,7 @@ The product does not process bookings or payments.
 13. The product must not process booking, availability, or payment.
 14. A package map may display ordered markers.
 15. A package map must not claim to show an optimized road route.
+16. Creating or editing a package and its complete ordered destination set must be one atomic administrator-only database mutation; any invalid item or failed write must leave both tables unchanged.
 
 ## Acceptance Criteria
 
@@ -853,6 +854,9 @@ The product does not process bookings or payments.
 * [ ] No booking or payment action is available.
 * [ ] The map does not claim route optimization.
 * [ ] Participant-limit fields are not presented in Version 1.
+* [x] Local database tests confirm package create, metadata update, relationship replacement, removal, and reordering roll back as one operation on failure.
+* [x] Direct authenticated mutations are revoked and both package mutation RPCs enforce sole-administrator authorization.
+* [ ] The new transactional RPC migration and administrator/non-administrator behavior are credential-backed against hosted development.
 
 ---
 

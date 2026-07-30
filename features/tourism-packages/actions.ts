@@ -1,7 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -12,25 +10,16 @@ import {
   queryDestinationOptions,
   queryPackageRelations,
   queryTourismPackageById,
-  type PackageRelationRecord,
 } from "./data";
 import {
-  runCreateRelationConsistency,
-  runUpdateConsistency,
-} from "./consistency";
-import {
-  arePackageDestinationValuesEqual,
   isTourismPackageDuplicateConstraintError,
   isValidTourismPackageId,
   isValidTourismPackageSlug,
   normalizeTourismPackageSlug,
+  tourismPackageDestinationsToRpcValue,
   validateTourismPackageFormData,
-  type PackageDestinationInsertPayload,
-  type PackageDestinationValue,
   type TourismPackageActionState,
   type TourismPackageFormValues,
-  type TourismPackageInsertPayload,
-  type TourismPackageUpdatePayload,
 } from "./model";
 
 const LIST_PATH = "/admin/paket-wisata";
@@ -74,7 +63,21 @@ function mutationFailure(
       message: "Paket wisata belum tersimpan karena data duplikat.",
     });
   }
-  if (code === "P0001" || code === "23514" || code === "23502") {
+  if (code === "P0002")
+    return failure(
+      previous,
+      values,
+      "not-found",
+      "Paket wisata tidak ditemukan. Data tidak disimpan.",
+    );
+  if (
+    code === "P0001" ||
+    code === "22023" ||
+    code === "23502" ||
+    code === "23503" ||
+    code === "23505" ||
+    code === "23514"
+  ) {
     return nextState(previous, {
       kind: "validation-error",
       values,
@@ -93,216 +96,11 @@ function mutationFailure(
   );
 }
 
-async function insertRelations(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  packageId: string,
-  destinations: PackageDestinationValue[],
-  administratorId: string,
-) {
-  if (!destinations.length) return true;
-  const payload: PackageDestinationInsertPayload[] = destinations.map(
-    (item) => ({
-      package_id: packageId,
-      destination_id: item.destinationId,
-      display_order: item.displayOrder,
-      notes: item.notes || null,
-      created_by: administratorId,
-    }),
-  );
-  const { error } = await supabase.from("package_destinations").insert(payload);
-  if (error)
-    console.error("Penyimpanan susunan destinasi gagal.", { code: error.code });
-  return !error;
-}
-
-async function synchronizeRelations(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  packageId: string,
-  current: PackageRelationRecord[],
-  desired: PackageDestinationValue[],
-  administratorId: string,
-) {
-  const desiredIds = new Set(desired.map((item) => item.destinationId));
-  const currentByDestination = new Map(
-    current.map((item) => [item.destinationId, item]),
-  );
-  for (const item of desired) {
-    const existing = currentByDestination.get(item.destinationId);
-    if (existing) {
-      const { error } = await supabase
-        .from("package_destinations")
-        .update({ display_order: item.displayOrder, notes: item.notes || null })
-        .eq("id", existing.id)
-        .eq("package_id", packageId);
-      if (error) {
-        console.error("Pembaruan susunan destinasi gagal.", {
-          code: error.code,
-        });
-        return false;
-      }
-    } else if (
-      !(await insertRelations(supabase, packageId, [item], administratorId))
-    )
-      return false;
-  }
-  const removed = current
-    .filter((item) => !desiredIds.has(item.destinationId))
-    .map((item) => item.id);
-  if (removed.length) {
-    const { error } = await supabase
-      .from("package_destinations")
-      .delete()
-      .eq("package_id", packageId)
-      .in("id", removed);
-    if (error) {
-      console.error("Penghapusan relasi destinasi gagal.", {
-        code: error.code,
-      });
-      return false;
-    }
-  }
-  return true;
-}
-
-async function restoreRelations(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  packageId: string,
-  original: PackageRelationRecord[],
-) {
-  const currentResult = await queryPackageRelations(supabase, packageId);
-  if (!currentResult.success) {
-    console.error("Pemulihan susunan destinasi gagal.", {
-      stage: "read-current",
-    });
-    return false;
-  }
-
-  const originalIds = new Set(original.map((item) => item.id));
-  const extraIds = currentResult.relations
-    .filter((item) => !originalIds.has(item.id))
-    .map((item) => item.id);
-  if (extraIds.length) {
-    const { error } = await supabase
-      .from("package_destinations")
-      .delete()
-      .eq("package_id", packageId)
-      .in("id", extraIds);
-    if (error) {
-      console.error("Pemulihan susunan destinasi gagal.", {
-        stage: "remove-added",
-        code: error.code,
-      });
-      return false;
-    }
-  }
-
-  const currentById = new Map(
-    currentResult.relations.map((item) => [item.id, item]),
-  );
-  for (const item of original) {
-    if (currentById.has(item.id)) {
-      const { error } = await supabase
-        .from("package_destinations")
-        .update({
-          destination_id: item.destinationId,
-          display_order: item.displayOrder,
-          notes: item.notes || null,
-        })
-        .eq("id", item.id)
-        .eq("package_id", packageId);
-      if (error) {
-        console.error("Pemulihan susunan destinasi gagal.", {
-          stage: "restore-existing",
-          code: error.code,
-        });
-        return false;
-      }
-    } else {
-      const { error } = await supabase.from("package_destinations").insert({
-        id: item.id,
-        package_id: packageId,
-        destination_id: item.destinationId,
-        display_order: item.displayOrder,
-        notes: item.notes || null,
-        created_at: item.createdAt,
-        created_by: item.createdBy,
-      });
-      if (error) {
-        console.error("Pemulihan susunan destinasi gagal.", {
-          stage: "restore-removed",
-          code: error.code,
-        });
-        return false;
-      }
-    }
-  }
-
-  const verification = await queryPackageRelations(supabase, packageId);
-  const restored =
-    verification.success &&
-    verification.relations.length === original.length &&
-    verification.relations.every((item, index) => {
-      const expected = original[index];
-      return (
-        expected !== undefined &&
-        item.id === expected.id &&
-        item.destinationId === expected.destinationId &&
-        item.displayOrder === expected.displayOrder &&
-        item.notes === expected.notes &&
-        item.createdAt === expected.createdAt &&
-        item.createdBy === expected.createdBy
-      );
-    });
-  console.info("Pemulihan susunan destinasi selesai.", {
-    success: restored,
-  });
-  return restored;
-}
-
-async function compensateNewPackage(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  packageId: string,
-  administratorId: string,
-) {
-  const { data: deleted, error: deleteError } = await supabase
-    .from("tourism_packages")
-    .delete()
-    .eq("id", packageId)
-    .eq("status", "draft")
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  if (!deleteError && deleted?.length === 1) {
-    console.info("Kompensasi paket baru selesai.", { method: "delete" });
-    return true;
-  }
-  console.error("Penghapusan kompensasi paket baru gagal.", {
-    code: deleteError?.code ?? "row-not-deleted",
-  });
-
-  const { data: archived, error: archiveError } = await supabase
-    .from("tourism_packages")
-    .update({
-      status: "archived",
-      slug: `failed-create-${randomUUID()}`,
-      updated_by: administratorId,
-    })
-    .eq("id", packageId)
-    .eq("status", "draft")
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  const archivedSafely = !archiveError && archived?.length === 1;
-  console.info("Fallback kompensasi paket baru selesai.", {
-    success: archivedSafely,
-    code: archiveError?.code,
-  });
-  return archivedSafely;
-}
-
 export async function createTourismPackage(
   previous: TourismPackageActionState,
   formData: FormData,
 ): Promise<TourismPackageActionState> {
-  const administrator = await requireAdministrator();
+  await requireAdministrator();
   const supabase = await createClient();
   const options = await queryDestinationOptions(supabase);
   if (!options.success)
@@ -336,18 +134,27 @@ export async function createTourismPackage(
       formErrors: [],
       message: "Periksa kembali nama paket.",
     });
-  const payload: TourismPackageInsertPayload = {
-    ...validation.data,
-    slug,
-    created_by: administrator.id,
-    updated_by: administrator.id,
-  };
-  const { data, error } = await supabase
-    .from("tourism_packages")
-    .insert(payload)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  const id = data?.length === 1 ? data[0].id : null;
+  const { data, error } = await supabase.rpc("tourism_package_create", {
+    p_name: validation.data.name,
+    p_slug: slug,
+    p_package_type: validation.data.package_type,
+    p_duration_value: validation.data.duration_value,
+    p_duration_unit: validation.data.duration_unit,
+    p_price: validation.data.price,
+    p_price_note: validation.data.price_note,
+    p_included_facilities: validation.data.included_facilities,
+    p_souvenir: validation.data.souvenir,
+    p_summary: validation.data.summary,
+    p_description: validation.data.description,
+    p_is_featured: validation.data.is_featured,
+    p_display_order: validation.data.display_order,
+    p_status: validation.data.status,
+    p_destinations: tourismPackageDestinationsToRpcValue(
+      validation.destinations,
+    ),
+  });
+  const id =
+    typeof data === "string" && isValidTourismPackageId(data) ? data : null;
   if (error || !id) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembuatan paket wisata gagal.", { code });
@@ -356,22 +163,6 @@ export async function createTourismPackage(
       validation.values,
       code,
       `${error?.message ?? ""} ${error?.details ?? ""}`,
-    );
-  }
-  const consistency = await runCreateRelationConsistency(
-    () =>
-      insertRelations(supabase, id, validation.destinations, administrator.id),
-    () => compensateNewPackage(supabase, id, administrator.id),
-  );
-  if (consistency !== "complete") {
-    console.error("Pembuatan paket wisata dibatalkan.", {
-      compensation: consistency,
-    });
-    return failure(
-      previous,
-      validation.values,
-      "database-error",
-      "Paket wisata belum dapat disimpan. Silakan coba lagi.",
     );
   }
   revalidatePath(LIST_PATH);
@@ -384,7 +175,7 @@ export async function updateTourismPackage(
   previous: TourismPackageActionState,
   formData: FormData,
 ): Promise<TourismPackageActionState> {
-  const administrator = await requireAdministrator();
+  await requireAdministrator();
   if (!isValidTourismPackageId(id))
     return failure(
       previous,
@@ -445,70 +236,35 @@ export async function updateTourismPackage(
       "database-error",
       "Paket wisata belum dapat disimpan. Silakan coba lagi.",
     );
-  const payload: TourismPackageUpdatePayload = {
-    ...validation.data,
-    updated_by: administrator.id,
-  };
-  const parentFailure: {
-    current: { code: string; diagnostic: string } | null;
-  } = { current: null };
-  const relationChangeRequested =
-    existing.status === "draft" &&
-    !arePackageDestinationValuesEqual(
+  const { data, error } = await supabase.rpc("tourism_package_update", {
+    p_package_id: existing.id,
+    p_name: validation.data.name,
+    p_package_type: validation.data.package_type,
+    p_duration_value: validation.data.duration_value,
+    p_duration_unit: validation.data.duration_unit,
+    p_price: validation.data.price,
+    p_price_note: validation.data.price_note,
+    p_included_facilities: validation.data.included_facilities,
+    p_souvenir: validation.data.souvenir,
+    p_summary: validation.data.summary,
+    p_description: validation.data.description,
+    p_is_featured: validation.data.is_featured,
+    p_display_order: validation.data.display_order,
+    p_status: validation.data.status,
+    p_destinations: tourismPackageDestinationsToRpcValue(
       validation.destinations,
-      relationsResult.relations,
-    );
-  const consistency = await runUpdateConsistency(
-    () =>
-      relationChangeRequested
-        ? synchronizeRelations(
-            supabase,
-            existing.id,
-            relationsResult.relations,
-            validation.destinations,
-            administrator.id,
-          )
-        : Promise.resolve(true),
-    () =>
-      relationChangeRequested
-        ? restoreRelations(supabase, existing.id, relationsResult.relations)
-        : Promise.resolve(true),
-    async () => {
-      const { data, error } = await supabase
-        .from("tourism_packages")
-        .update(payload)
-        .eq("id", existing.id)
-        .select("id")
-        .overrideTypes<{ id: string }[], { merge: false }>();
-      if (error || data?.length !== 1) {
-        parentFailure.current = {
-          code: error?.code ?? "unexpected-row-count",
-          diagnostic: `${error?.message ?? ""} ${error?.details ?? ""}`,
-        };
-        console.error("Pembaruan parent paket wisata gagal.", {
-          code: parentFailure.current.code,
-        });
-        return false;
-      }
-      return true;
-    },
-  );
-  if (consistency !== "complete") {
-    console.error("Pembaruan paket wisata dibatalkan.", {
-      outcome: consistency,
-    });
-    if (parentFailure.current && consistency === "parent-failed-restored")
-      return mutationFailure(
-        previous,
-        validation.values,
-        parentFailure.current.code,
-        parentFailure.current.diagnostic,
-      );
-    return failure(
+    ),
+  });
+  const updatedId =
+    typeof data === "string" && isValidTourismPackageId(data) ? data : null;
+  if (error || updatedId !== existing.id) {
+    const code = error?.code ?? "unexpected-result";
+    console.error("Pembaruan paket wisata gagal.", { code });
+    return mutationFailure(
       previous,
       validation.values,
-      "database-error",
-      "Paket wisata belum dapat disimpan. Silakan coba lagi.",
+      code,
+      `${error?.message ?? ""} ${error?.details ?? ""}`,
     );
   }
   revalidatePath(LIST_PATH);

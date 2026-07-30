@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
-  runCreateRelationConsistency,
-  runUpdateConsistency,
-} from "../features/tourism-packages/consistency.ts";
 import {
   getAllowedTourismPackageStatuses,
   getTourismPackageMutationMode,
@@ -12,6 +9,7 @@ import {
   isValidTourismPackageId,
   isValidTourismPackageSlug,
   normalizeTourismPackageSlug,
+  tourismPackageDestinationsToRpcValue,
   validateTourismPackageInput,
 } from "../features/tourism-packages/model.ts";
 
@@ -378,94 +376,76 @@ test("unknown fields and unsupported product structures are rejected", () => {
   }
 });
 
-test("create relation failure requires verified parent compensation", async () => {
-  let compensated = 0;
-  const result = await runCreateRelationConsistency(
-    async () => false,
-    async () => {
-      compensated += 1;
-      return true;
-    },
+test("RPC destination payload is deterministic and normalizes empty notes", () => {
+  assert.deepEqual(
+    tourismPackageDestinationsToRpcValue([
+      { destinationId: DESTINATION_A, displayOrder: 0, notes: " pertama " },
+      { destinationId: DESTINATION_B, displayOrder: 1, notes: " " },
+    ]),
+    [
+      {
+        destination_id: DESTINATION_A,
+        display_order: 0,
+        notes: "pertama",
+      },
+      {
+        destination_id: DESTINATION_B,
+        display_order: 1,
+        notes: null,
+      },
+    ],
   );
-  assert.equal(result, "compensated");
-  assert.equal(compensated, 1);
 });
 
-test("complete create does not trigger compensation", async () => {
-  let compensated = 0;
-  const result = await runCreateRelationConsistency(
-    async () => true,
-    async () => {
-      compensated += 1;
-      return true;
-    },
+test("Tourism Package actions use transactional RPCs without sequential table writes", async () => {
+  const source = await readFile(
+    new URL("../features/tourism-packages/actions.ts", import.meta.url),
+    "utf8",
   );
-  assert.equal(result, "complete");
-  assert.equal(compensated, 0);
+  assert.match(source, /rpc\("tourism_package_create"/);
+  assert.match(source, /rpc\("tourism_package_update"/);
+  assert.doesNotMatch(
+    source,
+    /from\("tourism_packages"\)\s*\.(?:insert|update|delete)/s,
+  );
+  assert.doesNotMatch(
+    source,
+    /from\("package_destinations"\)\s*\.(?:insert|update|delete)/s,
+  );
+  assert.doesNotMatch(
+    source,
+    /compensat|restoreRelations|synchronizeRelations/,
+  );
 });
 
-test("update synchronization failure triggers relationship restoration", async () => {
-  let restored = 0;
-  let parentUpdated = 0;
-  const result = await runUpdateConsistency(
-    async () => false,
-    async () => {
-      restored += 1;
-      return true;
-    },
-    async () => {
-      parentUpdated += 1;
-      return true;
-    },
-  );
-  assert.equal(result, "sync-failed-restored");
-  assert.equal(restored, 1);
-  assert.equal(parentUpdated, 0);
-});
-
-test("successful relation and parent writes do not trigger restoration", async () => {
-  let restored = 0;
-  const result = await runUpdateConsistency(
-    async () => true,
-    async () => {
-      restored += 1;
-      return true;
-    },
-    async () => true,
-  );
-  assert.equal(result, "complete");
-  assert.equal(restored, 0);
-});
-
-test("parent failure restores relationships and is never success", async () => {
-  let restored = 0;
-  const result = await runUpdateConsistency(
-    async () => true,
-    async () => {
-      restored += 1;
-      return true;
-    },
-    async () => false,
-  );
-  assert.equal(result, "parent-failed-restored");
-  assert.notEqual(result, "complete");
-  assert.equal(restored, 1);
-});
-
-test("failed compensation and failed restoration are never classified as success", async () => {
-  assert.equal(
-    await runCreateRelationConsistency(
-      async () => false,
-      async () => false,
+test("transactional RPC migration enforces authorization and least privilege", async () => {
+  const source = await readFile(
+    new URL(
+      "../supabase/migrations/20260730044746_tourism_package_transactional_rpcs.sql",
+      import.meta.url,
     ),
-    "compensation-failed",
+    "utf8",
   );
-  assert.equal(
-    await runUpdateConsistency(
-      async () => false,
-      async () => false,
-      async () => true,
-    ),
-    "sync-failed-restore-failed",
+  assert.match(
+    source,
+    /create or replace function public\.tourism_package_create/,
   );
+  assert.match(
+    source,
+    /create or replace function public\.tourism_package_update/,
+  );
+  assert.equal((source.match(/security definer/g) ?? []).length, 2);
+  assert.equal((source.match(/set search_path = ''/g) ?? []).length, 3);
+  assert.match(source, /caller_id is null or not public\.is_admin\(\)/);
+  assert.match(source, /for update/);
+  assert.match(source, /for share/);
+  assert.match(
+    source,
+    /revoke insert, update, delete on table public\.tourism_packages/,
+  );
+  assert.match(
+    source,
+    /revoke insert, update, delete on table public\.package_destinations/,
+  );
+  assert.doesNotMatch(source, /create or replace function public\.media_/);
 });
