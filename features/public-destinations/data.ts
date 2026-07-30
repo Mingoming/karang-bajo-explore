@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
+import { signPublishedMedia } from "@/features/public-media/server";
+import type { PublicMediaReference } from "@/features/public-media/model";
 
-import { signPublishedDestinationImages } from "./media";
 import {
   orderPublishedDestinationImages,
   PUBLIC_DESTINATION_SLUG_PATTERN,
@@ -65,7 +66,7 @@ export type PublicDestinationDetailResult =
 function mapPublicDestination(
   row: PublishedDestinationRow,
   categories: ReadonlyMap<string, string>,
-  images: Awaited<ReturnType<typeof signPublishedDestinationImages>>,
+  images: Awaited<ReturnType<typeof signPublishedMedia>>,
 ): PublicDestination {
   const gallery = [...images].sort(
     (left, right) =>
@@ -141,10 +142,18 @@ async function enrichDestinations(
 
   if (imageRows === null) return null;
 
-  const signedImages = await signPublishedDestinationImages(
-    supabase,
-    imageRows,
-  );
+  const mediaReferences: PublicMediaReference[] = imageRows.map((image) => ({
+    id: image.id,
+    entityType: "destination",
+    parentId: image.destination_id,
+    bucket: image.storage_bucket as "tourism-media",
+    storagePath: image.storage_path,
+    caption: image.caption,
+    altText: image.alt_text,
+    displayOrder: image.display_order,
+    isPrimary: image.is_primary,
+  }));
+  const signedImages = await signPublishedMedia(supabase, mediaReferences);
   const categoryNames = new Map(
     categories.map((category) => [category.id, category.name]),
   );
@@ -153,7 +162,7 @@ async function enrichDestinations(
     mapPublicDestination(
       row,
       categoryNames,
-      signedImages.filter((image) => image.destinationId === row.id),
+      signedImages.filter((image) => image.parentId === row.id),
     ),
   );
 }

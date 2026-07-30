@@ -1,5 +1,4 @@
-export const PUBLIC_MEDIA_BUCKET = "tourism-media";
-export const PUBLIC_DESTINATION_IMAGE_TTL_SECONDS = 600;
+import type { SignedPublicMedia } from "@/features/public-media/model";
 
 export type PublishedDestinationRow = {
   id: string;
@@ -36,17 +35,7 @@ export type PublishedDestinationImageRow = {
   is_primary: boolean;
 };
 
-export type PublicDestinationImage = {
-  id: string;
-  destinationId: string;
-  storageBucket: string;
-  storagePath: string;
-  caption: string | null;
-  altText: string;
-  displayOrder: number;
-  isPrimary: boolean;
-  signedUrl: string | null;
-};
+export type PublicDestinationImage = SignedPublicMedia;
 
 export type PublicDestination = {
   id: string;
@@ -97,15 +86,6 @@ export function selectPrimaryDestinationImage(
 ) {
   const ordered = orderPublishedDestinationImages(images);
   return ordered.find((image) => image.is_primary) ?? ordered[0] ?? null;
-}
-
-export function isTrustedPublishedDestinationImage(
-  image: PublishedDestinationImageRow,
-) {
-  return (
-    image.storage_bucket === PUBLIC_MEDIA_BUCKET &&
-    image.storage_path.startsWith(`destination/${image.destination_id}/`)
-  );
 }
 
 export function formatDestinationPrice(price: number | null) {

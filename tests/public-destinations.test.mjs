@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { signPublishedDestinationImages } from "../features/public-destinations/media.ts";
 import {
   orderPublishedDestinationImages,
   selectPrimaryDestinationImage,
@@ -14,10 +13,7 @@ const listPage = read("app/(public)/destinasi/page.tsx");
 const detailPage = read("app/(public)/destinasi/[slug]/page.tsx");
 const destinationImage = read("components/public/destination-image.tsx");
 const nextConfig = read("next.config.ts");
-const migrationName = readdirSync("supabase/migrations").find((name) =>
-  name.endsWith("_public_destination_signed_media.sql"),
-);
-const migration = read(`supabase/migrations/${migrationName}`);
+const destinationCard = read("components/public/destination-card.tsx");
 
 const images = [
   {
@@ -90,92 +86,6 @@ test("primary image and gallery ordering are deterministic", () => {
   );
 });
 
-test("signing accepts only trusted database-shaped destination records", async () => {
-  const calls = [];
-  const supabase = {
-    storage: {
-      from(bucket) {
-        assert.equal(bucket, "tourism-media");
-        return {
-          async createSignedUrls(paths, ttl) {
-            calls.push({ paths, ttl });
-            return {
-              data: paths.map((path) => ({
-                path,
-                signedUrl: `https://storage.invalid/signed?item=${paths.indexOf(path)}`,
-                error: null,
-              })),
-              error: null,
-            };
-          },
-        };
-      },
-    },
-  };
-  const injected = {
-    ...images[0],
-    storage_path: "homestay/arbitrary/private.jpg",
-  };
-  const result = await signPublishedDestinationImages(supabase, [
-    images[0],
-    injected,
-  ]);
-  assert.equal(result.length, 1);
-  assert.deepEqual(calls, [{ paths: [images[0].storage_path], ttl: 600 }]);
-});
-
-test("batch signing maps reordered and partial results by exact path", async () => {
-  const supabase = {
-    storage: {
-      from() {
-        return {
-          async createSignedUrls(paths, ttl) {
-            assert.equal(ttl, 600);
-            return {
-              data: [
-                { path: paths[1], signedUrl: "https://storage.invalid/second" },
-                { path: paths[0], signedUrl: "https://storage.invalid/first" },
-              ],
-              error: null,
-            };
-          },
-        };
-      },
-    },
-  };
-  const result = await signPublishedDestinationImages(supabase, images);
-  assert.equal(result[0].signedUrl, "https://storage.invalid/first");
-  assert.equal(result[1].signedUrl, "https://storage.invalid/second");
-});
-
-test("complete signing failure returns null fallbacks without logging paths", async () => {
-  const messages = [];
-  const originalConsoleError = console.error;
-  console.error = (...values) => messages.push(values);
-  try {
-    const supabase = {
-      storage: {
-        from() {
-          return {
-            async createSignedUrls() {
-              return { data: null, error: new Error("safe test failure") };
-            },
-          };
-        },
-      },
-    };
-    const result = await signPublishedDestinationImages(supabase, images);
-    assert.deepEqual(
-      result.map(({ signedUrl }) => signedUrl),
-      [null, null],
-    );
-    assert.equal(messages.length, 1);
-    assert.doesNotMatch(JSON.stringify(messages), /destination\//);
-  } finally {
-    console.error = originalConsoleError;
-  }
-});
-
 test("signed destination images bypass optimizer caching beyond their TTL", () => {
   assert.match(destinationImage, /<Image[\s\S]*?unoptimized/);
 });
@@ -184,24 +94,26 @@ test("Next Image host and path are narrow while signed token queries remain allo
   assert.match(nextConfig, /hostname: parsedSupabaseUrl\.hostname/);
   assert.match(
     nextConfig,
-    /pathname: "\/storage\/v1\/object\/sign\/tourism-media\/\*\*"/,
+    /pathname: `\/storage\/v1\/object\/sign\/tourism-media\/\$\{entity\.pathPrefix\}\/\*\*`/,
   );
   assert.doesNotMatch(nextConfig, /search:/);
 });
 
-test("Storage policy authorizes only referenced published destination objects", () => {
-  assert.match(migration, /security definer/);
-  assert.match(migration, /set search_path = ''/);
-  assert.match(migration, /destination\.status = 'published'/);
-  assert.match(migration, /image\.storage_path = object_name/);
-  assert.match(migration, /bucket_id = 'tourism-media'/);
-  assert.doesNotMatch(migration, /update|insert into|delete from/i);
+test("destination queries use the shared public Media signer", () => {
+  assert.match(dataSource, /@\/features\/public-media\/server/);
+  assert.match(dataSource, /signPublishedMedia/);
+  assert.doesNotMatch(dataSource, /signPublishedDestinationImages/);
+});
+
+test("the entire destination card remains linked", () => {
+  assert.match(destinationCard, /return \(\s*<Link[\s\S]*?<article/);
+  assert.match(destinationCard, /href={`\/destinasi\/\$\{/);
 });
 
 test("public destination code contains no mutations or service-role secrets", () => {
   const sources = [
     dataSource,
-    read("features/public-destinations/media.ts"),
+    read("features/public-media/server.ts"),
     listPage,
     detailPage,
   ].join("\n");

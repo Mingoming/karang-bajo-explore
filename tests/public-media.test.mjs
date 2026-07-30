@@ -1,0 +1,161 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+import {
+  isPublicMediaEntityType,
+  isTrustedPublicMediaReference,
+  mapPublicMediaSigningResults,
+  PUBLIC_MEDIA_BUCKET,
+  PUBLIC_MEDIA_ENTITY_CONFIG,
+  PUBLIC_MEDIA_TTL_SECONDS,
+} from "../features/public-media/model.ts";
+
+const parentId = "10000000-0000-4000-8000-000000000001";
+const imageId = "20000000-0000-4000-8000-000000000001";
+const entities = Object.entries(PUBLIC_MEDIA_ENTITY_CONFIG);
+const reference = (entityType, overrides = {}) => ({
+  id: imageId,
+  entityType,
+  parentId,
+  bucket: PUBLIC_MEDIA_BUCKET,
+  storagePath: `${PUBLIC_MEDIA_ENTITY_CONFIG[entityType].pathPrefix}/${parentId}/${imageId}.jpg`,
+  altText: "Media publik",
+  caption: null,
+  displayOrder: 0,
+  isPrimary: true,
+  ...overrides,
+});
+
+test("the public Media entity allowlist is closed and maps exact schema names", () => {
+  assert.deepEqual(
+    entities.map(([entityType]) => entityType),
+    [
+      "destination",
+      "tourism-package",
+      "homestay",
+      "umkm",
+      "traditional-house",
+      "cultural-event",
+    ],
+  );
+  assert.equal(isPublicMediaEntityType("gallery"), false);
+  assert.deepEqual(PUBLIC_MEDIA_ENTITY_CONFIG.destination, {
+    pathPrefix: "destination",
+    parentTable: "destinations",
+    imageTable: "destination_images",
+    parentForeignKey: "destination_id",
+    publishedView: "published_destination_images",
+  });
+});
+
+test("all six entity prefixes produce trusted exact paths", () => {
+  for (const [entityType, config] of entities) {
+    const media = reference(entityType);
+    assert.equal(media.storagePath.startsWith(`${config.pathPrefix}/`), true);
+    assert.equal(isTrustedPublicMediaReference(media), true);
+  }
+});
+
+test("bucket, parent UUID, prefix, owner, and extension are enforced", () => {
+  const valid = reference("destination");
+  assert.equal(
+    isTrustedPublicMediaReference({ ...valid, bucket: "public-media" }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({ ...valid, parentId: "not-a-uuid" }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({ ...valid, id: "not-a-uuid" }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({
+      ...valid,
+      storagePath: `homestay/${parentId}/${imageId}.jpg`,
+    }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({
+      ...valid,
+      storagePath: `destination/10000000-0000-4000-8000-000000000002/${imageId}.jpg`,
+    }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({
+      ...valid,
+      storagePath: `destination/${parentId}/${imageId}.gif`,
+    }),
+    false,
+  );
+  assert.equal(
+    isTrustedPublicMediaReference({
+      ...valid,
+      storagePath: `destination/${parentId}/20000000-0000-4000-8000-000000000002.jpg`,
+    }),
+    false,
+  );
+});
+
+test("slashes, traversal, encoded separators, and extra segments are rejected", () => {
+  const valid = reference("destination");
+  for (const storagePath of [
+    `/${valid.storagePath}`,
+    `${valid.storagePath}/`,
+    `destination/${parentId}/../${imageId}.jpg`,
+    `destination/${parentId}%2f${imageId}.jpg`,
+    `destination/${parentId}%5c${imageId}.jpg`,
+    `destination\\${parentId}\\${imageId}.jpg`,
+    `destination//${parentId}/${imageId}.jpg`,
+    `destination/${parentId}/${imageId}.JPG`,
+    `destination/${parentId}/extra/${imageId}.jpg`,
+  ]) {
+    assert.equal(
+      isTrustedPublicMediaReference({ ...valid, storagePath }),
+      false,
+    );
+  }
+});
+
+test("reordered and partial results map by exact path in input order", () => {
+  const first = reference("destination");
+  const second = reference("homestay", {
+    id: "20000000-0000-4000-8000-000000000002",
+    storagePath: `homestay/${parentId}/20000000-0000-4000-8000-000000000002.webp`,
+  });
+  const mapped = mapPublicMediaSigningResults(
+    [first, second],
+    [{ path: second.storagePath, signedUrl: "https://signed.invalid/second" }],
+  );
+  assert.deepEqual(
+    mapped.map(({ signedUrl }) => signedUrl),
+    [null, "https://signed.invalid/second"],
+  );
+});
+
+test("duplicate paths remain deterministic and signing failures remain null", () => {
+  const media = reference("destination");
+  const mapped = mapPublicMediaSigningResults([media, media], []);
+  assert.equal(mapped.length, 2);
+  assert.deepEqual(
+    mapped.map(({ signedUrl }) => signedUrl),
+    [null, null],
+  );
+});
+
+test("server signer has a fixed secure contract", () => {
+  const source = readFileSync("features/public-media/server.ts", "utf8");
+  assert.equal(PUBLIC_MEDIA_TTL_SECONDS, 600);
+  assert.match(source, /import "server-only"/);
+  assert.match(source, /new Set\(/);
+  assert.match(
+    source,
+    /createSignedUrls\(uniquePaths, PUBLIC_MEDIA_TTL_SECONDS\)/,
+  );
+  assert.doesNotMatch(source, /service.?role|SERVICE_ROLE/i);
+  assert.doesNotMatch(source, /console\.(?:log|error)[\s\S]*storagePath/);
+});
