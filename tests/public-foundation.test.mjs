@@ -84,3 +84,11 @@ test("mobile navigation exposes explicit controls and closes on navigation", () 
 test("public foundation presentation has no migration dependency", () => {
   assert.doesNotMatch(publicSources, /supabase[\\/]migrations|\.sql["']/);
 });
+
+test("public shell reserves viewport space and footer copyright meets contrast", () => {
+  assert.match(layout, /flex min-h-screen flex-col/);
+  assert.match(layout, /className="min-h-screen flex-1"/);
+
+  assert.match(footer, /pt-6 text-sm text-slate-400/);
+  assert.doesNotMatch(footer, /pt-6 text-sm text-slate-500/);
+});

@@ -138,3 +138,21 @@ test("public destination code contains no mutations or service-role secrets", ()
   assert.doesNotMatch(sources, /\.insert\(|\.update\(|\.delete\(|\.rpc\(/);
   assert.doesNotMatch(sources, /@\/lib\/auth\/admin/);
 });
+
+test("above-the-fold destination images receive explicit browser priority", () => {
+  assert.match(
+    destinationImage,
+    /loading=\{highPriority \? "eager" : "lazy"\}/,
+  );
+  assert.match(
+    destinationImage,
+    /fetchPriority=\{highPriority \? "high" : "auto"\}/,
+  );
+
+  assert.match(destinationCard, /highPriority=\{highPriority\}/);
+
+  assert.match(listPage, /destinations\.map\(\(destination, index\) =>/);
+  assert.match(listPage, /highPriority=\{index === 0\}/);
+
+  assert.match(detailPage, /<DestinationImage[\s\S]*?highPriority/);
+});

@@ -84,7 +84,7 @@ export default async function DestinationDetailPage({
           src={destination.primaryImage?.signedUrl ?? null}
           alt={destination.primaryImage?.altText ?? ""}
           sizes="(max-width: 1279px) 100vw, 1200px"
-          priority
+          highPriority
           className="aspect-[16/9] rounded-3xl"
         />
 

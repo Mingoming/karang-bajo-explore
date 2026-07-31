@@ -118,10 +118,11 @@ export default async function DestinationListPage({
             </div>
           ) : (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {destinations.map((destination) => (
+              {destinations.map((destination, index) => (
                 <DestinationCard
                   key={destination.id}
                   destination={destination}
+                  highPriority={index === 0}
                 />
               ))}
             </div>

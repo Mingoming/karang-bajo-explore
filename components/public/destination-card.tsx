@@ -6,7 +6,11 @@ import { DestinationImage } from "./destination-image";
 
 export function DestinationCard({
   destination,
-}: Readonly<{ destination: PublicDestination }>) {
+  highPriority = false,
+}: Readonly<{
+  destination: PublicDestination;
+  highPriority?: boolean;
+}>) {
   return (
     <Link
       href={`/destinasi/${encodeURIComponent(destination.slug)}`}
@@ -18,6 +22,7 @@ export function DestinationCard({
           src={destination.primaryImage?.signedUrl ?? null}
           alt={destination.primaryImage?.altText ?? destination.name}
           sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+          highPriority={highPriority}
           className="aspect-[4/3]"
         />
 

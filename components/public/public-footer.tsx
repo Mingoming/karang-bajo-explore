@@ -43,7 +43,7 @@ export function PublicFooter() {
           </p>
         </div>
       </PublicContainer>
-      <PublicContainer className="mt-10 border-t border-white/10 pt-6 text-sm text-slate-500">
+      <PublicContainer className="mt-10 border-t border-white/10 pt-6 text-sm text-slate-400">
         <p>© {year} {SITE_CONFIG.name}. Informasi Desa Karang Bajo.</p>
       </PublicContainer>
     </footer>

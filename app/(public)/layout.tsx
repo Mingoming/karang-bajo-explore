@@ -5,7 +5,7 @@ export default function PublicLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="min-h-screen bg-stone-50 text-slate-950">
+    <div className="flex min-h-screen flex-col bg-stone-50 text-slate-950">
       <a
         href="#konten-utama"
         className="sr-only z-50 rounded-md bg-emerald-950 px-4 py-3 font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -13,7 +13,7 @@ export default function PublicLayout({
         Lewati ke konten utama
       </a>
       <PublicHeader />
-      <main id="konten-utama" tabIndex={-1}>
+      <main id="konten-utama" tabIndex={-1} className="min-h-screen flex-1">
         {children}
       </main>
       <PublicFooter />
