@@ -6,10 +6,11 @@ export type PublicNavigationItem = Readonly<{
 export const PUBLIC_NAVIGATION: readonly PublicNavigationItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Destinasi", href: "/destinasi" },
-  { label: "Paket Wisata", href: "/#paket-wisata" },
-  { label: "Homestay", href: "/#homestay" },
-  { label: "UMKM", href: "/#umkm" },
-  { label: "Budaya", href: "/#budaya" },
+  { label: "Paket Wisata", href: "/paket-wisata" },
+  { label: "Homestay", href: "/homestay" },
+  { label: "UMKM", href: "/umkm" },
+  { label: "Rumah Adat", href: "/rumah-adat" },
+  { label: "Acara Budaya", href: "/acara-budaya" },
   { label: "Peta Wisata", href: "/#peta-wisata" },
 ] as const;
 

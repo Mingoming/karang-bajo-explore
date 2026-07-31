@@ -15,7 +15,7 @@ const publicSources = [page, layout, header, mobileNavigation, footer].join(
 );
 
 test("homepage is owned by the public route group", () => {
-  assert.match(page, /export default function HomePage/);
+  assert.match(page, /export default (?:async )?function HomePage/);
   assert.equal(existsSync("app/page.tsx"), false);
 });
 
@@ -35,7 +35,8 @@ test("public navigation exposes the approved foundation labels", () => {
       "Paket Wisata",
       "Homestay",
       "UMKM",
-      "Budaya",
+      "Rumah Adat",
+      "Acara Budaya",
       "Peta Wisata",
     ],
   );

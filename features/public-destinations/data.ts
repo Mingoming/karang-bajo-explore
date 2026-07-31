@@ -167,16 +167,22 @@ async function enrichDestinations(
   );
 }
 
-export async function getPublishedDestinations(): Promise<PublicDestinationListResult> {
+export async function getPublishedDestinations(
+  limit?: number,
+): Promise<PublicDestinationListResult> {
   const supabase = await createClient();
+  let destinationQuery = supabase
+    .from(PUBLISHED_DESTINATIONS_VIEW)
+    .select(PUBLIC_DESTINATION_COLUMNS)
+    .order("display_order", { ascending: true })
+    .order("name", { ascending: true })
+    .order("id", { ascending: true });
+  if (limit !== undefined) destinationQuery = destinationQuery.limit(limit);
   const [destinationResult, categories] = await Promise.all([
-    supabase
-      .from(PUBLISHED_DESTINATIONS_VIEW)
-      .select(PUBLIC_DESTINATION_COLUMNS)
-      .order("display_order", { ascending: true })
-      .order("name", { ascending: true })
-      .order("id", { ascending: true })
-      .overrideTypes<PublishedDestinationRow[], { merge: false }>(),
+    destinationQuery.overrideTypes<
+      PublishedDestinationRow[],
+      { merge: false }
+    >(),
     queryCategories(supabase),
   ]);
 

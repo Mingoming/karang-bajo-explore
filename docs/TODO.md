@@ -3,8 +3,8 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 4 — Public Website (Milestone 3 federated public media foundation complete locally)
-- **Progress Implementasi:** Shell administrator serta modul pengelolaan Profil Desa, Destinasi, Homestay, UMKM, Rumah Adat, Acara Budaya, Paket Wisata, dan Media federasi beserta galeri per parent selesai; public destination list/detail dan federated published-media boundary untuk enam parent selesai secara lokal; hosted validation dan domain publik lain masih dalam tahap berikutnya
+- **Fase Saat Ini:** Phase 4 — Public Website (Milestone 4 domain browsing complete locally)
+- **Progress Implementasi:** Public list/detail untuk Destinasi, Paket Wisata, Homestay, UMKM, Rumah Adat, dan Acara Budaya serta homepage live collections selesai secara lokal melalui published-safe views dan federated signed media; hosted federated-media validation, GIS, dan modul publik lain masih tertunda
 - **Status Dokumentasi:** ☑ Completed
 - **Kesiapan Deployment:** Belum siap
 
@@ -186,36 +186,36 @@
 ## Pages
 
 - ☑ Homepage visual foundation dan komposisi placeholder eksplisit
-- ☐ Homepage published-data dan signed-media integration
+- ☑ Homepage published-data dan signed-media integration untuk enam domain Media
 - ☐ Village Profile
 - ☑ Destination List
 - ☑ Destination category filter
 - ☑ Destination Detail
 - ☐ Interactive Map page
-- ☐ Traditional House list
-- ☐ Traditional House detail
+- ☑ Traditional House list
+- ☑ Traditional House detail
 - ☐ Pranata Adat Bayan list
 - ☐ Pranata Adat Bayan detail
 - ☐ Culture Articles list
 - ☐ Culture Article detail
-- ☐ Tourism Packages list
-- ☐ Tourism Package detail
-- ☐ Homestays list
-- ☐ Homestay detail
-- ☐ UMKM list
-- ☐ UMKM detail
-- ☐ Cultural Events list
-- ☐ Cultural Event detail
+- ☑ Tourism Packages list
+- ☑ Tourism Package detail dengan destinasi terbit terurut
+- ☑ Homestays list
+- ☑ Homestay detail
+- ☑ UMKM list
+- ☑ UMKM detail
+- ☑ Cultural Events list
+- ☑ Cultural Event detail
 - ☐ Gallery
 - ☐ Contact
 
 ## Quality
 
-- ☐ Published-only public queries
-- ☐ Public not-found behavior
-- ☐ Responsive design
-- ☐ Mobile-first layout
-- ☐ SEO metadata
+- ☑ Published-only public queries untuk enam domain yang tersedia
+- ☑ Public not-found behavior untuk route detail yang tersedia
+- ☑ Responsive design untuk route publik yang tersedia
+- ☑ Mobile-first layout untuk route publik yang tersedia
+- ☑ SEO metadata tanpa signed URL untuk route publik yang tersedia
 - ☐ Canonical URLs
 - ☐ Sitemap published-only
 - ☐ Robots rules
@@ -229,8 +229,8 @@
 - ☑ Primary image dan galeri mengikuti urutan tersimpan dengan fallback aman ketika signed URL gagal.
 - ☑ Signed URL destinasi dibuat server-side secara batch dengan TTL 600 detik hanya untuk path database yang dimiliki destinasi published.
 - ☑ Metadata list/detail menggunakan nama dan ringkasan terverifikasi tanpa signed URL sementara sebagai Open Graph image.
-- ☐ Integrasi data destinasi dan signed media pada homepage.
-- ☑ Federated public-media authorization dan batch signing untuk enam jenis parent selesai secara lokal; hanya route destinasi yang menjadi consumer publik saat ini.
+- ☑ Integrasi data destinasi dan signed media pada homepage.
+- ☑ Federated public-media authorization dan batch signing digunakan oleh route publik enam jenis parent.
 - ☐ Terapkan dan validasi credential-backed migration `20260730094319_federated_public_media_delivery.sql` pada hosted development.
 
 ## Phase 4 Completion Gate
@@ -470,7 +470,7 @@
 - ☑ Remove image, fallback primary, dan thumbnail clearing
 - ☐ Missing-image warning
 - ◐ Orphan-file cleanup dicatat aman saat Storage cleanup gagal; maintenance cleanup belum dibuat
-- ◐ Federated public signed-URL delivery untuk enam parent selesai secara lokal; hosted validation belum dilakukan dan route publik baru hanya tersedia untuk destinasi
+- ◐ Federated public signed-URL delivery untuk enam parent dan seluruh consumer Milestone 4 selesai secara lokal; hosted validation belum dilakukan
 - ☑ Lightweight Media tests 24/24 dan focused pgTAP Storage/RPC coverage
 
 ### Media Credential-Backed Browser Validation
@@ -702,6 +702,8 @@
 - ⚠ `SCHEMA.md` describes UMKM category as controlled text, but neither the documents nor the applied migration define an approved value list or reference table. The administrator form follows the applied migration by accepting required nonblank category text without inventing a taxonomy.
 - ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` require a UMKM map picker. The approved UMKM administration task excludes maps and GIS, so this module supports manual nullable coordinate pairs only.
 - ⚠ The applied UMKM schema contains no price, product, service, or inventory fields. The administrator module does not represent these concepts through unrelated fields.
+- ⚠ Milestone 4 meminta kapasitas Homestay, tetapi applied schema dan `published_homestays` tidak memiliki field kapasitas; halaman publik tidak mengarang nilai tersebut.
+- ⚠ Milestone 4 meminta produk/layanan dan marketplace UMKM bila tersedia, tetapi applied schema dan `published_umkms` tidak memilikinya; halaman publik hanya menampilkan field yang benar-benar tersedia.
 - ⚠ `PRD.md` permits incomplete traditional-house drafts, while the applied migration requires both `name` and `description` on every row. The administrator form follows the applied migration.
 - ⚠ The applied migration hard-requires a thumbnail pair before traditional-house publication, while the narrative documentation describes images more generally. Media remains outside this module, so records without existing thumbnail metadata cannot be published here.
 - ⚠ `PRD.md`, `RULES.md`, and `DESIGN.md` require a traditional-house map picker. The approved administration task excludes maps and GIS, so this module supports manual nullable coordinate pairs only.

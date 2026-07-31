@@ -1689,7 +1689,7 @@ Unsupported in Version 1:
 * [ ] Orphaned-file cleanup does not remove referenced files.
 * [x] The federated six-parent public-media authorization and batch-signing boundary passes local application and database tests.
 * [ ] The federated public-media migration and credential-backed access behavior are validated on hosted development.
-* [ ] Public pages for package, homestay, UMKM, traditional house, and cultural event media consume the shared delivery boundary.
+* [x] Public pages for package, homestay, UMKM, traditional house, and cultural event media consume the shared delivery boundary locally.
 
 ---
 
