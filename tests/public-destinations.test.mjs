@@ -14,6 +14,9 @@ const detailPage = read("app/(public)/destinasi/[slug]/page.tsx");
 const destinationImage = read("components/public/destination-image.tsx");
 const nextConfig = read("next.config.ts");
 const destinationCard = read("components/public/destination-card.tsx");
+const destinationLocationSummary = read(
+  "components/public/destination-location-summary.tsx",
+);
 
 const images = [
   {
@@ -108,6 +111,20 @@ test("destination queries use the shared public Media signer", () => {
 test("the entire destination card remains linked", () => {
   assert.match(destinationCard, /return \(\s*<Link[\s\S]*?<article/);
   assert.match(destinationCard, /href={`\/destinasi\/\$\{/);
+});
+
+test("destination location summary links to the implemented tourism map", () => {
+  assert.match(destinationLocationSummary, /href="\/peta-wisata"/);
+  assert.match(destinationLocationSummary, />\s*Lihat peta wisata\s*</);
+
+  assert.doesNotMatch(
+    destinationLocationSummary,
+    /milestone berikutnya|peta interaktif akan tersedia/i,
+  );
+
+  assert.match(destinationLocationSummary, /destination\.googleMapsUrl/);
+  assert.match(destinationLocationSummary, /Buka Google Maps/);
+  assert.match(destinationLocationSummary, /target="_blank"/);
 });
 
 test("public destination code contains no mutations or service-role secrets", () => {
