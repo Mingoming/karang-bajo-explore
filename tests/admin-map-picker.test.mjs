@@ -21,6 +21,15 @@ const destinationForm = readFileSync(
   "features/destinations/destination-form.tsx",
   "utf8",
 );
+const homestayForm = readFileSync(
+  "features/homestays/homestay-form.tsx",
+  "utf8",
+);
+const umkmForm = readFileSync("features/umkm/umkm-form.tsx", "utf8");
+const traditionalHouseForm = readFileSync(
+  "features/traditional-houses/traditional-house-form.tsx",
+  "utf8",
+);
 
 test("admin coordinate parsing accepts only finite in-range numbers", () => {
   assert.equal(parseAdminCoordinate("-8.35", -90, 90), -8.35);
@@ -111,4 +120,46 @@ test("admin picker never requests or stores device location", () => {
   );
   assert.doesNotMatch(combined, /\.insert\(|\.update\(|\.upsert\(|\.rpc\(/);
   assert.doesNotMatch(combined, /SERVICE_ROLE|service.?role/i);
+});
+
+test("remaining public map forms use one reusable optional coordinate picker", () => {
+  const forms = [
+    ["homestay", homestayForm],
+    ["UMKM", umkmForm],
+    ["traditional house", traditionalHouseForm],
+  ];
+
+  for (const [label, source] of forms) {
+    assert.equal(
+      source.match(/<AdminCoordinatePicker/g)?.length,
+      1,
+      `${label} must render exactly one coordinate picker`,
+    );
+
+    const pickerUsage = source.match(/<AdminCoordinatePicker[\s\S]*?\/>/);
+
+    assert.ok(
+      pickerUsage,
+      `${label} must render the reusable coordinate picker`,
+    );
+
+    assert.match(pickerUsage[0], /latitudeValue=\{state\.values\.latitude\}/);
+    assert.match(pickerUsage[0], /longitudeValue=\{state\.values\.longitude\}/);
+    assert.match(
+      pickerUsage[0],
+      /latitudeError=\{state\.fieldErrors\.latitude\}/,
+    );
+    assert.match(
+      pickerUsage[0],
+      /longitudeError=\{state\.fieldErrors\.longitude\}/,
+    );
+
+    assert.doesNotMatch(pickerUsage[0], /\brequired\b/);
+
+    assert.doesNotMatch(source, /name="latitude"/);
+    assert.doesNotMatch(source, /name="longitude"/);
+    assert.doesNotMatch(source, /id="latitude"/);
+    assert.doesNotMatch(source, /id="longitude"/);
+    assert.doesNotMatch(source, /Peta interaktif[\s\S]*?tahap ini/i);
+  }
 });

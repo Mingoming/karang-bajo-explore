@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
-
+import { AdminCoordinatePicker } from "@/features/admin-map/admin-coordinate-picker";
 import { createUmkm, updateUmkm } from "./actions";
 import {
   getAllowedUmkmStatuses,
@@ -273,10 +273,7 @@ export function UmkmForm({
         className="space-y-6 border-t border-slate-200 pt-8 disabled:opacity-75"
       >
         <legend className="text-xl font-bold text-slate-950">Lokasi</legend>
-        <p className="text-sm leading-6 text-slate-600">
-          Koordinat opsional, tetapi harus diisi berpasangan. Peta interaktif
-          tidak termasuk tahap ini.
-        </p>
+
         <div>
           <label htmlFor="address" className={labelClasses}>
             Alamat
@@ -295,54 +292,13 @@ export function UmkmForm({
             error={state.fieldErrors.address}
           />
         </div>
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="latitude" className={labelClasses}>
-              Latitude
-            </label>
-            <input
-              id="latitude"
-              name="latitude"
-              type="number"
-              inputMode="decimal"
-              min={-90}
-              max={90}
-              step="any"
-              defaultValue={state.values.latitude}
-              aria-invalid={Boolean(state.fieldErrors.latitude)}
-              aria-describedby={describedBy("latitude", true)}
-              className={inputClasses}
-            />
-            <FieldMessage
-              id="latitude-message"
-              error={state.fieldErrors.latitude}
-              helper="Nilai antara -90 dan 90."
-            />
-          </div>
-          <div>
-            <label htmlFor="longitude" className={labelClasses}>
-              Longitude
-            </label>
-            <input
-              id="longitude"
-              name="longitude"
-              type="number"
-              inputMode="decimal"
-              min={-180}
-              max={180}
-              step="any"
-              defaultValue={state.values.longitude}
-              aria-invalid={Boolean(state.fieldErrors.longitude)}
-              aria-describedby={describedBy("longitude", true)}
-              className={inputClasses}
-            />
-            <FieldMessage
-              id="longitude-message"
-              error={state.fieldErrors.longitude}
-              helper="Nilai antara -180 dan 180."
-            />
-          </div>
-        </div>
+        <AdminCoordinatePicker
+          disabled={isPending}
+          latitudeValue={state.values.latitude}
+          longitudeValue={state.values.longitude}
+          latitudeError={state.fieldErrors.latitude}
+          longitudeError={state.fieldErrors.longitude}
+        />
         <div>
           <label htmlFor="google_maps_url" className={labelClasses}>
             Tautan Google Maps
