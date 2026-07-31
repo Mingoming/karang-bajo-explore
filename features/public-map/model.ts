@@ -89,6 +89,41 @@ export function createPublicMapCoordinateKey(
   return `${normalizedLatitude}|${normalizedLongitude}`;
 }
 
+export function filterPublicMapMarkersByDestinationCategory(
+  markers: readonly PublicMapMarker[],
+  categorySlug: string | null,
+): PublicMapMarker[] {
+  if (categorySlug === null) {
+    return markers.map((marker) => ({
+      ...marker,
+      items: [...marker.items],
+    }));
+  }
+
+  return markers.flatMap((marker) => {
+    const items = marker.items.filter(
+      (item) =>
+        item.entityType === "destination" && item.categorySlug === categorySlug,
+    );
+
+    return items.length > 0
+      ? [
+          {
+            ...marker,
+            items,
+          },
+        ]
+      : [];
+  });
+}
+
+export function getPublicMapNavigationUrl(item: PublicMapItem) {
+  return (
+    item.googleMapsUrl ??
+    `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
+  );
+}
+
 function comparePublicMapItems(left: PublicMapItem, right: PublicMapItem) {
   return (
     ENTITY_ORDER[left.entityType] - ENTITY_ORDER[right.entityType] ||

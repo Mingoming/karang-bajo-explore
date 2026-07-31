@@ -1,14 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const data = readFileSync("features/public-map/data.ts", "utf8");
+
+const page = readFileSync("app/(public)/peta-wisata/page.tsx", "utf8");
+const shell = readFileSync("features/public-map/public-map.tsx", "utf8");
+const leaflet = readFileSync(
+  "features/public-map/public-map-leaflet.tsx",
+  "utf8",
+);
+const navigation = readFileSync("config/public-navigation.ts", "utf8");
 
 const {
   PUBLIC_MAP_ENTITY_TYPES,
   buildPublicMapMarkers,
   createPublicMapCoordinateKey,
   createPublicMapItem,
+  filterPublicMapMarkersByDestinationCategory,
+  getPublicMapNavigationUrl,
   isValidPublicMapCoordinate,
 } = await import("../features/public-map/model.ts");
 
@@ -260,4 +270,117 @@ test("map loader fails closed and derives the text list from combined markers", 
     data,
     /\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.rpc\(/,
   );
+});
+
+test("destination category filtering is deterministic and preserves combined markers for all", () => {
+  const markers = buildPublicMapMarkers([
+    mapItem(),
+    mapItem({
+      id: "00000000-0000-4000-8000-000000000002",
+      entityType: "umkm",
+      title: "UMKM Tenun",
+      slug: "umkm-tenun",
+      href: "/umkm/umkm-tenun",
+      categorySlug: null,
+      categoryName: "Kerajinan",
+    }),
+    mapItem({
+      id: "00000000-0000-4000-8000-000000000003",
+      title: "Wisata Alam",
+      slug: "wisata-alam",
+      href: "/destinasi/wisata-alam",
+      categorySlug: "alam",
+      categoryName: "Alam",
+      latitude: -8.36,
+      longitude: 116.28,
+    }),
+  ]);
+
+  const all = filterPublicMapMarkersByDestinationCategory(markers, null);
+  const budaya = filterPublicMapMarkersByDestinationCategory(markers, "budaya");
+
+  assert.equal(all.length, 2);
+  assert.equal(all.flatMap((marker) => marker.items).length, 3);
+
+  assert.equal(budaya.length, 1);
+  assert.deepEqual(
+    budaya[0].items.map((item) => item.title),
+    ["Kampung Adat"],
+  );
+});
+
+test("Google Maps navigation uses an approved URL or coordinate fallback", () => {
+  assert.equal(
+    getPublicMapNavigationUrl(
+      mapItem({
+        googleMapsUrl: "https://maps.google.com/example",
+      }),
+    ),
+    "https://maps.google.com/example",
+  );
+
+  assert.equal(
+    getPublicMapNavigationUrl(mapItem()),
+    "https://www.google.com/maps/search/?api=1&query=-8.351234,116.271234",
+  );
+});
+
+test("public tourism map route and navigation use the approved path", () => {
+  assert.equal(existsSync("app/(public)/peta-wisata/page.tsx"), true);
+  assert.match(navigation, /\{ label: "Peta Wisata", href: "\/peta-wisata" \}/);
+  assert.doesNotMatch(navigation, /href: "\/peta"/);
+});
+
+test("map page loads only the published map data contract", () => {
+  assert.match(page, /getPublishedPublicMapData\(\)/);
+  assert.match(page, /result\.kind === "error"/);
+  assert.match(page, /<PublicMap/);
+  assert.match(page, /result\.items\.length > 0/);
+
+  assert.doesNotMatch(page, /\.from\(/);
+  assert.doesNotMatch(page, /SERVICE_ROLE|service.?role/i);
+  assert.doesNotMatch(
+    page,
+    /\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.rpc\(/,
+  );
+});
+
+test("Leaflet is isolated behind a client-only dynamic boundary", () => {
+  assert.match(shell, /^"use client";/);
+  assert.match(
+    shell,
+    /dynamic\([\s\S]*?import\("\.\/public-map-leaflet"\)[\s\S]*?ssr: false/,
+  );
+
+  assert.match(leaflet, /^"use client";/);
+  assert.match(leaflet, /from "react-leaflet"/);
+  assert.match(leaflet, /leaflet\/dist\/leaflet\.css/);
+});
+
+test("interactive map supports OSM attribution, bounds, marker popups, and tile failure", () => {
+  assert.match(leaflet, /<MapContainer/);
+  assert.match(leaflet, /<TileLayer/);
+  assert.match(leaflet, /openstreetmap\.org\/copyright/);
+  assert.match(
+    leaflet,
+    /https:\/\/\{s\}\.tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/,
+  );
+  assert.match(leaflet, /<CircleMarker/);
+  assert.match(leaflet, /<Popup/);
+  assert.match(leaflet, /fitBounds\(/);
+  assert.match(leaflet, /setView\(/);
+  assert.match(leaflet, /invalidateSize\(/);
+  assert.match(leaflet, /ResizeObserver/);
+  assert.match(leaflet, /tileerror/);
+  assert.match(leaflet, /Peta dasar tidak dapat dimuat/);
+});
+
+test("map shell provides category controls and a textual alternative", () => {
+  assert.match(shell, /filterPublicMapMarkersByDestinationCategory/);
+  assert.match(shell, /aria-pressed=/);
+  assert.match(shell, /Filter kategori pada peta wisata/);
+  assert.match(shell, /Daftar lokasi/);
+  assert.match(shell, /Buka Google Maps/);
+  assert.match(shell, /Lihat detail/);
+  assert.match(shell, /visibleItems\.length/);
 });

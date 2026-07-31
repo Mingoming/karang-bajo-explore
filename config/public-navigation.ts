@@ -11,7 +11,7 @@ export const PUBLIC_NAVIGATION: readonly PublicNavigationItem[] = [
   { label: "UMKM", href: "/umkm" },
   { label: "Rumah Adat", href: "/rumah-adat" },
   { label: "Acara Budaya", href: "/acara-budaya" },
-  { label: "Peta Wisata", href: "/#peta-wisata" },
+  { label: "Peta Wisata", href: "/peta-wisata" },
 ] as const;
 
 export function isPublicNavigationItemActive(pathname: string, href: string) {
