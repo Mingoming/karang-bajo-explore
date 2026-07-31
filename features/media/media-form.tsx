@@ -110,8 +110,9 @@ export function MediaForm({
             className={`${inputClasses} file:mr-4 file:rounded-md file:border-0 file:bg-emerald-100 file:px-3 file:py-2 file:font-semibold file:text-emerald-900`}
           />
           <p id="file-help" className="mt-2 text-sm text-slate-600">
-            JPEG, PNG, atau WebP; maksimal 5 MiB. Isi berkas diperiksa, bukan
-            hanya nama berkas.
+            JPEG, PNG, atau WebP; maksimal 5 MiB. Gambar otomatis disesuaikan
+            orientasinya, diperkecil maksimal 1920 piksel, dan disimpan sebagai
+            WebP.
           </p>
           {state.fieldErrors.file ? (
             <p id="file-error" className="mt-2 text-sm text-red-700">
