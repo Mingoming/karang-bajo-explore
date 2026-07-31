@@ -30,6 +30,14 @@ const traditionalHouseForm = readFileSync(
   "features/traditional-houses/traditional-house-form.tsx",
   "utf8",
 );
+const culturalEventForm = readFileSync(
+  "features/cultural-events/cultural-event-form.tsx",
+  "utf8",
+);
+const villageProfileForm = readFileSync(
+  "features/village-profile/village-profile-form.tsx",
+  "utf8",
+);
 
 test("admin coordinate parsing accepts only finite in-range numbers", () => {
   assert.equal(parseAdminCoordinate("-8.35", -90, 90), -8.35);
@@ -161,5 +169,47 @@ test("remaining public map forms use one reusable optional coordinate picker", (
     assert.doesNotMatch(source, /id="latitude"/);
     assert.doesNotMatch(source, /id="longitude"/);
     assert.doesNotMatch(source, /Peta interaktif[\s\S]*?tahap ini/i);
+  }
+});
+
+test("other coordinate forms use one reusable optional coordinate picker", () => {
+  const forms = [
+    ["cultural event", culturalEventForm],
+    ["village profile", villageProfileForm],
+  ];
+
+  for (const [label, source] of forms) {
+    assert.equal(
+      source.match(/<AdminCoordinatePicker/g)?.length,
+      1,
+      `${label} must render exactly one coordinate picker`,
+    );
+
+    const pickerUsage = source.match(/<AdminCoordinatePicker[\s\S]*?\/>/);
+
+    assert.ok(
+      pickerUsage,
+      `${label} must render the reusable coordinate picker`,
+    );
+
+    assert.match(pickerUsage[0], /latitudeValue=\{state\.values\.latitude\}/);
+    assert.match(pickerUsage[0], /longitudeValue=\{state\.values\.longitude\}/);
+    assert.match(
+      pickerUsage[0],
+      /latitudeError=\{state\.fieldErrors\.latitude\}/,
+    );
+    assert.match(
+      pickerUsage[0],
+      /longitudeError=\{state\.fieldErrors\.longitude\}/,
+    );
+
+    assert.doesNotMatch(pickerUsage[0], /\brequired\b/);
+
+    assert.doesNotMatch(source, /name="latitude"/);
+    assert.doesNotMatch(source, /name="longitude"/);
+    assert.doesNotMatch(source, /id="latitude"/);
+    assert.doesNotMatch(source, /id="longitude"/);
+
+    assert.doesNotMatch(source, /Peta interaktif[\s\S]*?(?:modul|tahap) ini/i);
   }
 });

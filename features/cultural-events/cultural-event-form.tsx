@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
-
+import { AdminCoordinatePicker } from "@/features/admin-map/admin-coordinate-picker";
 import { createCulturalEvent, updateCulturalEvent } from "./actions";
 import {
   getAllowedCulturalEventStatuses,
@@ -302,42 +302,14 @@ export function CulturalEventForm({
             />
           </div>
         </div>
-        <p className="text-sm leading-6 text-slate-600">
-          Koordinat opsional, tetapi latitude dan longitude harus diisi sebagai
-          satu pasangan. Peta interaktif tidak termasuk modul ini.
-        </p>
-        <div className="grid gap-6 sm:grid-cols-2">
-          {(
-            [
-              ["latitude", "Latitude", -90, 90],
-              ["longitude", "Longitude", -180, 180],
-            ] as const
-          ).map(([field, label, minimum, maximum]) => (
-            <div key={field}>
-              <label htmlFor={field} className={labelClasses}>
-                {label}
-              </label>
-              <input
-                id={field}
-                name={field}
-                type="number"
-                inputMode="decimal"
-                min={minimum}
-                max={maximum}
-                step="any"
-                defaultValue={state.values[field]}
-                aria-invalid={Boolean(state.fieldErrors[field])}
-                aria-describedby={describedBy(field, true)}
-                className={inputClasses}
-              />
-              <FieldMessage
-                id={`${field}-message`}
-                error={state.fieldErrors[field]}
-                helper={`Nilai antara ${minimum} dan ${maximum}.`}
-              />
-            </div>
-          ))}
-        </div>
+
+        <AdminCoordinatePicker
+          disabled={isPending}
+          latitudeValue={state.values.latitude}
+          longitudeValue={state.values.longitude}
+          latitudeError={state.fieldErrors.latitude}
+          longitudeError={state.fieldErrors.longitude}
+        />
         <div>
           <label htmlFor="google_maps_url" className={labelClasses}>
             Tautan Google Maps
