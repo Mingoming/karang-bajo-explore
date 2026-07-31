@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { notFound } from "next/navigation";
 import { PublicDetailPage } from "@/components/public/public-detail-page";
 import {
@@ -7,8 +8,21 @@ import {
 } from "@/features/public-domains/data";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const item = await getPublishedUmkmMetadata((await params).slug);
-  return item ?? { title: "UMKM tidak ditemukan" };
+  const { slug } = await params;
+  const item = await getPublishedUmkmMetadata(slug);
+
+  if (!item) {
+    return buildPublicMetadata({
+      title: "UMKM tidak ditemukan",
+      description: "UMKM yang diminta tidak tersedia atau belum diterbitkan.",
+      noIndex: true,
+    });
+  }
+
+  return buildPublicMetadata({
+    title: item.title,
+    description: item.description,
+  });
 }
 export default async function Page({ params }: Props) {
   const result = await getPublishedUmkm((await params).slug);

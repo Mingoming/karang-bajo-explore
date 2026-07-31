@@ -11,6 +11,42 @@ const destinationDetail = readFileSync(
 );
 const mapPage = readFileSync("app/(public)/peta-wisata/page.tsx", "utf8");
 
+const remainingListPages = [
+  "app/(public)/paket-wisata/page.tsx",
+  "app/(public)/homestay/page.tsx",
+  "app/(public)/umkm/page.tsx",
+  "app/(public)/rumah-adat/page.tsx",
+  "app/(public)/acara-budaya/page.tsx",
+].map((path) => readFileSync(path, "utf8"));
+
+const remainingDetailPages = [
+  {
+    source: readFileSync("app/(public)/paket-wisata/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedPackageMetadata",
+    detailLoader: "getPublishedPackage",
+  },
+  {
+    source: readFileSync("app/(public)/homestay/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedHomestayMetadata",
+    detailLoader: "getPublishedHomestay",
+  },
+  {
+    source: readFileSync("app/(public)/umkm/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedUmkmMetadata",
+    detailLoader: "getPublishedUmkm",
+  },
+  {
+    source: readFileSync("app/(public)/rumah-adat/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedTraditionalHouseMetadata",
+    detailLoader: "getPublishedTraditionalHouse",
+  },
+  {
+    source: readFileSync("app/(public)/acara-budaya/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedCulturalEventMetadata",
+    detailLoader: "getPublishedCulturalEvent",
+  },
+];
+
 test("shared public metadata contains search and social descriptions", () => {
   assert.match(helper, /title:\s*safeTitle/);
   assert.match(helper, /description:\s*safeDescription/);
@@ -40,13 +76,17 @@ test("not-found public metadata can explicitly prevent indexing", () => {
   );
 });
 
-test("representative public routes use the shared metadata builder", () => {
-  for (const source of [
+test("all public content routes use the shared metadata builder", () => {
+  const sources = [
     homepage,
     destinationList,
     destinationDetail,
     mapPage,
-  ]) {
+    ...remainingListPages,
+    ...remainingDetailPages.map(({ source }) => source),
+  ];
+
+  for (const source of sources) {
     assert.match(source, /buildPublicMetadata/);
   }
 });
@@ -83,4 +123,34 @@ test("destination metadata remains published-safe and URL independent", () => {
 
   assert.doesNotMatch(metadataBlock, /signedUrl/);
   assert.doesNotMatch(metadataBlock, /getPublishedDestinationBySlug/);
+});
+
+test("remaining dynamic metadata stays published-safe and noindexes missing content", () => {
+  for (const { source, metadataLoader, detailLoader } of remainingDetailPages) {
+    const metadataStart = source.indexOf(
+      "export async function generateMetadata",
+    );
+    const pageStart = source.indexOf("export default async function");
+
+    assert.notEqual(metadataStart, -1);
+    assert.notEqual(pageStart, -1);
+    assert.ok(pageStart > metadataStart);
+
+    const metadataBlock = source.slice(metadataStart, pageStart);
+
+    assert.equal(
+      metadataBlock.includes(`${metadataLoader}(`),
+      true,
+      `${metadataLoader} must be used by generateMetadata`,
+    );
+
+    assert.equal(
+      metadataBlock.includes(`${detailLoader}(`),
+      false,
+      `${detailLoader} must not be used by generateMetadata`,
+    );
+
+    assert.match(metadataBlock, /noIndex:\s*true/);
+    assert.doesNotMatch(metadataBlock, /signedUrl/);
+  }
 });

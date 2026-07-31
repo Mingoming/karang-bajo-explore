@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { PublicListPage } from "@/components/public/public-list-page";
 import {
   formatPublicEventSchedule,
   getPublishedCulturalEvents,
 } from "@/features/public-domains/data";
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Acara Budaya",
-  description: "Jadwal acara budaya terkonfirmasi di Desa Karang Bajo.",
-};
+  description:
+    "Lihat acara budaya dengan jadwal yang telah dikonfirmasi dan diterbitkan di Desa Karang Bajo.",
+});
 export default async function Page() {
   const result = await getPublishedCulturalEvents();
   if (result.kind === "error") throw new Error("PUBLIC_EVENTS_UNAVAILABLE");

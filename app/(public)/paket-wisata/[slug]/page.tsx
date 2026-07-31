@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicDetailPage } from "@/components/public/public-detail-page";
@@ -12,7 +13,20 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const item = await getPublishedPackageMetadata(slug);
-  return item ?? { title: "Paket tidak ditemukan" };
+
+  if (!item) {
+    return buildPublicMetadata({
+      title: "Paket wisata tidak ditemukan",
+      description:
+        "Paket wisata yang diminta tidak tersedia atau belum diterbitkan.",
+      noIndex: true,
+    });
+  }
+
+  return buildPublicMetadata({
+    title: item.title,
+    description: item.description,
+  });
 }
 export default async function Page({ params }: Props) {
   const { slug } = await params;

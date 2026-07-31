@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { PublicListPage } from "@/components/public/public-list-page";
 import { getPublishedTraditionalHouses } from "@/features/public-domains/data";
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Rumah Adat",
   description:
-    "Rumah adat dan warisan budaya terverifikasi di Desa Karang Bajo.",
-};
+    "Pelajari rumah adat dan warisan budaya yang telah diterbitkan di Desa Karang Bajo.",
+});
 export default async function Page() {
   const result = await getPublishedTraditionalHouses();
   if (result.kind === "error") throw new Error("PUBLIC_HOUSES_UNAVAILABLE");
