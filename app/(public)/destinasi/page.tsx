@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 
 import { DestinationCard } from "@/components/public/destination-card";
@@ -6,11 +6,11 @@ import { EmptyContentState } from "@/components/public/empty-content-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { getPublishedDestinations } from "@/features/public-destinations/data";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Destinasi",
   description:
-    "Jelajahi destinasi wisata yang telah diterbitkan untuk Desa Karang Bajo.",
-};
+    "Jelajahi destinasi wisata alam, budaya, dan religi yang telah diterbitkan di Desa Karang Bajo.",
+});
 
 type DestinationListPageProps = {
   searchParams: Promise<{ kategori?: string | string[] }>;

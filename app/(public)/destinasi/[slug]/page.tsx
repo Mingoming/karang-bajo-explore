@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 
 import { DestinationGallery } from "@/components/public/destination-gallery";
 import { DestinationImage } from "@/components/public/destination-image";
@@ -21,11 +22,20 @@ export async function generateMetadata({
 }: DestinationDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   const destination = await getPublishedDestinationMetadata(slug);
-  if (!destination) return { title: "Destinasi tidak ditemukan" };
-  return {
+
+  if (!destination) {
+    return buildPublicMetadata({
+      title: "Destinasi tidak ditemukan",
+      description:
+        "Destinasi yang diminta tidak tersedia atau belum diterbitkan.",
+      noIndex: true,
+    });
+  }
+
+  return buildPublicMetadata({
     title: destination.name,
     description: destination.summary,
-  };
+  });
 }
 
 export default async function DestinationDetailPage({

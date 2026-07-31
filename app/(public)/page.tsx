@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 
 import { DestinationCard } from "@/components/public/destination-card";
@@ -18,10 +18,11 @@ import {
 } from "@/features/public-domains/data";
 import type { PublicContentBase } from "@/features/public-content/model";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Beranda",
-  description: "Jelajahi informasi pariwisata terbit Desa Karang Bajo.",
-};
+  description:
+    "Jelajahi destinasi, budaya, homestay, UMKM, paket wisata, dan acara di Desa Karang Bajo.",
+});
 
 function HomeCollection({
   id,
