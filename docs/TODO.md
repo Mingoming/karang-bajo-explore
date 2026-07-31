@@ -498,44 +498,68 @@
 
 # Phase 6 — GIS
 
-- ☐ Leaflet integration
-- ☐ OpenStreetMap tile layer
+## Public Tourism Map
+
+- ☑ Interactive Map page
+- ☑ Leaflet integration
+- ☑ OpenStreetMap tile layer untuk development
 - ⚠ Pilih provider tile produksi
-- ☐ OpenStreetMap attribution
-- ☐ Destination markers
-- ☐ Traditional House markers
-- ☐ Homestay markers
-- ☐ Visitable UMKM markers
-- ☐ Combined marker untuk koordinat identik
-- ☐ UMKM Tenun berbagi marker Kampung Adat
-- ☐ Marker popup
-- ☐ Category filters
-- ☐ Map legend
-- ☐ Fit bounds
-- ☐ Single-marker focus
-- ☐ Empty-map state
-- ☐ Invalid-coordinate handling
-- ☐ Google Maps external link
-- ☐ Textual map alternative
-- ☐ Mobile map behavior
-- ☐ User-location control
-- ☐ Map Picker
-- ☐ Manual latitude/longitude input
+- ☑ OpenStreetMap attribution
+- ☑ Destination markers
+- ☑ Traditional House markers
+- ☑ Homestay markers
+- ☑ Visitable UMKM markers
+- ☑ Combined marker untuk koordinat identik
+- ⚠ UMKM Tenun berbagi marker Kampung Adat — menunggu koordinat survei nyata yang telah diverifikasi
+- ☑ Marker popup
+- ☑ Category filters untuk kategori destinasi
+- ☐ Map legend terpisah
+- ☑ Fit bounds untuk beberapa marker
+- ☑ Single-marker focus
+- ☑ Empty-map state
+- ☑ Invalid-coordinate handling
+- ☑ Google Maps external link dengan coordinate fallback
+- ☑ Textual map alternative
+- ☑ Mobile map behavior
+- ☑ Peta tetap menyediakan fallback ketika tile gagal
+- ☑ Tidak meminta atau menyimpan lokasi perangkat pengguna
+
+## Administrator Coordinate Entry
+
+- ☑ Reusable Map Picker
+- ☑ Manual latitude/longitude input
+- ☑ Sinkronisasi input manual dan pemilihan titik pada peta
+- ☑ Required coordinate picker untuk Destinasi
+- ☑ Optional coordinate picker untuk Homestay
+- ☑ Optional coordinate picker untuk UMKM
+- ☑ Optional coordinate picker untuk Rumah Adat
+- ☑ Optional coordinate picker untuk Acara Budaya
+- ☑ Optional coordinate picker untuk Profil Desa
+- ☑ Validasi pasangan latitude dan longitude
+- ☑ Validasi coordinate range
+- ☑ Deterministic coordinate formatting
+
+## Survey Data Import
+
 - ☐ GeoJSON validator
 - ☐ GeoJSON coordinate conversion
 - ☐ Duplicate candidate report
-- ☐ Category mapping
+- ☐ Category mapping untuk data import
 - ☐ Initial GeoJSON import
 - ☐ Imported records start as draft
 - ☐ Manual coordinate review
+- ⚠ Import data koordinat hasil survei ditunda sampai data sumber diverifikasi
 
 ## Phase 6 Completion Gate
 
-- ☐ Marker berasal dari data tersimpan.
-- ☐ Koordinat invalid tidak menghasilkan marker.
-- ☐ Marker gabungan tidak tumpang tindih.
-- ☐ Peta gagal tidak merusak halaman.
-- ☐ QGIS tidak dibutuhkan untuk pembaruan harian.
+- ☑ Marker aplikasi berasal dari published data yang tersimpan.
+- ☑ Koordinat invalid tidak menghasilkan marker.
+- ☑ Record dengan koordinat identik digabungkan dalam satu marker.
+- ☑ Kegagalan tile peta tidak merusak keseluruhan halaman.
+- ☑ Peta menyediakan daftar lokasi sebagai alternatif tekstual.
+- ☑ QGIS tidak dibutuhkan untuk pembaruan koordinat harian.
+- ⚠ Provider tile produksi belum ditetapkan.
+- ☐ Alur import GeoJSON dan review data survei belum selesai.
 
 ---
 
@@ -628,7 +652,15 @@
 
 ## SEO and Content
 
-- ☐ Final SEO review
+- ☑ Public robots rules foundation
+- ☑ Shared SEO metadata untuk seluruh route konten publik
+- ☑ Metadata detail hanya membaca published-safe metadata
+- ☑ Missing public content menggunakan noindex
+- ☑ Metadata tidak menggunakan signed private media URL
+- ⚠ Canonical URLs — menunggu origin/domain produksi resmi
+- ⚠ Published-only sitemap — menunggu origin/domain produksi resmi
+- ⚠ Open Graph image permanen — signed private media tidak dapat digunakan sebagai URL permanen
+- ☐ Final SEO review pada deployment produksi
 - ☐ Final sitemap review
 - ☐ Final robots review
 - ☐ Replace temporary KKN logo
