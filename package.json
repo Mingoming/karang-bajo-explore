@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npm run test:admin-shell && npm run test:village-profile && npm run test:destinations && npm run test:homestays && npm run test:umkm && npm run test:traditional-houses && npm run test:cultural-events && npm run test:tourism-packages && npm run test:media && npm run test:public-foundation && npm run test:public-media && npm run test:public-destinations && npm run test:public-domains",
+    "test": "npm run test:admin-shell && npm run test:village-profile && npm run test:destinations && npm run test:homestays && npm run test:umkm && npm run test:traditional-houses && npm run test:cultural-events && npm run test:tourism-packages && npm run test:media && npm run test:public-foundation && npm run test:public-media && npm run test:public-destinations && npm run test:public-domains && npm run test:public-map",
     "test:admin-shell": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/admin-navigation.test.mjs",
     "test:village-profile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/village-profile.test.mjs",
     "test:destinations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/destinations.test.mjs",
@@ -21,6 +21,7 @@
     "test:public-media": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/public-media.test.mjs",
     "test:public-destinations": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/public-destinations.test.mjs",
     "test:public-domains": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/public-domains.test.mjs",
+    "test:public-map": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/public-map.test.mjs",
     "format": "prettier --write app components config constants features lib tests README.md \"*.{json,mjs,ts}\"",
     "format:check": "prettier --check app components config constants features lib tests README.md \"*.{json,mjs,ts}\""
   },
@@ -30,12 +31,15 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
+    "leaflet": "1.9.4",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-leaflet": "5.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
