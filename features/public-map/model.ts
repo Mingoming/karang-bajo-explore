@@ -29,6 +29,13 @@ export type PublicMapMarker = Readonly<{
   items: readonly PublicMapItem[];
 }>;
 
+export type PublicMapItemInput = Readonly<
+  Omit<PublicMapItem, "latitude" | "longitude"> & {
+    latitude: number | null;
+    longitude: number | null;
+  }
+>;
+
 const ENTITY_ORDER: Record<PublicMapEntityType, number> = {
   destination: 0,
   "traditional-house": 1,
@@ -52,6 +59,24 @@ export function isValidPublicMapCoordinate(
 
 function normalizeZero(value: number) {
   return Object.is(value, -0) ? 0 : value;
+}
+
+export function createPublicMapItem(
+  input: PublicMapItemInput,
+): PublicMapItem | null {
+  if (
+    input.latitude === null ||
+    input.longitude === null ||
+    !isValidPublicMapCoordinate(input.latitude, input.longitude)
+  ) {
+    return null;
+  }
+
+  return {
+    ...input,
+    latitude: normalizeZero(input.latitude),
+    longitude: normalizeZero(input.longitude),
+  };
 }
 
 export function createPublicMapCoordinateKey(

@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+
+const data = readFileSync("features/public-map/data.ts", "utf8");
 
 const {
   PUBLIC_MAP_ENTITY_TYPES,
   buildPublicMapMarkers,
   createPublicMapCoordinateKey,
+  createPublicMapItem,
   isValidPublicMapCoordinate,
 } = await import("../features/public-map/model.ts");
 
@@ -161,5 +165,99 @@ test("building markers does not mutate source items or source ordering", () => {
   assert.deepEqual(
     source.map((item) => item.id),
     originalIds,
+  );
+});
+
+test("map item construction rejects missing and invalid coordinate pairs", () => {
+  assert.equal(
+    createPublicMapItem(
+      mapItem({
+        latitude: null,
+      }),
+    ),
+    null,
+  );
+
+  assert.equal(
+    createPublicMapItem(
+      mapItem({
+        longitude: null,
+      }),
+    ),
+    null,
+  );
+
+  assert.equal(
+    createPublicMapItem(
+      mapItem({
+        latitude: 91,
+      }),
+    ),
+    null,
+  );
+
+  const valid = createPublicMapItem(
+    mapItem({
+      thumbnailUrl: "https://example.test/signed-image",
+    }),
+  );
+
+  assert.equal(valid?.latitude, -8.351234);
+  assert.equal(valid?.longitude, 116.271234);
+  assert.equal(valid?.thumbnailUrl, "https://example.test/signed-image");
+});
+
+test("map loader reuses published-safe public data loaders", () => {
+  for (const functionName of [
+    "getPublishedDestinations",
+    "getPublishedHomestays",
+    "getPublishedUmkms",
+    "getPublishedTraditionalHouses",
+  ]) {
+    assert.match(data, new RegExp(`${functionName}\\(`));
+  }
+
+  assert.match(data, /Promise\.all/);
+  assert.doesNotMatch(data, /\.from\(/);
+  assert.doesNotMatch(data, /createClient/);
+  assert.doesNotMatch(data, /SERVICE_ROLE|service.?role/i);
+});
+
+test("map loader maps every approved domain and signed thumbnail", () => {
+  for (const source of [
+    'entityType: "destination"',
+    'entityType: "homestay"',
+    'entityType: "umkm"',
+    'entityType: "traditional-house"',
+    "destination.primaryImage?.signedUrl",
+    "homestay.primaryImage?.signedUrl",
+    "umkm.primaryImage?.signedUrl",
+    "house.primaryImage?.signedUrl",
+  ]) {
+    assert.equal(data.includes(source), true);
+  }
+
+  assert.equal(data.includes("href: `/destinasi/${destination.slug}`"), true);
+  assert.equal(data.includes("href: `/homestay/${homestay.slug}`"), true);
+  assert.equal(data.includes("href: `/umkm/${umkm.slug}`"), true);
+  assert.equal(data.includes("href: `/rumah-adat/${house.slug}`"), true);
+});
+
+test("map loader fails closed and derives the text list from combined markers", () => {
+  for (const resultName of [
+    "destinationResult",
+    "homestayResult",
+    "umkmResult",
+    "traditionalHouseResult",
+  ]) {
+    assert.match(data, new RegExp(`${resultName}\\.kind === "error"`));
+  }
+
+  assert.match(data, /buildPublicMapMarkers\(items\)/);
+  assert.match(data, /items: markers\.flatMap/);
+
+  assert.doesNotMatch(
+    data,
+    /\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.rpc\(/,
   );
 });
