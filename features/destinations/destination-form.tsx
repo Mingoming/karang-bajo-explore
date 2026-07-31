@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
-
+import { AdminCoordinatePicker } from "@/features/admin-map/admin-coordinate-picker";
 import { createDestination, updateDestination } from "./actions";
 import {
   getAllowedDestinationStatuses,
@@ -467,70 +467,14 @@ export function DestinationForm({
         className="space-y-6 border-t border-slate-200 pt-8 disabled:opacity-75"
       >
         <legend className="text-xl font-bold text-slate-950">Lokasi</legend>
-        <p className="text-sm leading-6 text-slate-600">
-          Koordinat wajib disimpan sebagai pasangan. Peta interaktif tidak
-          termasuk dalam tahap ini.
-        </p>
-
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div>
-            <label htmlFor="latitude" className={labelClasses}>
-              Latitude{" "}
-              <span aria-hidden="true" className="text-red-700">
-                *
-              </span>
-              <span className="sr-only"> (wajib)</span>
-            </label>
-            <input
-              id="latitude"
-              name="latitude"
-              type="number"
-              inputMode="decimal"
-              min={-90}
-              max={90}
-              step="any"
-              required
-              defaultValue={state.values.latitude}
-              aria-invalid={Boolean(state.fieldErrors.latitude)}
-              aria-describedby={describedBy("latitude", true)}
-              className={inputClasses}
-            />
-            <FieldMessage
-              id="latitude-message"
-              error={state.fieldErrors.latitude}
-              helper="Nilai antara -90 dan 90."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="longitude" className={labelClasses}>
-              Longitude{" "}
-              <span aria-hidden="true" className="text-red-700">
-                *
-              </span>
-              <span className="sr-only"> (wajib)</span>
-            </label>
-            <input
-              id="longitude"
-              name="longitude"
-              type="number"
-              inputMode="decimal"
-              min={-180}
-              max={180}
-              step="any"
-              required
-              defaultValue={state.values.longitude}
-              aria-invalid={Boolean(state.fieldErrors.longitude)}
-              aria-describedby={describedBy("longitude", true)}
-              className={inputClasses}
-            />
-            <FieldMessage
-              id="longitude-message"
-              error={state.fieldErrors.longitude}
-              helper="Nilai antara -180 dan 180."
-            />
-          </div>
-        </div>
+        <AdminCoordinatePicker
+          disabled={isPending}
+          latitudeValue={state.values.latitude}
+          longitudeValue={state.values.longitude}
+          latitudeError={state.fieldErrors.latitude}
+          longitudeError={state.fieldErrors.longitude}
+          required
+        />
 
         <div>
           <label htmlFor="google_maps_url" className={labelClasses}>
