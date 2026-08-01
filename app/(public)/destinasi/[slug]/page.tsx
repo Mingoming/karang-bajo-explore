@@ -138,7 +138,10 @@ export default async function DestinationDetailPage({
             ) : null}
 
             <DestinationLocationSummary destination={destination} />
-            <DestinationGallery images={destination.gallery} />
+            <DestinationGallery
+              images={destination.gallery}
+              primaryImageId={destination.primaryImage?.id ?? null}
+            />
           </div>
 
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

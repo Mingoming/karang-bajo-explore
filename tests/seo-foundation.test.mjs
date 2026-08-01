@@ -14,7 +14,7 @@ test("root metadata establishes the Indonesian site identity", () => {
   assert.match(rootLayout, /default:\s*SITE_CONFIG\.name/);
   assert.match(rootLayout, /template:\s*`%s \| \$\{SITE_CONFIG\.name\}`/);
   assert.match(rootLayout, /description:\s*SITE_CONFIG\.tagline/);
-  assert.match(rootLayout, /<html lang=\{SITE_CONFIG\.locale\}>/);
+  assert.match(rootLayout, /<html[^>]*lang=\{SITE_CONFIG\.locale\}[^>]*>/);
   assert.match(siteConfig, /locale:\s*"id"/);
 });
 

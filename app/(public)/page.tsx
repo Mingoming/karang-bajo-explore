@@ -133,12 +133,8 @@ export default async function HomePage() {
           />
           {destinations.destinations.length ? (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {destinations.destinations.slice(0, 3).map((item, index) => (
-                <DestinationCard
-                  key={item.id}
-                  destination={item}
-                  highPriority={index === 0}
-                />
+              {destinations.destinations.slice(0, 3).map((item) => (
+                <DestinationCard key={item.id} destination={item} />
               ))}
             </div>
           ) : (

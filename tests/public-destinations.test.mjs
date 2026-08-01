@@ -17,6 +17,7 @@ const destinationCard = read("components/public/destination-card.tsx");
 const destinationLocationSummary = read(
   "components/public/destination-location-summary.tsx",
 );
+const destinationGallery = read("components/public/destination-gallery.tsx");
 
 const images = [
   {
@@ -155,4 +156,13 @@ test("above-the-fold destination images receive explicit browser priority", () =
   assert.match(listPage, /highPriority=\{index === 0\}/);
 
   assert.match(detailPage, /<DestinationImage[\s\S]*?highPriority/);
+});
+
+test("destination detail does not repeat its primary image in the gallery", () => {
+  assert.match(
+    detailPage,
+    /primaryImageId=\{destination\.primaryImage\?\.id \?\? null\}/,
+  );
+
+  assert.match(destinationGallery, /image\.id !== primaryImageId/);
 });
