@@ -92,3 +92,11 @@ test("public shell reserves viewport space and footer copyright meets contrast",
   assert.match(footer, /pt-6 text-sm text-slate-400/);
   assert.doesNotMatch(footer, /pt-6 text-sm text-slate-500/);
 });
+
+test("homepage prioritizes its first destination image", () => {
+  assert.match(
+    page,
+    /destinations\.destinations\.slice\(0,\s*3\)\.map\(\(item,\s*index\) =>/,
+  );
+  assert.match(page, /highPriority=\{index === 0\}/);
+});
