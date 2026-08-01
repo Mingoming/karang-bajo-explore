@@ -13,6 +13,7 @@ import {
 
 const parentId = "10000000-0000-4000-8000-000000000001";
 const imageId = "20000000-0000-4000-8000-000000000001";
+const replacementObjectId = "30000000-0000-4000-8000-000000000001";
 const entities = Object.entries(PUBLIC_MEDIA_ENTITY_CONFIG);
 const reference = (entityType, overrides = {}) => ({
   id: imageId,
@@ -57,7 +58,7 @@ test("all six entity prefixes produce trusted exact paths", () => {
   }
 });
 
-test("bucket, parent UUID, prefix, owner, and extension are enforced", () => {
+test("bucket, parent path, row identity, object UUID, and extension are enforced", () => {
   const valid = reference("destination");
   assert.equal(
     isTrustedPublicMediaReference({ ...valid, bucket: "public-media" }),
@@ -95,7 +96,7 @@ test("bucket, parent UUID, prefix, owner, and extension are enforced", () => {
   assert.equal(
     isTrustedPublicMediaReference({
       ...valid,
-      storagePath: `destination/${parentId}/20000000-0000-4000-8000-000000000002.jpg`,
+      storagePath: `destination/${parentId}/not-a-uuid.jpg`,
     }),
     false,
   );
@@ -158,4 +159,13 @@ test("server signer has a fixed secure contract", () => {
   );
   assert.doesNotMatch(source, /service.?role|SERVICE_ROLE/i);
   assert.doesNotMatch(source, /console\.(?:log|error)[\s\S]*storagePath/);
+});
+
+test("replacement objects remain trusted when their UUID differs from the media row ID", () => {
+  const replaced = reference("destination", {
+    storagePath: `destination/${parentId}/${replacementObjectId}.webp`,
+  });
+
+  assert.notEqual(replaced.id, replacementObjectId);
+  assert.equal(isTrustedPublicMediaReference(replaced), true);
 });
