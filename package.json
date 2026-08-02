@@ -26,7 +26,9 @@
     "test:seo-foundation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/seo-foundation.test.mjs",
     "test:public-metadata": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/public-metadata.test.mjs",
     "format": "prettier --write app components config constants features lib tests README.md \"*.{json,mjs,ts}\"",
-    "format:check": "prettier --check app components config constants features lib tests README.md \"*.{json,mjs,ts}\""
+    "format:check": "prettier --check app components config constants features lib tests README.md \"*.{json,mjs,ts}\"",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "engines": {
     "node": ">=22.0.0"
