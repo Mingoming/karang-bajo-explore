@@ -2,11 +2,13 @@
 
 ## Karang Bajo Tourism Information System
 
-**Project status:** Phase 1 — Project Foundation
-**Production code:** Foundation scaffold present; product features not started
-**Documentation status:** Version 1 decisions applied; remaining phase-gated decisions listed below
-**Roadmap type:** Production implementation roadmap
-**Team context:** Small university KKN development team
+- **Project status:** Release preparation
+- **Production code:** Core public domains, administration modules, GIS, media delivery, and SEO foundation implemented
+- **Documentation status:** Being synchronized with the current release candidate
+- **Roadmap type:** Production implementation roadmap
+- **Team context:** Small university KKN development team
+
+> Historical phase checklists below remain as implementation records. Current release status is tracked through `TODO.md` and `MVP_RELEASE_SCOPE.md`.
 
 ---
 

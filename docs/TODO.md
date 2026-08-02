@@ -3,10 +3,11 @@
 ## Status Proyek
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Phase 4 — Public Website (Milestone 4 domain browsing complete locally)
-- **Progress Implementasi:** Public list/detail untuk Destinasi, Paket Wisata, Homestay, UMKM, Rumah Adat, dan Acara Budaya serta homepage live collections selesai secara lokal melalui published-safe views dan federated signed media; hosted federated-media validation, GIS, dan modul publik lain masih tertunda
-- **Status Dokumentasi:** ☑ Completed
-- **Kesiapan Deployment:** Belum siap
+- **Fase Saat Ini:** P0 — Release Preparation
+- **Branch Aktif:** `review/milestone-6-seo`
+- **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, automated tests, dan CI quality gate telah diimplementasikan.
+- **Status Dokumentasi:** ◐ In Progress
+- **Kesiapan Deployment:** Pre-production; belum production-ready
 
 ## Legenda Status
 
@@ -17,9 +18,31 @@
 
 ## Blockers Aktif
 
-- ⚠ Region Supabase belum dipilih.
-- ⚠ Pemilik akun produksi dan prosedur backup belum ditetapkan.
-- ⚠ Provider tile OpenStreetMap, caching, monitoring, dan retensi log belum diputuskan.
+- ⚠ Scope final Version 1.0 belum disetujui secara eksplisit.
+- ⚠ Public Village Profile belum diimplementasikan.
+- ⚠ Kontak pusat dan WhatsApp belum dikonfigurasi.
+- ⚠ Production owner belum ditetapkan.
+- ⚠ Supabase production project belum dibuat.
+- ⚠ Vercel production project belum dibuat.
+- ⚠ Domain production belum ditetapkan.
+- ⚠ Password recovery belum divalidasi pada production environment.
+- ⚠ Dependency vulnerabilities belum ditriage.
+- ⚠ Konten publik belum seluruhnya diverifikasi.
+- ⚠ Backup dan restore belum diuji.
+
+## P0 — Release Preparation
+
+- ☑ Milestone 6 implementation branch tersedia.
+- ☑ Production build lulus.
+- ☑ Application tests lulus.
+- ☑ Typecheck script tersedia.
+- ☑ Aggregate quality-gate script tersedia.
+- ☑ GitHub Actions CI workflow tersedia.
+- ◐ README, TODO, ROADMAP, dan release scope disinkronkan.
+- ☐ Pull request Milestone 6 dibuat.
+- ☐ CI pull request lulus.
+- ☐ Milestone 6 di-merge ke `main`.
+- ☐ Branch protection untuk `main` diaktifkan.
 
 ---
 
