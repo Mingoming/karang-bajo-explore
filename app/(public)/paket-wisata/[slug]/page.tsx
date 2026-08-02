@@ -3,6 +3,7 @@ import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicDetailPage } from "@/components/public/public-detail-page";
+import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
 import { formatRupiah } from "@/features/public-content/model";
 import {
   getPublishedPackage,
@@ -111,6 +112,17 @@ export default async function Page({ params }: Props) {
             Belum ada destinasi terbit yang dapat ditampilkan.
           </p>
         )}
+      </section>
+      <section className="rounded-2xl bg-emerald-50 p-6">
+        <h2 className="font-serif text-2xl font-bold">
+          Pertanyaan paket wisata
+        </h2>
+        <div className="mt-5">
+          <OfficialContactCta
+            className="bg-emerald-900 text-white focus-visible:outline-emerald-700"
+            compact
+          />
+        </div>
       </section>
     </PublicDetailPage>
   );

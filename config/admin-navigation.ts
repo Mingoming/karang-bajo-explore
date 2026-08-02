@@ -12,6 +12,7 @@ export const ADMIN_NAVIGATION = [
   { href: "/admin/umkm", label: "UMKM" },
   { href: "/admin/rumah-adat", label: "Rumah Adat" },
   { href: "/admin/acara-budaya", label: "Acara Budaya" },
+  { href: "/admin/kontak", label: "Kontak" },
   { href: "/admin/media", label: "Media" },
   { href: "/admin/pengaturan", label: "Pengaturan" },
 ] as const satisfies readonly AdminNavigationItem[];

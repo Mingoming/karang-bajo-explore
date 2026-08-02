@@ -19,6 +19,7 @@ import {
 import type { PublicContentBase } from "@/features/public-content/model";
 import { getPublishedVillageProfile } from "@/features/public-village-profile/data";
 import { getPublicVillageProfileExcerpt } from "@/features/public-village-profile/model";
+import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
 
 export const metadata = buildPublicMetadata({
   title: "Beranda",
@@ -245,6 +246,9 @@ export default async function HomePage() {
             <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold">
               Mulai mengenal Karang Bajo dari informasi yang terverifikasi
             </h2>
+            <div className="mt-8">
+              <OfficialContactCta className="bg-white text-emerald-950 focus-visible:outline-amber-300" />
+            </div>
           </div>
         </PublicContainer>
       </section>

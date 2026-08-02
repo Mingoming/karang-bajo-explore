@@ -40,6 +40,7 @@ test("public navigation exposes the approved foundation labels", () => {
       "Rumah Adat",
       "Acara Budaya",
       "Peta Wisata",
+      "Kontak",
     ],
   );
 });

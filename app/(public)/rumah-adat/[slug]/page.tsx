@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { notFound } from "next/navigation";
 import { PublicDetailPage } from "@/components/public/public-detail-page";
+import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
 import {
   getPublishedTraditionalHouse,
   getPublishedTraditionalHouseMetadata,
@@ -93,6 +94,15 @@ export default async function Page({ params }: Props) {
           ) : null}
         </section>
       ) : null}
+      <section className="rounded-2xl bg-emerald-50 p-6">
+        <h2 className="font-serif text-2xl font-bold">Pertanyaan kunjungan</h2>
+        <div className="mt-5">
+          <OfficialContactCta
+            className="bg-emerald-900 text-white focus-visible:outline-emerald-700"
+            compact
+          />
+        </div>
+      </section>
     </PublicDetailPage>
   );
 }
