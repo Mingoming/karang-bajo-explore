@@ -4,7 +4,8 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** P0 — Release Preparation
-- **Branch Aktif:** `feat/central-official-contact`
+- **Branch Dasar Pengembangan:** `main`
+- **Branch Dokumentasi Saat Ini:** `docs/reconcile-release-state`
 - **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, kontak resmi terpusat, automated tests, dan CI quality gate telah diimplementasikan.
 - **Status Dokumentasi:** ◐ In Progress
 - **Kesiapan Deployment:** Pre-production; belum production-ready
@@ -31,17 +32,21 @@
 
 ## P0 — Release Preparation
 
-- ☑ Milestone 6 implementation branch tersedia.
+- ☑ Milestone 5 GIS telah selesai dan tersedia pada `main`; validasi koordinat dan konten production tetap terbuka.
+- ☑ Milestone 6 SEO/performance dan release quality gate telah selesai dan di-merge melalui PR #1.
+- ☑ Perbaikan heading README telah di-merge melalui PR #2.
+- ☑ Public Village Profile telah selesai dan di-merge melalui PR #3.
+- ☑ Kontak resmi terpusat dan WhatsApp telah selesai dan di-merge melalui PR #4.
 - ☑ Production build lulus.
-- ☑ Application tests lulus.
+- ☑ Application tests lulus: 19 suite dan 236 test.
+- ☑ Local pgTAP database tests lulus: 361 assertion.
 - ☑ Typecheck script tersedia.
 - ☑ Aggregate quality-gate script tersedia.
 - ☑ GitHub Actions CI workflow tersedia.
 - ◐ README, TODO, ROADMAP, dan release scope disinkronkan.
-- ☐ Pull request Milestone 6 dibuat.
-- ☐ CI pull request lulus.
-- ☐ Milestone 6 di-merge ke `main`.
-- ☐ Branch protection untuk `main` diaktifkan.
+- ☑ PR #1 sampai #4 telah di-merge ke `main`.
+- ☑ Required GitHub Actions check `Quality` lulus pada PR yang relevan.
+- ☑ Ruleset perlindungan `main` aktif dan mewajibkan check `Quality`.
 
 ---
 
@@ -209,11 +214,11 @@
 
 - ☑ Homepage visual foundation dan komposisi placeholder eksplisit
 - ☑ Homepage published-data dan signed-media integration untuk enam domain Media
-- ☐ Village Profile
+- ☑ Village Profile
 - ☑ Destination List
 - ☑ Destination category filter
 - ☑ Destination Detail
-- ☐ Interactive Map page
+- ☑ Interactive Map page
 - ☑ Traditional House list
 - ☑ Traditional House detail
 - ☐ Pranata Adat Bayan list
@@ -239,11 +244,7 @@
 - ☑ Responsive design untuk route publik yang tersedia
 - ☑ Mobile-first layout untuk route publik yang tersedia
 - ☑ SEO metadata tanpa signed URL untuk route publik yang tersedia
-- ☐ Canonical URLs
-- ☐ Sitemap published-only
-- ☐ Robots rules
-- ☐ Open Graph fallback
-- ☐ Structured data yang relevan
+- ☑ Robots rules
 
 ### Destination Public Milestone 2
 
@@ -776,9 +777,20 @@
 
 # Future Features
 
+## Proposed Version 1.1 Deferrals — Pending Explicit Approval
+
+- ◐ General Cultural Articles
+- ◐ Bayan Customary Institution Articles
+- ◐ Standalone Public Gallery
+- ◐ Advanced Dashboard Analytics
+- ◐ Responsive image derivatives
+- ◐ Advanced structured data
+- ◐ Visitor analytics
+
+Usulan di atas belum disetujui. Item tersebut tidak boleh diperlakukan sebagai deferral resmi Version 1.0 sampai persetujuan scope dicatat.
+
 - ☐ Booking
 - ☐ Payments
-- ☐ Visitor Analytics
 - ☐ QR Code
 - ☐ Recommendation Engine
 - ☐ Trip Planner

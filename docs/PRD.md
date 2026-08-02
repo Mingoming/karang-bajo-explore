@@ -2,7 +2,7 @@
 
 ## Karang Bajo Tourism Information System
 
-**Product stage:** Production Version
+**Product stage:** Version 1 release preparation / pre-production
 **Document responsibility:** Defines what the product must do
 
 ---
