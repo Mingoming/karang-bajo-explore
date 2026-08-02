@@ -19,6 +19,7 @@ test("navigation contains the approved routes in order", () => {
       "/admin/umkm",
       "/admin/rumah-adat",
       "/admin/acara-budaya",
+      "/admin/kontak",
       "/admin/media",
       "/admin/pengaturan",
     ],

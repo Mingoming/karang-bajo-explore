@@ -4,8 +4,8 @@
 
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** P0 — Release Preparation
-- **Branch Aktif:** `review/milestone-6-seo`
-- **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, automated tests, dan CI quality gate telah diimplementasikan.
+- **Branch Aktif:** `feat/central-official-contact`
+- **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, kontak resmi terpusat, automated tests, dan CI quality gate telah diimplementasikan.
 - **Status Dokumentasi:** ◐ In Progress
 - **Kesiapan Deployment:** Pre-production; belum production-ready
 
@@ -19,7 +19,7 @@
 ## Blockers Aktif
 
 - ⚠ Scope final Version 1.0 belum disetujui secara eksplisit.
-- ⚠ Kontak pusat dan WhatsApp belum dikonfigurasi.
+- ⚠ Nomor WhatsApp utama dan konten kontak resmi belum dikonfigurasi dengan data yang telah disetujui.
 - ⚠ Production owner belum ditetapkan.
 - ⚠ Supabase production project belum dibuat.
 - ⚠ Vercel production project belum dibuat.
@@ -128,7 +128,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 334 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, dan federated published-media access untuk enam parent
+- ☑ Jalankan 361 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, official-contact dan site-setting RLS, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, dan federated published-media access untuk enam parent
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -229,7 +229,8 @@
 - ☑ Cultural Events list
 - ☑ Cultural Event detail
 - ☐ Gallery
-- ☐ Contact
+- ☑ Contact dengan kanal published-only dan fallback aman saat belum dikonfigurasi
+- ☑ CTA WhatsApp utama terpusat pada homepage, footer, dan halaman detail publik
 
 ## Quality
 
@@ -455,8 +456,10 @@
 - ☑ Pengguna terautentikasi non-administrator tidak dapat mengakses daftar, create, atau edit UMKM.
 
 - ☐ CRUD Gallery
-- ☐ CRUD Contact
-- ☐ Website Settings
+- ☑ Contact admin list, create, edit, reorder, publish, archive, dan restore
+- ☑ Validasi native kontak resmi, URL aman, lifecycle, serta duplicate handling
+- ☑ Pengaturan nomor WhatsApp utama terpusat dengan status configured/unconfigured
+- ☑ Official Contact lightweight application tests dan focused pgTAP RLS coverage
 
 ## Workflow
 

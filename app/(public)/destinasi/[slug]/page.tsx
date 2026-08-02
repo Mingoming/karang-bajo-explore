@@ -7,6 +7,7 @@ import { DestinationGallery } from "@/components/public/destination-gallery";
 import { DestinationImage } from "@/components/public/destination-image";
 import { DestinationLocationSummary } from "@/components/public/destination-location-summary";
 import { PublicContainer } from "@/components/public/public-container";
+import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
 import {
   getPublishedDestinationBySlug,
   getPublishedDestinationMetadata,
@@ -190,6 +191,20 @@ export default async function DestinationDetailPage({
             </dl>
           </aside>
         </div>
+        <section className="mt-12 rounded-2xl bg-emerald-50 p-6">
+          <h2 className="font-serif text-2xl font-bold text-slate-950">
+            Pertanyaan kunjungan
+          </h2>
+          <p className="mt-2 text-slate-600">
+            Gunakan kanal utama desa untuk pertanyaan umum mengenai kunjungan.
+          </p>
+          <div className="mt-5">
+            <OfficialContactCta
+              className="bg-emerald-900 text-white focus-visible:outline-emerald-700"
+              compact
+            />
+          </div>
+        </section>
       </PublicContainer>
     </article>
   );

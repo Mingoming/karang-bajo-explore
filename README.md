@@ -16,6 +16,7 @@ Fitur utama yang telah tersedia:
 - Daftar dan detail UMKM
 - Daftar dan detail rumah adat
 - Daftar dan detail acara budaya
+- Halaman kontak resmi dan CTA WhatsApp utama terpusat
 - Peta wisata interaktif
 - Login administrator tunggal
 - Dashboard pengelolaan konten
@@ -30,7 +31,7 @@ Fitur utama yang telah tersedia:
 
 Pekerjaan yang masih diperlukan sebelum production release:
 
-- Kontak pusat dan WhatsApp
+- Konfigurasi nomor WhatsApp utama dan konten kontak resmi yang telah disetujui
 - Persetujuan final scope MVP
 - Logo dan favicon resmi
 - Production domain
