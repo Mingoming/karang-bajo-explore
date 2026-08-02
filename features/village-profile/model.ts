@@ -9,6 +9,7 @@ export const VILLAGE_PROFILE_EDITABLE_FIELDS = [
   "latitude",
   "longitude",
   "google_maps_url",
+  "status",
 ] as const;
 
 export type VillageProfileEditableField =
@@ -53,6 +54,7 @@ export type VillageProfileMutationValues = {
   latitude: number | null;
   longitude: number | null;
   google_maps_url: string | null;
+  status: VillageProfileStatus;
 };
 
 export type VillageProfileInsertPayload = VillageProfileMutationValues & {
@@ -92,7 +94,7 @@ export type VillageProfileValidationResult =
     };
 
 type VillageProfileValidationContext = {
-  currentStatus?: VillageProfileStatus;
+  currentStatus?: VillageProfileStatus | null;
 };
 
 const EMPTY_VALUES: VillageProfileFormValues = {
@@ -106,6 +108,7 @@ const EMPTY_VALUES: VillageProfileFormValues = {
   latitude: "",
   longitude: "",
   google_maps_url: "",
+  status: "draft",
 };
 
 const FIELD_LABELS: Record<VillageProfileEditableField, string> = {
@@ -119,6 +122,7 @@ const FIELD_LABELS: Record<VillageProfileEditableField, string> = {
   latitude: "Latitude",
   longitude: "Longitude",
   google_maps_url: "Tautan Google Maps",
+  status: "Status publikasi",
 };
 
 function isEditableField(value: string): value is VillageProfileEditableField {
@@ -181,7 +185,30 @@ export function villageProfileToFormValues(
     latitude: profile.latitude === null ? "" : String(profile.latitude),
     longitude: profile.longitude === null ? "" : String(profile.longitude),
     google_maps_url: profile.google_maps_url ?? "",
+    status: profile.status,
   };
+}
+
+export function getAllowedVillageProfileStatuses(
+  currentStatus: VillageProfileStatus | null,
+): readonly VillageProfileStatus[] {
+  if (currentStatus === null) return ["draft"];
+  if (currentStatus === "published") return ["published", "archived"];
+  if (currentStatus === "archived") return ["archived", "draft"];
+  return ["draft", "published", "archived"];
+}
+
+export function getVillageProfileStatusLabel(status: VillageProfileStatus) {
+  const labels: Record<VillageProfileStatus, string> = {
+    draft: "Draf",
+    published: "Diterbitkan",
+    archived: "Diarsipkan",
+  };
+  return labels[status];
+}
+
+function isVillageProfileStatus(value: string): value is VillageProfileStatus {
+  return value === "draft" || value === "published" || value === "archived";
 }
 
 export function createVillageProfileInitialState(
@@ -246,10 +273,24 @@ export function validateVillageProfileInput(
 
   const googleMapsUrl = normalizeOptionalText(values.google_maps_url);
   const description = normalizeOptionalText(values.description);
+  const statusValue = values.status.trim();
+  let status: VillageProfileStatus | null = null;
 
-  if (context.currentStatus === "published" && description === null) {
+  if (!isVillageProfileStatus(statusValue)) {
+    fieldErrors.status = "Status publikasi tidak valid.";
+  } else {
+    status = statusValue;
+    if (
+      context.currentStatus !== undefined &&
+      !getAllowedVillageProfileStatuses(context.currentStatus).includes(status)
+    ) {
+      fieldErrors.status = "Perubahan status publikasi tidak diizinkan.";
+    }
+  }
+
+  if (status === "published" && description === null) {
     fieldErrors.description =
-      "Deskripsi wajib diisi untuk profil yang sudah diterbitkan.";
+      "Deskripsi wajib diisi sebelum profil diterbitkan.";
   }
 
   if (googleMapsUrl) {
@@ -265,7 +306,11 @@ export function validateVillageProfileInput(
     }
   }
 
-  if (Object.keys(fieldErrors).length > 0 || formErrors.length > 0) {
+  if (
+    status === null ||
+    Object.keys(fieldErrors).length > 0 ||
+    formErrors.length > 0
+  ) {
     return {
       success: false,
       values,
@@ -288,6 +333,7 @@ export function validateVillageProfileInput(
       latitude,
       longitude,
       google_maps_url: googleMapsUrl,
+      status,
     },
   };
 }

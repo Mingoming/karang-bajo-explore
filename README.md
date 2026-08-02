@@ -30,7 +30,6 @@ Fitur utama yang telah tersedia:
 
 Pekerjaan yang masih diperlukan sebelum production release:
 
-- Profil Desa publik
 - Kontak pusat dan WhatsApp
 - Persetujuan final scope MVP
 - Logo dan favicon resmi

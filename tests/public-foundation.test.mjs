@@ -32,6 +32,7 @@ test("public navigation exposes the approved foundation labels", () => {
     PUBLIC_NAVIGATION.map(({ label }) => label),
     [
       "Beranda",
+      "Profil Desa",
       "Destinasi",
       "Paket Wisata",
       "Homestay",

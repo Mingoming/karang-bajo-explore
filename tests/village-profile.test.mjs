@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createVillageProfileSlug,
+  getAllowedVillageProfileStatuses,
   getVillageProfileMutationMode,
   validateVillageProfileFormData,
   validateVillageProfileInput,
@@ -20,6 +21,7 @@ function validFormData() {
   formData.set("latitude", "-8.2731");
   formData.set("longitude", "116.4251");
   formData.set("google_maps_url", " https://maps.google.com/example ");
+  formData.set("status", "draft");
   return formData;
 }
 
@@ -40,6 +42,7 @@ test("form values are transformed into a trimmed mutation payload", () => {
     latitude: -8.2731,
     longitude: 116.4251,
     google_maps_url: "https://maps.google.com/example",
+    status: "draft",
   });
 });
 
@@ -89,7 +92,7 @@ test("coordinates must be a complete valid pair", () => {
 
 test("an already-published profile retains its description requirement", () => {
   const result = validateVillageProfileInput(
-    { name: "Karang Bajo", description: "   " },
+    { name: "Karang Bajo", description: "   ", status: "published" },
     { currentStatus: "published" },
   );
 
@@ -111,7 +114,7 @@ test("singleton save mode is based on the server-read profile", () => {
 test("unknown fields and malformed values are rejected", () => {
   const unknown = validateVillageProfileInput({
     name: "Karang Bajo",
-    status: "published",
+    created_by: "tidak-boleh-dikirim",
   });
   assert.equal(unknown.success, false);
   if (!unknown.success) {
@@ -132,4 +135,68 @@ test("unknown fields and malformed values are rejected", () => {
     createVillageProfileSlug("  Désa Karang Bajo  "),
     "desa-karang-bajo",
   );
+});
+
+test("village-profile lifecycle options match the database transition rules", () => {
+  assert.deepEqual(getAllowedVillageProfileStatuses(null), ["draft"]);
+  assert.deepEqual(getAllowedVillageProfileStatuses("draft"), [
+    "draft",
+    "published",
+    "archived",
+  ]);
+  assert.deepEqual(getAllowedVillageProfileStatuses("published"), [
+    "published",
+    "archived",
+  ]);
+  assert.deepEqual(getAllowedVillageProfileStatuses("archived"), [
+    "archived",
+    "draft",
+  ]);
+
+  const directRepublish = validateVillageProfileInput(
+    {
+      name: "Karang Bajo",
+      description: "Deskripsi terverifikasi",
+      status: "published",
+    },
+    { currentStatus: "archived" },
+  );
+  assert.equal(directRepublish.success, false);
+  if (!directRepublish.success) {
+    assert.match(directRepublish.fieldErrors.status ?? "", /tidak diizinkan/);
+  }
+
+  const directUnpublish = validateVillageProfileInput(
+    {
+      name: "Karang Bajo",
+      description: "Deskripsi terverifikasi",
+      status: "draft",
+    },
+    { currentStatus: "published" },
+  );
+  assert.equal(directUnpublish.success, false);
+  if (!directUnpublish.success) {
+    assert.match(directUnpublish.fieldErrors.status ?? "", /tidak diizinkan/);
+  }
+
+  for (const [currentStatus, status] of [
+    ["draft", "published"],
+    ["draft", "archived"],
+    ["published", "archived"],
+    ["archived", "draft"],
+  ]) {
+    const allowedTransition = validateVillageProfileInput(
+      {
+        name: "Karang Bajo",
+        description: "Deskripsi terverifikasi",
+        status,
+      },
+      { currentStatus },
+    );
+    assert.equal(
+      allowedTransition.success,
+      true,
+      `${currentStatus} -> ${status} seharusnya diizinkan`,
+    );
+  }
 });
