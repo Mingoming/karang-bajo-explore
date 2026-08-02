@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 
 import { DestinationCard } from "@/components/public/destination-card";
@@ -6,11 +6,11 @@ import { EmptyContentState } from "@/components/public/empty-content-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { getPublishedDestinations } from "@/features/public-destinations/data";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Destinasi",
   description:
-    "Jelajahi destinasi wisata yang telah diterbitkan untuk Desa Karang Bajo.",
-};
+    "Jelajahi destinasi wisata alam, budaya, dan religi yang telah diterbitkan di Desa Karang Bajo.",
+});
 
 type DestinationListPageProps = {
   searchParams: Promise<{ kategori?: string | string[] }>;
@@ -118,10 +118,11 @@ export default async function DestinationListPage({
             </div>
           ) : (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {destinations.map((destination) => (
+              {destinations.map((destination, index) => (
                 <DestinationCard
                   key={destination.id}
                   destination={destination}
+                  highPriority={index === 0}
                 />
               ))}
             </div>

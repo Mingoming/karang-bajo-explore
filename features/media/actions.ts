@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
+import { normalizeMediaImage } from "./image-normalization";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -176,31 +176,48 @@ export async function createMedia(
       message: "Batas jumlah gambar telah tercapai.",
     });
   }
+  const normalized = await normalizeMediaImage(fileValidation.file);
+
+  if (!normalized.success) {
+    return nextState(previous, {
+      kind: "validation-error",
+      values: validation.values,
+      fieldErrors: {
+        file: normalized.error,
+      },
+      formErrors: [],
+      message: "Gambar belum dapat diproses.",
+    });
+  }
 
   const imageId = crypto.randomUUID();
+
   const path = createMediaStoragePath(
     context.parent.entityType,
     context.parent.id,
     imageId,
-    fileValidation.extension,
+    normalized.image.extension,
   );
+
   const orderedIds = moveMediaImageToOrder(
     [...context.images.map((image) => image.id), imageId],
     imageId,
     validation.data.displayOrder,
   );
-  if (!orderedIds)
+
+  if (!orderedIds) {
     return failure(
       previous,
       validation.values,
       "database-error",
       "Susunan media tidak valid.",
     );
+  }
 
   const upload = await uploadMediaObject(
     context.supabase,
     path,
-    fileValidation.file,
+    normalized.image.file,
   );
   if (upload.error) {
     logMediaStorageFailure(
@@ -352,17 +369,30 @@ export async function updateMedia(
       );
     }
   } else {
+    const normalized = await normalizeMediaImage(fileValidation.file);
+
+    if (!normalized.success) {
+      return nextState(previous, {
+        kind: "validation-error",
+        values: validation.values,
+        fieldErrors: {
+          file: normalized.error,
+        },
+        formErrors: [],
+        message: "Gambar pengganti belum dapat diproses.",
+      });
+    }
     const replacementId = crypto.randomUUID();
     const newPath = createMediaStoragePath(
       context.parent.entityType,
       context.parent.id,
       replacementId,
-      fileValidation.extension,
+      normalized.image.extension,
     );
     const upload = await uploadMediaObject(
       context.supabase,
       newPath,
-      fileValidation.file,
+      normalized.image.file,
     );
     if (upload.error) {
       logMediaStorageFailure(

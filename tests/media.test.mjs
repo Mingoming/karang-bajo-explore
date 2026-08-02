@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import sharp from "sharp";
+
+import {
+  MEDIA_MAX_OUTPUT_EDGE,
+  normalizeMediaImage,
+} from "../features/media/image-normalization.ts";
 
 import {
   canAddMediaImage,
@@ -384,4 +390,61 @@ test("successful media creation redirects back to the parent gallery", () => {
   assert.match(galleryPage, /success\?: string \| string\[\]/);
   assert.match(galleryPage, /query\.success === "created"/);
   assert.match(galleryPage, /Gambar berhasil ditambahkan ke galeri/);
+});
+
+test("media normalization converts uploads into bounded WebP images", async () => {
+  const input = await sharp({
+    create: {
+      width: 3000,
+      height: 2000,
+      channels: 3,
+      background: {
+        r: 90,
+        g: 120,
+        b: 80,
+      },
+    },
+  })
+    .jpeg({ quality: 95 })
+    .toBuffer();
+
+  const result = await normalizeMediaImage(
+    new File([input], "large-photo.jpg", {
+      type: "image/jpeg",
+    }),
+  );
+
+  assert.equal(result.success, true);
+  if (!result.success) return;
+
+  assert.equal(result.image.extension, "webp");
+  assert.equal(result.image.file.type, "image/webp");
+  assert.equal(result.image.file.name, "normalized.webp");
+
+  const output = Buffer.from(await result.image.file.arrayBuffer());
+  const metadata = await sharp(output).metadata();
+
+  assert.equal(metadata.format, "webp");
+  assert.ok((metadata.width ?? Infinity) <= MEDIA_MAX_OUTPUT_EDGE);
+  assert.ok((metadata.height ?? Infinity) <= MEDIA_MAX_OUTPUT_EDGE);
+  assert.equal(metadata.width, 1920);
+  assert.equal(metadata.height, 1280);
+});
+
+test("media normalization rejects malformed signature-only images", async () => {
+  const result = await normalizeMediaImage(
+    new File([Uint8Array.from([0xff, 0xd8, 0xff, 0x00])], "broken.jpg", {
+      type: "image/jpeg",
+    }),
+  );
+
+  assert.equal(result.success, false);
+});
+
+test("media actions normalize create and replacement uploads before storage", () => {
+  const actions = readFileSync("features/media/actions.ts", "utf8");
+
+  assert.equal(actions.match(/normalizeMediaImage\(/g)?.length, 2);
+  assert.equal(actions.match(/normalized\.image\.extension/g)?.length, 2);
+  assert.equal(actions.match(/normalized\.image\.file/g)?.length, 2);
 });

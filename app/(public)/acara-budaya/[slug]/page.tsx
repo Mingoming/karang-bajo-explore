@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { notFound } from "next/navigation";
 import { PublicDetailPage } from "@/components/public/public-detail-page";
 import {
@@ -8,8 +9,22 @@ import {
 } from "@/features/public-domains/data";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const item = await getPublishedCulturalEventMetadata((await params).slug);
-  return item ?? { title: "Acara tidak ditemukan" };
+  const { slug } = await params;
+  const item = await getPublishedCulturalEventMetadata(slug);
+
+  if (!item) {
+    return buildPublicMetadata({
+      title: "Acara budaya tidak ditemukan",
+      description:
+        "Acara budaya yang diminta tidak tersedia atau belum diterbitkan.",
+      noIndex: true,
+    });
+  }
+
+  return buildPublicMetadata({
+    title: item.title,
+    description: item.description,
+  });
 }
 export default async function Page({ params }: Props) {
   const result = await getPublishedCulturalEvent((await params).slug);

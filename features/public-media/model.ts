@@ -95,13 +95,13 @@ export function isTrustedPublicMediaReference(reference: PublicMediaReference) {
   if (!reference.storagePath.startsWith(expectedPrefix)) return false;
 
   const filename = reference.storagePath.slice(expectedPrefix.length);
-  const [imageId, extension, extra] = filename.split(".");
+  const [storageObjectId, extension, extra] = filename.split(".");
   return (
     !reference.storagePath.includes("\\") &&
     !reference.storagePath.includes("%") &&
     !reference.storagePath.includes("..") &&
     extra === undefined &&
-    imageId === reference.id &&
+    UUID_PATTERN.test(storageObjectId ?? "") &&
     SUPPORTED_IMAGE_EXTENSION_PATTERN.test(extension ?? "")
   );
 }

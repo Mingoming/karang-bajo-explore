@@ -4,7 +4,7 @@ type DestinationImageProps = Readonly<{
   src: string | null;
   alt: string;
   sizes: string;
-  priority?: boolean;
+  highPriority?: boolean;
   className?: string;
 }>;
 
@@ -12,7 +12,7 @@ export function DestinationImage({
   src,
   alt,
   sizes,
-  priority = false,
+  highPriority = false,
   className = "",
 }: DestinationImageProps) {
   return (
@@ -25,7 +25,8 @@ export function DestinationImage({
           alt={alt}
           fill
           sizes={sizes}
-          priority={priority}
+          loading={highPriority ? "eager" : "lazy"}
+          fetchPriority={highPriority ? "high" : "auto"}
           unoptimized
           className="object-cover"
         />

@@ -4,8 +4,16 @@ import { DestinationImage } from "./destination-image";
 
 export function DestinationGallery({
   images,
-}: Readonly<{ images: PublicDestinationImage[] }>) {
-  const visibleImages = images.filter((image) => image.signedUrl !== null);
+  primaryImageId,
+}: Readonly<{
+  images: PublicDestinationImage[];
+  primaryImageId?: string | null;
+}>) {
+  const visibleImages = images.filter(
+    (image) =>
+      image.signedUrl !== null && image.id !== primaryImageId,
+  );
+
   if (visibleImages.length === 0) return null;
 
   return (

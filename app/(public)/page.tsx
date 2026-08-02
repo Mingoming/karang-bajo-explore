@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import Link from "next/link";
 
 import { DestinationCard } from "@/components/public/destination-card";
@@ -18,10 +18,11 @@ import {
 } from "@/features/public-domains/data";
 import type { PublicContentBase } from "@/features/public-content/model";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Beranda",
-  description: "Jelajahi informasi pariwisata terbit Desa Karang Bajo.",
-};
+  description:
+    "Jelajahi destinasi, budaya, homestay, UMKM, paket wisata, dan acara di Desa Karang Bajo.",
+});
 
 function HomeCollection({
   id,
@@ -201,9 +202,16 @@ export default async function HomePage() {
         <PublicContainer>
           <SectionHeading
             eyebrow="Lihat lokasi"
-            title="Peta wisata belum tersedia"
-            description="Koordinat dan tautan lokasi tersimpan dapat dilihat pada detail. Peta interaktif tetap ditunda."
+            title="Jelajahi peta wisata Karang Bajo"
+            description="Temukan lokasi destinasi, rumah adat, homestay, dan UMKM yang telah diterbitkan."
           />
+
+          <Link
+            href="/peta-wisata"
+            className="mt-8 inline-flex min-h-11 items-center rounded-full bg-emerald-900 px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-emerald-700"
+          >
+            Buka peta wisata
+          </Link>
         </PublicContainer>
       </section>
       <section className="py-16 sm:py-24">

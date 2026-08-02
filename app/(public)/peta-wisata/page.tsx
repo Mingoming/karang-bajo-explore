@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
+import { buildPublicMetadata } from "@/features/seo/public-metadata";
 
 import { EmptyContentState } from "@/components/public/empty-content-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { getPublishedPublicMapData } from "@/features/public-map/data";
 import { PublicMap } from "@/features/public-map/public-map";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Peta Wisata",
   description:
-    "Lihat lokasi destinasi, rumah adat, homestay, dan UMKM yang telah diterbitkan di Desa Karang Bajo.",
-};
+    "Lihat persebaran destinasi, rumah adat, homestay, dan UMKM yang telah diterbitkan di Desa Karang Bajo.",
+});
 
 export default async function TourismMapPage() {
   const result = await getPublishedPublicMapData();

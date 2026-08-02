@@ -3,10 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { PUBLIC_NAVIGATION } from "../config/public-navigation.ts";
-
 const read = (path) => readFileSync(path, "utf8");
 const page = read("app/(public)/page.tsx");
 const layout = read("app/(public)/layout.tsx");
+const rootLayout = read("app/layout.tsx");
+const globalStyles = read("app/globals.css");
 const header = read("components/public/public-header.tsx");
 const mobileNavigation = read("components/public/public-mobile-navigation.tsx");
 const footer = read("components/public/public-footer.tsx");
@@ -83,4 +84,17 @@ test("mobile navigation exposes explicit controls and closes on navigation", () 
 
 test("public foundation presentation has no migration dependency", () => {
   assert.doesNotMatch(publicSources, /supabase[\\/]migrations|\.sql["']/);
+});
+
+test("public shell reserves viewport space and footer copyright meets contrast", () => {
+  assert.match(layout, /flex min-h-screen flex-col/);
+  assert.match(layout, /className="min-h-screen flex-1"/);
+
+  assert.match(footer, /pt-6 text-sm text-slate-400/);
+  assert.doesNotMatch(footer, /pt-6 text-sm text-slate-500/);
+});
+
+test("root layout declares the configured smooth scroll behavior", () => {
+  assert.match(globalStyles, /scroll-behavior:\s*smooth/);
+  assert.match(rootLayout, /data-scroll-behavior="smooth"/);
 });
