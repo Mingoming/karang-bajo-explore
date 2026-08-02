@@ -19,7 +19,6 @@
 ## Blockers Aktif
 
 - ⚠ Scope final Version 1.0 belum disetujui secara eksplisit.
-- ⚠ Public Village Profile belum diimplementasikan.
 - ⚠ Kontak pusat dan WhatsApp belum dikonfigurasi.
 - ⚠ Production owner belum ditetapkan.
 - ⚠ Supabase production project belum dibuat.
@@ -301,7 +300,7 @@
 
 ## Content Management
 
-- ☑ Create, view, and update singleton Village Profile (tanpa deletion, media, atau workflow publikasi)
+- ☑ Create, view, update, dan lifecycle singleton Village Profile (tanpa deletion atau media)
 - ☑ Destination admin list dan pencarian nama berbasis server
 - ☑ Destination create sebagai draft
 - ☑ Destination edit dan lifecycle sesuai applied migration

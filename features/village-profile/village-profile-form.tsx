@@ -6,11 +6,17 @@ import { saveVillageProfile } from "./actions";
 import type {
   VillageProfileActionState,
   VillageProfileEditableField,
+  VillageProfileStatus,
+} from "./model";
+import {
+  getAllowedVillageProfileStatuses,
+  getVillageProfileStatusLabel,
 } from "./model";
 
 type VillageProfileFormProps = {
   initialState: VillageProfileActionState;
   profileExists: boolean;
+  currentStatus: VillageProfileStatus | null;
 };
 
 type FieldMessageProps = {
@@ -42,6 +48,7 @@ function FieldMessage({ error, helper, id }: FieldMessageProps) {
 export function VillageProfileForm({
   initialState,
   profileExists,
+  currentStatus,
 }: VillageProfileFormProps) {
   const [state, formAction, isPending] = useActionState(
     saveVillageProfile,
@@ -78,6 +85,7 @@ export function VillageProfileForm({
   const inputClasses =
     "mt-2 block min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-950 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-700 focus:ring-3 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100";
   const labelClasses = "block text-sm font-semibold text-slate-800";
+  const allowedStatuses = getAllowedVillageProfileStatuses(currentStatus);
 
   return (
     <form
@@ -179,7 +187,7 @@ export function VillageProfileForm({
           <FieldMessage
             id="description-message"
             error={state.fieldErrors.description}
-            helper="Deskripsi wajib tersedia sebelum profil dapat diterbitkan melalui alur publikasi yang terpisah."
+            helper="Deskripsi wajib tersedia sebelum profil dapat diterbitkan."
           />
         </div>
       </fieldset>
@@ -277,11 +285,35 @@ export function VillageProfileForm({
       </fieldset>
 
       <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm leading-6 text-slate-600">
-          {profileExists
-            ? "Menyimpan akan memperbarui profil desa yang ada."
-            : "Belum ada profil desa. Penyimpanan pertama akan membuat satu profil."}
-        </p>
+        <div className="max-w-sm">
+          <label htmlFor="status" className={labelClasses}>
+            Status publikasi
+          </label>
+          <select
+            id="status"
+            name="status"
+            defaultValue={state.values.status}
+            disabled={isPending}
+            aria-invalid={Boolean(state.fieldErrors.status)}
+            aria-describedby={describedBy("status", true)}
+            className={inputClasses}
+          >
+            {allowedStatuses.map((status) => (
+              <option key={status} value={status}>
+                {getVillageProfileStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+          <FieldMessage
+            id="status-message"
+            error={state.fieldErrors.status}
+            helper={
+              profileExists
+                ? "Profil yang diarsipkan harus dipulihkan ke draf sebelum dapat diterbitkan kembali."
+                : "Profil baru selalu dimulai sebagai draf."
+            }
+          />
+        </div>
         <button
           type="submit"
           disabled={isPending}

@@ -15,14 +15,14 @@ export default async function VillageProfileAdminPage() {
       </h1>
       <p className="mt-3 max-w-3xl leading-7 text-slate-600">
         Kelola satu profil resmi Desa Karang Bajo. Modul ini menyimpan informasi
-        teks dan lokasi saja; publikasi serta media dikelola pada tahap
-        terpisah.
+        teks, lokasi, dan status publikasi; media tidak dikelola pada modul ini.
       </p>
 
       {result.success ? (
         <VillageProfileForm
           initialState={createVillageProfileInitialState(result.profile)}
           profileExists={result.profile !== null}
+          currentStatus={result.profile?.status ?? null}
         />
       ) : (
         <div

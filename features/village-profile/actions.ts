@@ -51,7 +51,7 @@ export async function saveVillageProfile(
 
   const existingProfile = currentProfile.profile;
   const validation = validateVillageProfileFormData(formData, {
-    currentStatus: existingProfile?.status,
+    currentStatus: existingProfile?.status ?? null,
   });
 
   if (!validation.success) {
@@ -102,6 +102,18 @@ export async function saveVillageProfile(
       operation: mutationMode,
       code: mutationFailureCode,
     });
+    if (mutationFailureCode === "P0001") {
+      return {
+        kind: "validation-error",
+        values: validation.values,
+        fieldErrors: {
+          status: "Perubahan status publikasi tidak diizinkan.",
+        },
+        formErrors: [],
+        message: "Status profil desa belum berubah.",
+        revision: previousState.revision + 1,
+      };
+    }
     return {
       kind: "database-error",
       values: validation.values,
@@ -113,6 +125,8 @@ export async function saveVillageProfile(
   }
 
   revalidatePath(VILLAGE_PROFILE_ADMIN_PATH);
+  revalidatePath("/profil-desa");
+  revalidatePath("/");
 
   return {
     kind: "success",

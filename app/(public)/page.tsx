@@ -17,6 +17,8 @@ import {
   getPublishedUmkms,
 } from "@/features/public-domains/data";
 import type { PublicContentBase } from "@/features/public-content/model";
+import { getPublishedVillageProfile } from "@/features/public-village-profile/data";
+import { getPublicVillageProfileExcerpt } from "@/features/public-village-profile/model";
 
 export const metadata = buildPublicMetadata({
   title: "Beranda",
@@ -90,8 +92,9 @@ function requirePublicItems<T extends PublicContentBase>(
 }
 
 export default async function HomePage() {
-  const [destinations, packages, homestays, umkms, houses, events] =
+  const [profile, destinations, packages, homestays, umkms, houses, events] =
     await Promise.all([
+      getPublishedVillageProfile(),
       getPublishedDestinations(3),
       getPublishedPackages(3),
       getPublishedHomestays(3),
@@ -99,6 +102,9 @@ export default async function HomePage() {
       getPublishedTraditionalHouses(3),
       getPublishedCulturalEvents(3),
     ]);
+  if (profile.kind === "error") {
+    throw new Error("PUBLIC_HOMEPAGE_VILLAGE_PROFILE_UNAVAILABLE");
+  }
   if (destinations.kind === "error") {
     throw new Error("PUBLIC_HOMEPAGE_DESTINATIONS_UNAVAILABLE");
   }
@@ -114,11 +120,27 @@ export default async function HomePage() {
       <PublicHero />
       <section id="profil-desa" className="scroll-mt-24 py-16 sm:py-20">
         <PublicContainer>
-          <SectionHeading
-            eyebrow="Mengenal desa"
-            title="Selamat datang di Desa Karang Bajo"
-            description="Informasi publik hanya menampilkan konten yang telah diterbitkan dan diverifikasi."
-          />
+          {profile.kind === "ready" ? (
+            <>
+              <SectionHeading
+                eyebrow="Mengenal desa"
+                title={profile.profile.name}
+                description={getPublicVillageProfileExcerpt(profile.profile)}
+              />
+              <Link
+                href="/profil-desa"
+                className="mt-8 inline-flex min-h-11 items-center rounded-full bg-emerald-900 px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-emerald-700"
+              >
+                Baca profil desa
+              </Link>
+            </>
+          ) : (
+            <SectionHeading
+              eyebrow="Mengenal desa"
+              title="Profil desa belum tersedia"
+              description="Profil resmi desa belum diterbitkan."
+            />
+          )}
         </PublicContainer>
       </section>
       <section
