@@ -88,7 +88,8 @@ npm run dev
 Aplikasi dapat dibuka melalui:
 http://localhost:3000
 
-##Quality Gate
+## Quality Gate
+
 Jalankan seluruh pemeriksaan release:
 
 ```bash
@@ -117,7 +118,8 @@ npm run build
 npm run start
 ```
 
-##Database dan Storage
+## Database dan Storage
+
 Seluruh migration yang dibutuhkan aplikasi berada di:
 
 ```
@@ -134,7 +136,8 @@ tourism-media
 
 Media publik diberikan melalui signed URL yang dibuat oleh server. URL media sementara tidak boleh digunakan sebagai permanent Open Graph image.
 
-##Dokumentasi
+## Dokumentasi
+
 Dokumentasi produk dan teknis berada di direktori:
 
 ```
@@ -153,14 +156,16 @@ Dokumen yang menjadi rujukan utama:
 - TODO.md
 - MVP_RELEASE_SCOPE.md
 
-##Aturan Konten
+## Aturan Konten
+
 Informasi budaya, sejarah, tradisi, kontak, lokasi, dan harga tidak boleh dibuat atau ditebak.
 
 Konten hanya boleh diterbitkan setelah diverifikasi oleh pihak desa, pengelola, atau narasumber yang berwenang.
 
 Placeholder dan informasi yang belum diverifikasi tidak boleh tampil pada halaman publik.
 
-##Logo Sementara
+## Logo Sementara
+
 Aplikasi masih menggunakan logo KKN Desa Karang Bajo.
 
 Logo tersebut harus diganti dengan identitas resmi atau identitas netral yang telah disetujui sebelum production release.
