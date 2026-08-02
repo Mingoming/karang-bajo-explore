@@ -2,10 +2,10 @@
 
 ## Karang Bajo Explore Version 1.0
 
-**Release target:** Version 1.0 MVP  
-**Current stage:** Release preparation  
-**Environment:** Development / pre-production  
-**Production deployment:** Not completed
+- **Release target:** Version 1.0 MVP
+- **Current stage:** Release preparation
+- **Environment:** Development / pre-production
+- **Production deployment:** Not completed
 
 ---
 
