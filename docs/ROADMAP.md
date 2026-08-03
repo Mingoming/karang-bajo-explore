@@ -214,7 +214,7 @@ Record the approved Version 1 product, access, data, and repository boundaries b
 * Approved `rules.md`
 * Approved `roadmap.md`
 * Single-administrator access model
-* Indonesian-only decision
+* Indonesian-default, single-language database baseline
 * Final package feature boundary
 * Fixed destination categories
 * Archive-and-restore lifecycle
@@ -225,7 +225,7 @@ Record the approved Version 1 product, access, data, and repository boundaries b
 
 * [x] One Supabase Auth administrator may create, edit, publish, archive, restore, upload media, and manage settings.
 * [x] Editor, role, user, invitation, and approval-workflow features are excluded.
-* [x] Version 1 is Indonesian-only.
+* [x] Indonesian is the default locale; the original database-content baseline is single-language.
 * [x] New content starts as draft and permanent deletion is excluded.
 * [x] Package participant limits and structured stop timing/activity are excluded.
 * [x] Traditional houses remain separate and may appear on the map directly.
@@ -1998,17 +1998,45 @@ A risk must be escalated when:
 
 ---
 
-# 25. Future Roadmap
+# 25. Bilingual and Future Roadmap
 
-Future phases are not part of Version 1.
+The bilingual public-shell foundation below is approved product scope. Implementation begins only after the locale-mechanism spike validates the selected Next.js 16 rendering and caching behavior. Other future phases are not part of Version 1 unless separately approved.
 
-They may begin only after:
+Those other future phases may begin only after:
 
 * Version 1 is stable
 * Village ownership is active
 * Actual user needs are documented
 * Operational responsibility is assigned
 * Product and architecture documents are updated
+
+## Bilingual Rollout — Phase 1 Public-Shell Foundation
+
+Approved scope:
+
+* Preserve all unprefixed Indonesian public routes.
+* Add `/en` as the only English route.
+* Add typed `id` and `en` dictionaries and a semantic route manifest.
+* Localize the public header, mobile navigation, footer, homepage static UI, contact CTA UI, and external-tourism-link UI.
+* Render the correct server document language for `/` and `/en`.
+* Show a language switcher only for the real `/` and `/en` equivalent pair.
+* Emit localized basic metadata, including `en_US` Open Graph locale, without production-origin canonical or alternate links.
+* Exclude database-managed Indonesian descriptive content from `/en` and provide no automatic fallback or translation.
+* Reuse only approved language-neutral WhatsApp, Google Maps, and Tripadvisor values.
+
+Explicit exclusions:
+
+* Database migration or translation schema
+* English domain list and detail routes
+* Locale-prefixed admin or authentication
+* Canonical, `hreflang`, alternate, or sitemap changes
+* General Cultural Articles, Bayan Customary Institution Articles, or standalone gallery
+
+## Later Bilingual Phases
+
+The next proposed step is a separately reviewed Village Profile translation pilot. It must define the translation schema, RLS, public views, administrator workflow, publication approval, and missing-translation behavior before implementation. Additional English domain routes follow only after their own content and route approval. Canonical URLs, future `hreflang="en"`, alternates, and locale-aware sitemap work wait for an approved production origin.
+
+---
 
 ## Future Phase A — Visitor Analytics
 
@@ -2209,7 +2237,7 @@ The project is complete only when all of the following are true.
 * [x] `rules.md` approved for the Version 1 baseline
 * [x] `roadmap.md` approved for the Version 1 baseline
 * [x] Single-administrator access approved
-* [x] Indonesian-only Version 1 approved
+* [x] Indonesian-default baseline and bilingual public-shell Phase 1 boundary approved
 * [x] Package boundary approved
 * [x] Fixed categories, slugs, prices, contacts, maps, and lifecycle approved
 * [ ] Content owners assigned

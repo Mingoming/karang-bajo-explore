@@ -46,7 +46,7 @@ Source documents:
 
 Version 1 uses one anonymous public access state and one authenticated administrator access state. The administrator has full approved content-management capability. Editor roles, role management, user management, invitations, and approval workflows are excluded.
 
-The product is Indonesian-only. New records start as draft; the administrator may create, edit, publish, archive, restore, upload media, and manage approved settings. Permanent deletion is unavailable.
+Indonesian remains the default public locale, all existing Indonesian public URLs remain unchanged, and the administration and authentication interfaces remain Indonesian-only. The approved bilingual rollout Phase 1 adds only the English public-shell homepage at `/en`; database-managed content remains single-language and must not be shown through an Indonesian fallback on English pages. New records start as draft; the administrator may create, edit, publish, archive, restore, upload media, and manage approved settings. Permanent deletion is unavailable.
 
 Destination categories are fixed to `Alam`, `Budaya`, and `Religi` and are not dashboard-managed. Slugs are generated automatically, hidden from normal forms, and frozen after first publication.
 
@@ -55,6 +55,23 @@ All price fields are numeric: `0` means free, `null` means unavailable, and a po
 One central WhatsApp number is the primary visitor inquiry call-to-action. Per-entity contacts are optional and require publication consent.
 
 Destinations, traditional houses, homestays, and visitable UMKM may appear on the public map. Records sharing one physical location use one combined marker. In particular, UMKM Tenun shares the Kampung Adat marker and must not create a duplicate overlapping marker.
+
+### Bilingual Public-Shell Foundation — Phase 1
+
+Phase 1 of the bilingual rollout is limited to static public-interface localization:
+
+1. `/` remains the Indonesian homepage and `/en` is its only English equivalent.
+2. The English homepage uses approved static English copy for the public shell, homepage interface, contact CTA, and recognized external-tourism links.
+3. English Phase 1 must not render Indonesian database-managed names, summaries, descriptions, visitor information, facilities, itineraries, cultural explanations, contact labels, or contact descriptions.
+4. There is no automatic Indonesian-content fallback, browser-language redirect, or machine translation.
+5. Unsupported English list, detail, admin, and authentication routes return not found; they must not be invented from Indonesian paths or slugs.
+6. The language switcher uses real links and appears only when an actual equivalent exists. In Phase 1, this applies only to `/` and `/en`.
+7. Approved language-neutral values on `/en` are limited to the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Their visible labels come from the English static dictionary.
+8. The server response must declare the correct document language: `id` for `/` and `en` for `/en`.
+9. English Open Graph metadata uses `en_US`. Canonical URLs, `hreflang="en"`, alternates, and sitemap changes remain deferred until an approved production origin exists.
+10. Phase 1 introduces no database migration, translation entity, or database-content translation workflow.
+
+The product must not claim that all tourism information is bilingual. Database translation will be considered separately, beginning with a Village Profile pilot after its schema, authorization, editorial, and fallback rules are reviewed.
 
 ### Version 1 Boundary — Package Participant Limits
 
@@ -446,7 +463,7 @@ The system helps visitors discover, understand, and contact tourism providers. I
 | Social commenting          | Out of scope | Requires moderation and identity management                                  |
 | Multi-village management   | Out of scope | Product serves Desa Karang Bajo only                                         |
 | Automatic event recurrence | Out of scope | Each occurrence is managed separately                                        |
-| Multilingual publishing    | Out of scope | Version 1 is Indonesian-only                                                  |
+| Database-content translation | Deferred   | Phase 1 localizes only the static public shell; a Village Profile pilot requires separate review |
 | Package participant limits | Out of scope | No approved product or data model                                            |
 | Structured stop timing     | Out of scope | No approved package-stop model                                               |
 
@@ -2441,7 +2458,7 @@ Future features require validated need, responsible ownership, and revised produ
 | Favorites                  | Requires persistent visitor identity or tracking                |
 | AI chatbot                 | Requires controlled knowledge and maintenance processes         |
 | Native mobile app          | Responsive web must be evaluated first                          |
-| Multilingual content       | Version 1 is Indonesian-only; translation requires a future scope change |
+| Database-managed English content | Phase 1 has no database translation; a separately reviewed Village Profile pilot is the next proposed step |
 | Multi-village support      | Current product serves one village                              |
 | Event recurrence           | Individual event entries are sufficient for Version 1           |
 | Social-media integration   | Requires platform ownership and content rules                   |
@@ -2608,7 +2625,7 @@ Version 1 is ready for production only when:
 | Invitation Flows           |  [ ]  |     [ ]    |      [x]     |
 | Approval Workflows         |  [ ]  |     [ ]    |      [x]     |
 | Permanent Deletion         |  [ ]  |     [ ]    |      [x]     |
-| Multilingual Publishing    |  [ ]  |     [ ]    |      [x]     |
+| Database Content Translation | [ ]  |     [ ]    |      [x]     |
 | Automatic Event Recurrence |  [ ]  |     [ ]    |      [x]     |
 | Package Participant Limits |  [ ]  |     [ ]    |      [x]     |
 | Structured Stop Timing     |  [ ]  |     [ ]    |      [x]     |

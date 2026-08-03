@@ -2620,13 +2620,13 @@ A revision system may be added if administrators require version comparison or r
 
 ## 24.10 Translation Tables
 
-No multilingual translation entities are included in Version 1.
+The current database schema is single-language. No multilingual translation entity, locale column, translated field, translated public view, or translation-specific policy exists.
 
 Reason:
 
-Version 1 managed and public content is Indonesian-only.
+The approved bilingual public-shell Phase 1 localizes static application copy only. It does not store or publish English database-managed content and therefore requires no schema change.
 
-Translation columns or tables require a future approved scope and schema revision.
+Database translation is a future, separately reviewed capability beginning with a proposed Village Profile pilot. Any translation columns or tables require an approved logical model, migration, RLS and public-view review, admin workflow, and publication rules before implementation. This document does not imply that those structures currently exist.
 
 ---
 
@@ -2776,7 +2776,7 @@ When translating this logical model into Supabase PostgreSQL migrations:
 17. Define a documented synchronization rule for primary images and thumbnail paths.
 18. Preserve storage bucket and path together in every media reference.
 19. Test restore behavior before production handover.
-20. Do not add multilingual fields in Version 1.
+20. Do not add translation fields, tables, views, or policies as part of bilingual public-shell Phase 1; future database translation requires a separately approved schema revision.
 21. Store facilities and included facilities as `text[]` with an empty-array default.
 22. Enforce the approved Indonesian-rupiah price semantics and optional `price_note` fields.
 23. Do not add booking, payment, rating, review, or PostGIS entities without an approved architecture and PRD change.
