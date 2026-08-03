@@ -20,6 +20,7 @@ import type { PublicContentBase } from "@/features/public-content/model";
 import { getPublishedVillageProfile } from "@/features/public-village-profile/data";
 import { getPublicVillageProfileExcerpt } from "@/features/public-village-profile/model";
 import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
+import { ExternalTourismLinks } from "@/features/official-contact/external-tourism-links";
 
 export const metadata = buildPublicMetadata({
   title: "Beranda",
@@ -237,6 +238,7 @@ export default async function HomePage() {
           </Link>
         </PublicContainer>
       </section>
+      <ExternalTourismLinks />
       <section className="py-16 sm:py-24">
         <PublicContainer>
           <div className="rounded-3xl bg-emerald-900 px-6 py-12 text-center text-white">
@@ -247,7 +249,10 @@ export default async function HomePage() {
               Mulai mengenal Karang Bajo dari informasi yang terverifikasi
             </h2>
             <div className="mt-8">
-              <OfficialContactCta className="bg-white text-emerald-950 focus-visible:outline-amber-300" />
+              <OfficialContactCta
+                fallbackOnError
+                className="bg-white text-emerald-950 focus-visible:outline-amber-300"
+              />
             </div>
           </div>
         </PublicContainer>

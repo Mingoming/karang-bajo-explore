@@ -5,18 +5,20 @@ import { getPublicOfficialContacts } from "./data";
 type Props = Readonly<{
   className?: string;
   compact?: boolean;
+  fallbackOnError?: boolean;
 }>;
 
 export async function OfficialContactCta({
   className = "",
   compact = false,
+  fallbackOnError = false,
 }: Props) {
   const result = await getPublicOfficialContacts();
-  if (result.kind === "error") {
+  if (result.kind === "error" && !fallbackOnError) {
     throw new Error("PUBLIC_OFFICIAL_CONTACT_UNAVAILABLE");
   }
   const classes = `inline-flex min-h-11 items-center justify-center rounded-full px-5 py-2.5 font-bold focus-visible:outline-3 focus-visible:outline-offset-3 ${className}`;
-  if (!result.primaryWhatsapp) {
+  if (result.kind === "error" || !result.primaryWhatsapp) {
     return (
       <Link href="/kontak" className={classes}>
         Lihat kontak resmi

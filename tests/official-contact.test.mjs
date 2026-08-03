@@ -13,9 +13,24 @@ import {
   mapPrimaryWhatsapp,
   mapPublicOfficialContact,
   normalizeHttpUrl,
+  selectExternalTourismLinks,
+  selectGoogleMapsTourismLink,
+  selectPublicFooterContactAction,
+  selectTripadvisorLink,
   validateContactInput,
   validatePrimaryWhatsappInput,
 } from "../features/official-contact/model.ts";
+
+const publicUrlContact = (overrides = {}) => ({
+  id: "10000000-0000-4000-8000-000000000010",
+  label: "Tripadvisor",
+  type: "url",
+  value: "https://example.test/tripadvisor",
+  description: null,
+  href: "https://example.test/tripadvisor",
+  external: true,
+  ...overrides,
+});
 
 const validContact = (overrides = {}) => ({
   label: "Informasi Pariwisata",
@@ -129,6 +144,141 @@ test("public result classification distinguishes unconfigured from invalid store
     ]).kind,
     "error",
   );
+});
+
+test("external tourism selectors match only canonical URL contact labels", () => {
+  const contacts = [
+    publicUrlContact({
+      label: "  TRIPADVISOR  ",
+      href: "https://example.test/tripadvisor ",
+    }),
+    publicUrlContact({
+      id: "10000000-0000-4000-8000-000000000011",
+      label: " google maps wisata ",
+      href: "https://example.test/tourism-map",
+    }),
+    publicUrlContact({
+      id: "10000000-0000-4000-8000-000000000012",
+      label: "Situs Pariwisata Lain",
+      href: "https://example.test/other",
+    }),
+  ];
+
+  assert.deepEqual(selectTripadvisorLink(contacts), {
+    platform: "tripadvisor",
+    href: "https://example.test/tripadvisor",
+  });
+  assert.deepEqual(selectGoogleMapsTourismLink(contacts), {
+    platform: "google-maps",
+    href: "https://example.test/tourism-map",
+  });
+  assert.deepEqual(selectExternalTourismLinks(contacts), [
+    {
+      platform: "google-maps",
+      href: "https://example.test/tourism-map",
+    },
+    {
+      platform: "tripadvisor",
+      href: "https://example.test/tripadvisor",
+    },
+  ]);
+});
+
+test("external tourism selectors reject wrong types, unsafe links, and unrelated contacts", () => {
+  const wrongType = publicUrlContact({ type: "phone" });
+  const unsafe = publicUrlContact({ href: "javascript:alert(1)" });
+  const unrelated = publicUrlContact({ label: "Situs Desa" });
+
+  assert.equal(selectTripadvisorLink([wrongType]), null);
+  assert.equal(selectTripadvisorLink([unsafe]), null);
+  assert.equal(selectTripadvisorLink([unrelated]), null);
+  assert.deepEqual(
+    selectExternalTourismLinks([wrongType, unsafe, unrelated]),
+    [],
+  );
+});
+
+test("external tourism selection represents one-link and no-link rendering states", () => {
+  const tripadvisor = publicUrlContact();
+  const googleMaps = publicUrlContact({
+    label: "Google Maps Wisata",
+    href: "https://example.test/tourism-map",
+  });
+
+  assert.equal(selectExternalTourismLinks([tripadvisor]).length, 1);
+  assert.equal(selectExternalTourismLinks([googleMaps]).length, 1);
+  assert.equal(selectExternalTourismLinks([]).length, 0);
+});
+
+test("public footer preserves WhatsApp and safely falls back for absent or failed contact data", () => {
+  const primaryWhatsapp = mapPrimaryWhatsapp("6281234567890");
+  assert.ok(primaryWhatsapp);
+  assert.deepEqual(
+    selectPublicFooterContactAction({
+      kind: "ready",
+      primaryWhatsapp,
+      contacts: [],
+    }),
+    { kind: "whatsapp", href: "https://wa.me/6281234567890" },
+  );
+  assert.deepEqual(
+    selectPublicFooterContactAction({
+      kind: "ready",
+      primaryWhatsapp: null,
+      contacts: [],
+    }),
+    { kind: "contact-page", href: "/kontak" },
+  );
+  assert.deepEqual(selectPublicFooterContactAction({ kind: "error" }), {
+    kind: "contact-page",
+    href: "/kontak",
+  });
+
+  const footer = readFileSync("components/public/public-footer.tsx", "utf8");
+  assert.match(footer, /selectPublicFooterContactAction\(contact\)/);
+  assert.match(footer, /contactAction\.kind === "whatsapp"/);
+  assert.match(footer, /href="\/kontak"/);
+  assert.match(footer, /target="_blank"/);
+  assert.match(footer, /rel="noopener noreferrer"/);
+  assert.doesNotMatch(
+    footer,
+    /PUBLIC_OFFICIAL_CONTACT_UNAVAILABLE|throw new Error/,
+  );
+});
+
+test("homepage external tourism section is optional, secure, and follows the internal map", () => {
+  const section = readFileSync(
+    "features/official-contact/external-tourism-links.tsx",
+    "utf8",
+  );
+  const homepage = readFileSync("app/(public)/page.tsx", "utf8");
+
+  assert.match(section, /if \(links\.length === 0\) return null/);
+  assert.match(section, /if \(result\.kind === "error"\) return null/);
+  assert.match(section, /target="_blank"/);
+  assert.match(section, /rel="noopener noreferrer"/);
+  assert.match(section, /aria-label={content\.accessibleLabel}/);
+  assert.match(section, /focus-visible:outline/);
+  assert.doesNotMatch(section, /from "next\/link"/);
+  assert.doesNotMatch(
+    section,
+    /Apa Kata Pengunjung|Ulasan Pengunjung|Testimoni|rating|review count|ranking|★/i,
+  );
+  assert.doesNotMatch(
+    section,
+    /tripadvisor\.(?:com|co\.id)|google\.(?:com|co\.id)\/maps|maps\.app\.goo\.gl/i,
+  );
+
+  const mapPosition = homepage.indexOf('id="peta-wisata"');
+  const externalPosition = homepage.indexOf("<ExternalTourismLinks />");
+  const contactPosition = homepage.indexOf("<OfficialContactCta");
+  assert.ok(mapPosition >= 0);
+  assert.ok(externalPosition > mapPosition);
+  assert.ok(contactPosition > externalPosition);
+  assert.match(homepage, /href="\/peta-wisata"/);
+  assert.match(homepage, /Buka peta wisata/);
+  assert.match(homepage, /<OfficialContactCta[\s\S]*?fallbackOnError/);
+  assert.doesNotMatch(section, /supabase[\\/]migrations|\.sql["']/);
 });
 
 test("contact validation normalizes a typed payload and rejects unknown fields", () => {
@@ -245,10 +395,12 @@ test("all approved visitor inquiry surfaces use the centralized CTA contract", (
     "utf8",
   );
   assert.match(cta, /result\.primaryWhatsapp/);
+  assert.match(cta, /result\.kind === "error" && !fallbackOnError/);
+  assert.match(cta, /result\.kind === "error" \|\| !result\.primaryWhatsapp/);
   assert.match(cta, /href="\/kontak"/);
   assert.match(cta, /Hubungi WhatsApp Desa/);
 
-  for (const page of [
+  const visitorPages = [
     "app/(public)/page.tsx",
     "app/(public)/destinasi/[slug]/page.tsx",
     "app/(public)/paket-wisata/[slug]/page.tsx",
@@ -256,7 +408,11 @@ test("all approved visitor inquiry surfaces use the centralized CTA contract", (
     "app/(public)/umkm/[slug]/page.tsx",
     "app/(public)/rumah-adat/[slug]/page.tsx",
     "app/(public)/acara-budaya/[slug]/page.tsx",
-  ]) {
+  ];
+  for (const page of visitorPages) {
     assert.match(readFileSync(page, "utf8"), /<OfficialContactCta/);
+  }
+  for (const detailPage of visitorPages.slice(1)) {
+    assert.doesNotMatch(readFileSync(detailPage, "utf8"), /fallbackOnError/);
   }
 });

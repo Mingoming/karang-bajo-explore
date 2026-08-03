@@ -60,6 +60,13 @@ export type PublicOfficialContact = {
   external: boolean;
 };
 
+export type ExternalTourismPlatform = "google-maps" | "tripadvisor";
+
+export type ExternalTourismLink = {
+  platform: ExternalTourismPlatform;
+  href: string;
+};
+
 export type PrimaryWhatsapp = {
   number: string;
   displayValue: string;
@@ -73,6 +80,10 @@ export type PublicOfficialContactResult =
       contacts: PublicOfficialContact[];
     }
   | { kind: "error" };
+
+export type PublicFooterContactAction =
+  | { kind: "whatsapp"; href: string }
+  | { kind: "contact-page"; href: "/kontak" };
 
 const CONTACT_FIELDS = [
   "label",
@@ -284,6 +295,58 @@ export function classifyPublicOfficialContacts(
     contacts.push(contact);
   }
   return { kind: "ready", primaryWhatsapp, contacts };
+}
+
+function selectExternalTourismLink(
+  contacts: readonly PublicOfficialContact[],
+  label: string,
+  platform: ExternalTourismPlatform,
+): ExternalTourismLink | null {
+  const normalizedLabel = label.trim().toLowerCase();
+  const contact = contacts.find(
+    (candidate) =>
+      candidate.type === "url" &&
+      candidate.label.trim().toLowerCase() === normalizedLabel,
+  );
+  if (!contact) return null;
+
+  const href = normalizeHttpUrl(contact.href);
+  return href ? { platform, href } : null;
+}
+
+export function selectTripadvisorLink(
+  contacts: readonly PublicOfficialContact[],
+) {
+  return selectExternalTourismLink(contacts, "Tripadvisor", "tripadvisor");
+}
+
+export function selectGoogleMapsTourismLink(
+  contacts: readonly PublicOfficialContact[],
+) {
+  return selectExternalTourismLink(
+    contacts,
+    "Google Maps Wisata",
+    "google-maps",
+  );
+}
+
+export function selectExternalTourismLinks(
+  contacts: readonly PublicOfficialContact[],
+) {
+  return [
+    selectGoogleMapsTourismLink(contacts),
+    selectTripadvisorLink(contacts),
+  ].filter((link): link is ExternalTourismLink => link !== null);
+}
+
+export function selectPublicFooterContactAction(
+  result: PublicOfficialContactResult,
+): PublicFooterContactAction {
+  if (result.kind === "ready" && result.primaryWhatsapp) {
+    return { kind: "whatsapp", href: result.primaryWhatsapp.href };
+  }
+
+  return { kind: "contact-page", href: "/kontak" };
 }
 
 export function getContactTypeLabel(type: OfficialContactType) {
