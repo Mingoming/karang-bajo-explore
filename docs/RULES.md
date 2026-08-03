@@ -105,7 +105,7 @@ Minor wording differences that do not change behavior do not require implementat
 
 Version 1 has exactly two access states: anonymous public visitor and one authenticated administrator. Supabase Auth is required. The administrator can create, edit, publish, archive, restore, upload media, and manage approved settings.
 
-Editor roles, additional accounts, role management, user management, invitations, approval workflows, and permanent deletion are prohibited. New content starts as draft, restore returns content to draft, and Version 1 is Indonesian-only.
+Editor roles, additional accounts, role management, user management, invitations, approval workflows, and permanent deletion are prohibited. New content starts as draft and restore returns content to draft. Indonesian remains the default locale; bilingual public-shell Phase 1 adds only `/en` with static English interface copy, while admin, authentication, and database-managed content remain single-language Indonesian.
 
 Destination categories are fixed to `Alam`, `Budaya`, and `Religi` and are not dashboard-managed. Slugs are generated automatically, hidden from normal forms, and immutable after first publication.
 
@@ -196,7 +196,7 @@ Version 1 must not include:
 * Invitation flows
 * Approval workflows
 * Permanent deletion
-* Multilingual publishing
+* Database-backed multilingual publishing in bilingual public-shell Phase 1
 
 Do not add optional features merely because they are common on tourism websites.
 
@@ -220,6 +220,23 @@ When a requested change affects approved scope:
 6. Implement only after the approved documents are consistent.
 
 Do not add a route, table, column, dependency, service, or role merely to support an unapproved idea.
+
+## 3.4 Bilingual Public-Shell Constraints
+
+* Keep all existing Indonesian public URLs unchanged and do not introduce `/id`.
+* English uses `/en`; no other English list or detail route is approved in Phase 1.
+* Admin and authentication routes remain Indonesian-only and must not receive locale prefixes.
+* Do not machine-generate cultural, historical, address, visitor, facility, itinerary, or other database-managed translations.
+* Do not silently fall back from English to Indonesian database content.
+* Do not invent English paths, slugs, or route equivalence. A missing equivalent must remain unavailable.
+* Render a language switcher only when the semantic route manifest contains a real equivalent.
+* Do not add database translation columns, tables, views, policies, migrations, or admin workflows in Phase 1.
+* Derive locale from the trusted request path through a server-side mechanism validated for Next.js 16. Caller-supplied locale indicators must not control document language. Do not finalize a request-header implementation until the rendering and caching spike passes.
+* Do not redirect according to browser language.
+* Do not derive a canonical origin from the request `Host`; wait for an approved production origin.
+* Do not access or mutate hosted Supabase for bilingual implementation or validation without explicit user instruction.
+* On `/en`, reusable database values are limited to the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Do not render database contact labels or descriptions.
+* General Cultural Articles, Bayan Customary Institution Articles, standalone gallery, and database translation remain outside this scope.
 
 ---
 
@@ -1601,6 +1618,7 @@ They must not compress text and actions until they become unusable.
 * Do not make unverified cultural claims.
 * Do not represent an unconfirmed event date as confirmed.
 * Published slugs are immutable, so canonical public URLs remain stable.
+* Do not emit locale canonical or alternate URLs until an approved production origin exists, and never infer that origin from an untrusted request header.
 
 If public content lacks a meaningful summary, use an approved neutral fallback or omit the metadata field rather than inventing copy.
 

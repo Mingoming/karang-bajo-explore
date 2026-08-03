@@ -61,7 +61,15 @@ New content starts as draft. Restore returns archived content to draft. Permanen
 
 ### Language and Content Identity
 
-Version 1 is Indonesian-only. Slugs are generated automatically, hidden from normal forms, and immutable after first publication.
+Indonesian is the default locale and all existing Indonesian public URLs remain unchanged. The bilingual public-shell Phase 1 introduces only `/en`, containing approved static English interface copy. Admin and authentication remain Indonesian-only. Database-managed content remains single-language and is not displayed through an Indonesian fallback on `/en`. Slugs are generated automatically, hidden from normal forms, and immutable after first publication.
+
+The language switcher uses the labels `Bahasa Indonesia` and `English`, uses real links, and represents the current locale semantically rather than through color alone. It is omitted when no equivalent route exists. In Phase 1, only `/` and `/en` are equivalent; English navigation must not expose invented list or detail routes.
+
+The English homepage communicates without promotional exaggeration that verified English information is being prepared. It must not claim complete bilingual coverage. The initial server response declares `<html lang="id">` for `/` and `<html lang="en">` for `/en`; a client-only correction is not sufficient.
+
+On mobile, the switcher remains keyboard accessible, uses the same verified equivalent route pair, closes navigation after selection, and preserves the existing Escape and focus-return behavior. No browser-language redirect or machine translation is used.
+
+Approved language-neutral values on `/en` are limited to the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Database contact labels and descriptions are not rendered.
 
 Destination category selection uses the fixed values `Alam`, `Budaya`, and `Religi`. There is no destination-category management route or dashboard navigation item.
 
@@ -3742,6 +3750,8 @@ These breakpoints guide layout behavior, not device detection.
 * Full-width touch targets
 * Subsections grouped clearly
 * No hover-dependent menus
+* Locale-specific navigation includes only routes that actually exist
+* The language switcher closes the menu after selection and preserves keyboard focus behavior
 
 ### Tablet
 
@@ -3909,6 +3919,8 @@ Canonical URLs use the production domain and stable slug route.
 
 Draft preview URLs must not become canonical.
 
+The bilingual public-shell Phase 1 must not invent a production origin or derive canonical authority from the request `Host`. Canonical, alternate-language, and `hreflang` output for `/` and `/en` remains deferred until the production origin is approved.
+
 ---
 
 ## 19.6 Sitemap
@@ -3924,6 +3936,8 @@ The sitemap includes only:
 * Published events
 * Published homestays
 * Published UMKM
+
+No sitemap change is part of bilingual public-shell Phase 1. Locale-aware sitemap work begins only after a production origin is approved.
 
 Admin, auth, preview, draft, and archived routes are excluded.
 

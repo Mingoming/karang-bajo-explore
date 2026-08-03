@@ -777,6 +777,20 @@
 
 ---
 
+# Bilingual Public-Shell Foundation
+
+- ☐ Evaluate server-side path-derived locale mechanisms, including a trusted internal request-header option, without changing admin/auth session handling.
+- ☐ Verify the root locale mechanism's dynamic-rendering and caching impact under Next.js 16.
+- ☐ Implement typed `id` and `en` dictionaries and the ten-key semantic public-route manifest.
+- ☐ Implement `/en` as the only active English route without querying Indonesian domain content.
+- ☐ Localize the public header, mobile navigation, footer, homepage static UI, contact CTA UI, and external-tourism-link UI.
+- ☐ Add the `/` and `/en` language switcher without inventing unsupported English equivalents.
+- ☐ Add dictionary-parity, route-manifest, metadata, no-fallback, admin-isolation, and Indonesian-regression tests.
+- ☐ Validate server-rendered `<html lang="id">` and `<html lang="en">` through local HTTP responses.
+- ☐ Design the Village Profile database-translation pilot separately after Phase 1; include schema, RLS, views, admin workflow, and publication rules.
+
+---
+
 # Future Features
 
 ## Proposed Version 1.1 Deferrals — Pending Explicit Approval
@@ -796,7 +810,6 @@ Usulan di atas belum disetujui. Item tersebut tidak boleh diperlakukan sebagai d
 - ☐ QR Code
 - ☐ Recommendation Engine
 - ☐ Trip Planner
-- ☐ Multi-language
 - ☐ Offline Map
 - ☐ Ratings and Reviews
 - ☐ Favorites

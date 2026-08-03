@@ -106,7 +106,9 @@ The administration system covers:
 
 The administrator can create, edit, publish, archive, restore, upload media, and manage approved settings. New content starts as draft. Permanent deletion is unavailable in Version 1.
 
-Version 1 is Indonesian-only.
+Indonesian remains the default locale, existing Indonesian public URLs remain unchanged, and administration and authentication remain Indonesian-only. The approved bilingual public-shell Phase 1 adds only `/en` with translated static interface copy. It does not translate or expose database-managed Indonesian descriptive content, add a database migration, or create English domain list and detail routes.
+
+Future database translation is a separately reviewed capability beginning with a proposed Village Profile pilot. No automatic or machine translation is permitted, and the system must not claim complete bilingual content coverage.
 
 Destination categories are the fixed values `Alam`, `Budaya`, and `Religi`. They are not managed through the dashboard.
 

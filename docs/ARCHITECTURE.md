@@ -629,6 +629,20 @@ The public website must not include:
 
 ---
 
+### 6.16 Bilingual Public-Shell Foundation
+
+The approved Phase 1 locale architecture is asymmetric: Indonesian remains unprefixed and keeps every existing public URL, while English begins with `/en` only. Admin and authentication routes remain Indonesian-only and are never locale-prefixed.
+
+Static interface copy is provided by typed `id` and `en` dictionaries. A semantic route manifest records actual equivalents independently from visible labels; in Phase 1, only `/` and `/en` form an equivalent pair. A missing English path remains unavailable rather than being derived from an Indonesian segment or slug.
+
+The server-rendered document language must be derived from the requested path through a trusted server-side locale mechanism. The concrete Next.js 16 implementation, including the option of a Proxy-injected internal request header, remains subject to a spike that validates rendering and caching behavior. Caller-supplied locale indicators are never authoritative. Public locale classification must remain separate from the existing Supabase session-refresh and administrator-authorization flow so an English public request does not expand the authentication boundary.
+
+The English homepage does not query or render database-managed Indonesian descriptive content. It may reuse only approved language-neutral values: the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Contact labels and descriptions remain excluded. There is no browser-language redirect, machine translation, or Indonesian database-content fallback.
+
+Phase 1 adds no database translation layer. Canonical, alternate-language, `hreflang`, and sitemap work remains inactive until an approved production origin exists. Future database translation begins with a separately reviewed Village Profile pilot.
+
+---
+
 ## 7. Admin Dashboard Architecture
 
 ## 7.1 Dashboard Responsibilities
@@ -1866,7 +1880,7 @@ They are not required for the current web-based information platform.
 | GitHub is the source of truth for code and documentation        | Supports traceability, recovery, and handover                                                                   |
 | Back up database, media, and GIS files separately               | Each contains different information and cannot fully replace the others                                         |
 | Use one administrator account in Version 1                      | Keeps authentication and authorization proportional to the approved operating model                            |
-| Use Indonesian-only managed content                             | Version 1 has no translation workflow or multilingual schema                                                    |
+| Use an Indonesian-default asymmetric locale foundation          | Existing Indonesian routes remain unprefixed; Phase 1 adds only a static English public shell at `/en`          |
 | Keep destination categories fixed                               | `Alam`, `Budaya`, and `Religi` are stable system data and require no dashboard management                       |
 | Generate and freeze public slugs                                | Slugs stay out of routine forms and remain stable after first publication                                       |
 | Use numeric Indonesian-rupiah price semantics                   | `0` means free, `null` unavailable, and positive values are rupiah; `price_note` remains optional                |
