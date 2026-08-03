@@ -5,9 +5,8 @@
 - **Nama Proyek:** Karang Bajo Explore
 - **Fase Saat Ini:** P0 — Release Preparation
 - **Branch Dasar Pengembangan:** `main`
-- **Branch Dokumentasi Saat Ini:** `docs/reconcile-release-state`
 - **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, kontak resmi terpusat, automated tests, dan CI quality gate telah diimplementasikan.
-- **Status Dokumentasi:** ◐ In Progress
+- **Status Dokumentasi:** ☑ Tersinkronisasi dengan release candidate saat ini
 - **Kesiapan Deployment:** Pre-production; belum production-ready
 
 ## Legenda Status
@@ -43,7 +42,7 @@
 - ☑ Typecheck script tersedia.
 - ☑ Aggregate quality-gate script tersedia.
 - ☑ GitHub Actions CI workflow tersedia.
-- ◐ README, TODO, ROADMAP, dan release scope disinkronkan.
+- ☑ README, TODO, ROADMAP, dan release scope telah disinkronkan dengan release candidate saat ini.
 - ☑ PR #1 sampai #4 telah di-merge ke `main`.
 - ☑ Required GitHub Actions check `Quality` lulus pada PR yang relevan.
 - ☑ Ruleset perlindungan `main` aktif dan mewajibkan check `Quality`.
@@ -245,6 +244,9 @@
 - ☑ Mobile-first layout untuk route publik yang tersedia
 - ☑ SEO metadata tanpa signed URL untuk route publik yang tersedia
 - ☑ Robots rules
+- ☐ Canonical URLs — menunggu final production origin.
+- ☐ Published-only sitemap — menunggu final production origin.
+- ☐ Permanent social preview fallback — menunggu aset resmi yang telah disetujui.
 
 ### Destination Public Milestone 2
 
