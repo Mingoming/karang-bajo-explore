@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { EmptyContentState } from "@/components/public/empty-content-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { getPublicOfficialContacts } from "@/features/official-contact/data";
-import { getContactTypeLabel } from "@/features/official-contact/model";
 import { buildPublicMetadata } from "@/features/seo/public-metadata";
 
 export const metadata: Metadata = buildPublicMetadata({
@@ -67,9 +66,11 @@ export default async function OfficialContactPage() {
                   <h2 className="font-serif text-2xl font-bold text-slate-950">
                     {contact.label}
                   </h2>
-                  <p className="mt-2 text-sm font-semibold text-emerald-800">
-                    {getContactTypeLabel(contact.type)} · {contact.value}
-                  </p>
+                  {contact.type !== "url" ? (
+                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                      {contact.value}
+                    </p>
+                  ) : null}
                   {contact.description ? (
                     <p className="mt-3 leading-7 text-slate-600">
                       {contact.description}

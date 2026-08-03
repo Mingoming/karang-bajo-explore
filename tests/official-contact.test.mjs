@@ -149,12 +149,12 @@ test("public result classification distinguishes unconfigured from invalid store
 test("external tourism selectors match only canonical URL contact labels", () => {
   const contacts = [
     publicUrlContact({
-      label: "  TRIPADVISOR  ",
+      label: "  KARANG BAJO EXPLORE DI TRIPADVISOR  ",
       href: "https://example.test/tripadvisor ",
     }),
     publicUrlContact({
       id: "10000000-0000-4000-8000-000000000011",
-      label: " google maps wisata ",
+      label: "  karang bajo explore di google maps  ",
       href: "https://example.test/tourism-map",
     }),
     publicUrlContact({
@@ -168,10 +168,12 @@ test("external tourism selectors match only canonical URL contact labels", () =>
     platform: "tripadvisor",
     href: "https://example.test/tripadvisor",
   });
+
   assert.deepEqual(selectGoogleMapsTourismLink(contacts), {
     platform: "google-maps",
     href: "https://example.test/tourism-map",
   });
+
   assert.deepEqual(selectExternalTourismLinks(contacts), [
     {
       platform: "google-maps",
@@ -182,6 +184,31 @@ test("external tourism selectors match only canonical URL contact labels", () =>
       href: "https://example.test/tripadvisor",
     },
   ]);
+
+  assert.deepEqual(
+    selectTripadvisorLink([
+      publicUrlContact({
+        label: "Tripadvisor",
+      }),
+    ]),
+    {
+      platform: "tripadvisor",
+      href: "https://example.test/tripadvisor",
+    },
+  );
+
+  assert.deepEqual(
+    selectGoogleMapsTourismLink([
+      publicUrlContact({
+        label: "Google Maps Wisata",
+        href: "https://example.test/tourism-map",
+      }),
+    ]),
+    {
+      platform: "google-maps",
+      href: "https://example.test/tourism-map",
+    },
+  );
 });
 
 test("external tourism selectors reject wrong types, unsafe links, and unrelated contacts", () => {
