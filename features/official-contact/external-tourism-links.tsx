@@ -8,8 +8,8 @@ const PLATFORM_CONTENT: Record<
   { label: string; accessibleLabel: string }
 > = {
   "google-maps": {
-    label: "Buka Peta Wisata di Google Maps",
-    accessibleLabel: "Buka Peta Wisata Karang Bajo di Google Maps (tab baru)",
+    label: "Buka di Google Maps",
+    accessibleLabel: "Buka Karang Bajo Explore di Google Maps (tab baru)",
   },
   tripadvisor: {
     label: "Buka Tripadvisor",

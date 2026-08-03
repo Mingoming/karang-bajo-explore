@@ -299,14 +299,17 @@ export function classifyPublicOfficialContacts(
 
 function selectExternalTourismLink(
   contacts: readonly PublicOfficialContact[],
-  label: string,
+  labels: readonly string[],
   platform: ExternalTourismPlatform,
 ): ExternalTourismLink | null {
-  const normalizedLabel = label.trim().toLowerCase();
+  const normalizedLabels = new Set(
+    labels.map((label) => label.trim().toLowerCase()),
+  );
+
   const contact = contacts.find(
     (candidate) =>
       candidate.type === "url" &&
-      candidate.label.trim().toLowerCase() === normalizedLabel,
+      normalizedLabels.has(candidate.label.trim().toLowerCase()),
   );
   if (!contact) return null;
 
@@ -317,7 +320,11 @@ function selectExternalTourismLink(
 export function selectTripadvisorLink(
   contacts: readonly PublicOfficialContact[],
 ) {
-  return selectExternalTourismLink(contacts, "Tripadvisor", "tripadvisor");
+  return selectExternalTourismLink(
+    contacts,
+    ["Karang Bajo Explore di Tripadvisor", "Tripadvisor"],
+    "tripadvisor",
+  );
 }
 
 export function selectGoogleMapsTourismLink(
@@ -325,7 +332,7 @@ export function selectGoogleMapsTourismLink(
 ) {
   return selectExternalTourismLink(
     contacts,
-    "Google Maps Wisata",
+    ["Karang Bajo Explore di Google Maps", "Google Maps Wisata"],
     "google-maps",
   );
 }
