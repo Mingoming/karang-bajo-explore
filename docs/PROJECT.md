@@ -5,7 +5,7 @@
 **Project Name:** Karang Bajo Tourism Information System
 **Tagline:** A WebGIS-based tourism information platform for Desa Karang Bajo.
 **Project Type:** Production system
-**Current Status:** Phase 1 — Project Foundation
+**Current Status:** Release preparation / pre-production
 
 This project is a production system intended for long-term use and maintenance. It is not a prototype, demonstration application, or temporary KKN deliverable.
 

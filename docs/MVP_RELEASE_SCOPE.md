@@ -24,6 +24,7 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 ### Public Website
 
 - Homepage publik
+- Public Village Profile
 - Destination list dan detail
 - Destination category filter
 - Tourism package list dan detail
@@ -31,6 +32,7 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 - UMKM list dan detail
 - Traditional house list dan detail
 - Cultural event list dan detail
+- Halaman kontak resmi dan CTA WhatsApp utama terpusat
 - Interactive tourism map
 - Published-only data access
 - Signed public media
@@ -57,6 +59,8 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 - Image upload dan replacement
 - WebP image normalization
 - Coordinate picker
+- Official Contact administration
+- Central WhatsApp configuration UI
 
 ### Quality and Security Foundations
 
@@ -64,11 +68,12 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 - Private Storage bucket
 - Server-side signed media delivery
 - Database tests
-- Application tests
+- Application tests: 19 suite dan 236 test
+- Local pgTAP database tests: 361 assertion
 - Lint
 - Type checking
 - Production build
-- CI quality gate
+- CI quality gate `Quality` yang diwajibkan oleh ruleset aktif pada `main`
 
 ---
 
@@ -76,8 +81,8 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 
 Pekerjaan berikut masih wajib diselesaikan:
 
-- Public Village Profile page
-- Central contact and WhatsApp configuration
+- Data production untuk nomor WhatsApp utama dan kontak resmi yang telah disetujui
+- Verifikasi ownership dan izin publikasi kontak production
 - Official logo and favicon
 - Final production origin
 - Canonical URLs

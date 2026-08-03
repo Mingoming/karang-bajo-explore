@@ -9,6 +9,7 @@ Proyek berada pada tahap **release preparation / pre-production**.
 Fitur utama yang telah tersedia:
 
 - Homepage publik dengan koleksi konten terbit
+- Profil desa publik
 - Daftar dan detail destinasi
 - Filter kategori destinasi
 - Daftar dan detail paket wisata
@@ -20,18 +21,20 @@ Fitur utama yang telah tersedia:
 - Peta wisata interaktif
 - Login administrator tunggal
 - Dashboard pengelolaan konten
+- Pengelolaan kontak resmi dan pengaturan WhatsApp utama
 - Lifecycle draft, published, archived, dan restore
 - Private media storage dengan signed URL
 - Upload dan replacement media
 - Normalisasi gambar menjadi WebP
 - SEO metadata foundation
 - Robots rules
-- Automated application tests
-- CI quality gate
+- Automated application tests: 19 suite dengan 236 test
+- Local pgTAP database tests: 361 assertion
+- CI quality gate `Quality` yang diwajibkan oleh ruleset aktif pada `main`
 
 Pekerjaan yang masih diperlukan sebelum production release:
 
-- Konfigurasi nomor WhatsApp utama dan konten kontak resmi yang telah disetujui
+- Konfigurasi data production untuk nomor WhatsApp utama dan konten kontak resmi yang telah disetujui
 - Persetujuan final scope MVP
 - Logo dan favicon resmi
 - Production domain

@@ -3,7 +3,7 @@
 ## Karang Bajo Tourism Information System
 
 - **Project status:** Release preparation
-- **Production code:** Core public domains, administration modules, GIS, media delivery, and SEO foundation implemented
+- **Production code:** Core public domains, administration modules, GIS, media delivery, SEO foundation, public Village Profile, and centralized official contact/WhatsApp flows implemented
 - **Documentation status:** Being synchronized with the current release candidate
 - **Roadmap type:** Production implementation roadmap
 - **Team context:** Small university KKN development team
@@ -62,12 +62,30 @@ Authoritative references:
 | Roadmap                     | This document                       |
 | Production repository       | Initialized with Next.js and npm lockfile |
 | Production Supabase project | Not yet created                     |
-| Production code             | Foundation scaffold only            |
+| Release-candidate code      | Implemented on `main`; not production-ready |
+| Application tests           | 19 suites and 236 tests passing      |
+| Local database tests        | 361 pgTAP assertions passing         |
+| GitHub quality gate         | Active `main` ruleset requires `Quality` |
 | Initial tourism data        | Partially collected                 |
 | Cultural content            | Incomplete                          |
 | QGIS data                   | Requires validation and preparation |
 | Production ownership        | Not finalized                       |
 | Administrator access        | One Supabase Auth administrator approved |
+
+---
+
+## 1.1 Release Milestone Reconciliation
+
+| Milestone or delivery | Implementation status | Remaining boundary |
+| --------------------- | --------------------- | ------------------ |
+| Milestone 5 GIS | Completed on `main` | Production coordinate/content verification and any approved initial-data import remain pending |
+| Milestone 6 SEO, performance, and release quality gate | Merged through PR #1; README correction merged through PR #2 | Production origin, final assets, and production validation remain pending |
+| Public Village Profile | Merged through PR #3 | Approved production profile content and acceptance remain pending |
+| Centralized official contact and WhatsApp | Merged through PR #4, including `/kontak`, administrator contact management, and central WhatsApp configuration | Approved production contact data, ownership, and publication consent remain pending |
+
+PRs #1 through #4 are merged. The active development baseline is `main`, protected by an active repository ruleset that requires the `Quality` check. This status does not indicate production readiness.
+
+General Cultural Articles, Bayan Customary Institution Articles, the Standalone Public Gallery, Advanced Dashboard Analytics, responsive image derivatives, advanced structured data, and visitor analytics remain proposed Version 1.1 deferrals pending explicit approval.
 
 ---
 
@@ -749,23 +767,23 @@ At the end of this phase:
 
 ## Completion Criteria
 
-* [ ] Leaflet loads only on required pages.
-* [ ] OpenStreetMap attribution is visible.
-* [ ] Valid published destinations, traditional houses, homestays, and visitable UMKM appear.
-* [ ] Invalid coordinates are excluded.
-* [ ] Category filter works.
-* [ ] Zero, one, and multiple marker states work.
-* [ ] Google Maps link opens correctly.
-* [ ] Mobile map is usable.
-* [ ] Location picker updates coordinates.
-* [ ] Manual latitude/longitude entry updates the marker.
-* [ ] Identical coordinate pairs render as one combined marker.
-* [ ] UMKM Tenun and Kampung Adat do not overlap as separate markers.
+* [x] Leaflet loads only on required pages.
+* [x] OpenStreetMap attribution is visible.
+* [x] Valid published destinations, traditional houses, homestays, and visitable UMKM appear.
+* [x] Invalid coordinates are excluded.
+* [x] Category filter works.
+* [x] Zero, one, and multiple marker states work.
+* [x] Google Maps link opens correctly.
+* [x] Mobile map is usable.
+* [x] Location picker updates coordinates.
+* [x] Manual latitude/longitude entry updates the marker.
+* [x] Identical coordinate pairs render as one combined marker.
+* [x] Shared-coordinate grouping prevents UMKM Tenun and Kampung Adat from rendering as separate overlapping markers when their approved coordinates match.
 * [ ] GeoJSON conversion is tested.
 * [ ] Imported records start as draft.
 * [ ] Import report is produced.
 * [ ] Initial locations receive manual review.
-* [ ] The increment is deployable.
+* [x] The implementation increment passes the release quality gate.
 
 ---
 
@@ -2265,7 +2283,7 @@ The project is complete only when all of the following are true.
 * [ ] Public destination list works
 * [ ] Category filter works
 * [ ] Destination detail works
-* [ ] Village profile works
+* [x] Village profile works
 * [ ] Traditional houses work
 * [ ] Cultural articles work
 * [ ] Customary institution articles work
@@ -2275,21 +2293,21 @@ The project is complete only when all of the following are true.
 
 ## Phase 5 — GIS
 
-* [ ] Leaflet integrated
-* [ ] OpenStreetMap tiles displayed
-* [ ] Attribution displayed
-* [ ] Destination markers displayed
-* [ ] Popups work
-* [ ] Category filters work
-* [ ] Bounds work
-* [ ] Single-marker behavior works
-* [ ] Empty map state works
-* [ ] Invalid coordinates excluded
-* [ ] Mobile map works
-* [ ] Google Maps links work
-* [ ] Location picker works
+* [x] Leaflet integrated
+* [x] OpenStreetMap tiles displayed
+* [x] Attribution displayed
+* [x] Destination markers displayed
+* [x] Popups work
+* [x] Category filters work
+* [x] Bounds work
+* [x] Single-marker behavior works
+* [x] Empty map state works
+* [x] Invalid coordinates excluded
+* [x] Mobile map works
+* [x] Google Maps links work
+* [x] Location picker works
 * [ ] GeoJSON validator works
-* [ ] Coordinate order tested
+* [x] Coordinate order tested
 * [ ] Duplicate report works
 * [ ] Initial import remains draft
 * [ ] Imported records manually reviewed
@@ -2310,7 +2328,7 @@ The project is complete only when all of the following are true.
 * [ ] Homestay list and detail work
 * [ ] UMKM list and detail work
 * [ ] Standalone gallery works
-* [ ] Public contacts work
+* [x] Public contact route and safe unconfigured fallback work
 * [ ] No booking or payment exists
 
 ## Phase 7 — Dashboard Completion
@@ -2331,26 +2349,26 @@ The project is complete only when all of the following are true.
 * [ ] Primary image works
 * [ ] Image replacement is safe
 * [ ] Orphan handling works
-* [ ] Site Settings works
-* [ ] Central WhatsApp setting drives the primary visitor CTA
+* [x] Site Settings works
+* [x] Central WhatsApp setting drives the primary visitor CTA
 * [ ] No user, role, invitation, approval, or permanent-delete controls exist
 * [ ] Mobile dashboard works
 
 ## Phase 8 — Quality Assurance
 
-* [ ] Unit tests pass
-* [ ] Integration tests pass
+* [x] Unit tests pass
+* [x] Integration tests pass
 * [ ] End-to-end tests pass
-* [ ] RLS denial tests pass
-* [ ] Storage policy tests pass
+* [x] RLS denial tests pass
+* [x] Storage policy tests pass
 * [ ] Accessibility review passes
 * [ ] Keyboard flows pass
 * [ ] Mobile public pages pass
 * [ ] Mobile admin flows pass
-* [ ] Performance review completed
+* [x] Performance review completed
 * [ ] Image-size review completed
-* [ ] Missing-image behavior tested
-* [ ] Map failure behavior tested
+* [x] Missing-image behavior tested
+* [x] Map failure behavior tested
 * [ ] Session expiration tested
 * [ ] Village acceptance test completed
 * [ ] Critical issues resolved
