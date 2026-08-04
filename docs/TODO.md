@@ -801,16 +801,15 @@
 
 - ☑ Database-backed English content approved as a separate Phase 2 using one explicit translation table per domain.
 - ☑ Village Profile-only pilot scope, `/en/village-profile` route, lifecycle, completeness, RLS boundary, and stale-source contract documented.
-- ☐ Create a new reviewed migration for `public.village_profile_translations`, its published-English view, lifecycle validation, RLS, grants, and indexes.
-- ☐ Implement the Indonesian-language administrator translation workflow.
-- ☐ Implement the published-English loader, `/en/village-profile`, metadata, route equivalence, and homepage excerpt integration.
-- ☐ Add pgTAP tests for authorization, lifecycle, completeness, source publication, and source-version staleness.
-- ☐ Add application tests for no fallback, route equivalence, metadata, states, and Indonesian/admin regression.
-- ☐ Run desktop and 390 px browser validation for the pilot routes.
-- ☐ Apply the future migration to a hosted development project only under a separate explicit authorization.
+- ☑ PR #12 added the reviewed `public.village_profile_translations` migration, published-English view, lifecycle validation, RLS, grants, indexes, and pgTAP coverage.
+- ☑ PR #13 added the published-English loader, `/en/village-profile`, localized metadata, route equivalence, homepage excerpt integration, and no-fallback application tests.
+- ☑ PR #14 added the Indonesian-language administrator translation workflow, lifecycle actions, source-freshness states, and administrator regression tests.
+- ☑ Desktop and 390 px browser validation completed for the pilot routes.
+- ☑ The English Village Profile migration was applied and validated against the approved hosted development target during the authorized development workflow.
+- ⚠ Production migration approval and production post-migration validation remain pending.
+- ⚠ Verified English production content and production administrator acceptance remain pending.
 
-Phase 2A excludes other domain translations, English slugs, media text translations, contact translations, canonical/alternate/`hreflang`/sitemap work, machine translation, browser-language redirects, and hosted Supabase work in the documentation-approval task.
-
+Phase 2A excludes other domain translations, English slugs, media text translations, contact translations, canonical/alternate/`hreflang`/sitemap work, machine translation, and browser-language redirects. Any production hosted access or mutation remains governed by the separate approval gates in `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
 ---
 
 # Future Features
