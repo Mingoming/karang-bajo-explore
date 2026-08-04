@@ -6,6 +6,12 @@
 - **Current stage:** Release preparation
 - **Environment:** Development / pre-production
 - **Production deployment:** Not completed
+- **Approval packet source baseline:** `190acf7a741329db8d072915b8e2845414fe8f4f`
+- **Approval decision baseline:** Pending exact reviewed commit SHA
+- **Validated application suite:** 23 test files / 283 tests
+- **Validated local database suite:** 448 pgTAP assertions
+- **Production target approval:** Pending
+- **Version 1.0 scope approval:** Pending explicit stakeholder decision
 
 ---
 
@@ -35,6 +41,10 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 - Published-only data access
 - Signed public media
 - Loading, empty, error, dan not-found states
+- English homepage foundation
+- English Village Profile public route
+- English Village Profile administrator workflow
+- English Village Profile translation lifecycle with stale-source suppression
 - Public metadata foundation
 - Robots rules
 - Responsive public layout
@@ -64,7 +74,7 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 - Private Storage bucket
 - Server-side signed media delivery
 - Database tests
-- Application tests: 21 file test dengan 263 test case
+- Application tests: 23 file test dengan 283 test case
 - Lint
 - Type checking
 - Production build
@@ -76,7 +86,6 @@ Kemampuan berikut telah diimplementasikan pada release candidate:
 
 Pekerjaan berikut masih wajib diselesaikan:
 
-- Public Village Profile page
 - Central contact and WhatsApp configuration
 - Official logo and favicon
 - Final production origin
@@ -128,7 +137,7 @@ Version 1.0 tidak mencakup:
 - Favorites
 - AI chatbot
 - Native mobile application
-- Multi-language publishing
+- Multi-language publishing beyond the implemented English Village Profile pilot
 - Route optimization
 - Package participant limits
 - Structured package-stop duration
@@ -136,7 +145,54 @@ Version 1.0 tidak mencakup:
 
 ---
 
-## 6. Release Gate
+## 6. Version 1.0 Scope Approval Packet
+
+### Decision requested
+
+Stakeholder diminta mengambil keputusan eksplisit terhadap dua hal berikut:
+
+1. Menyetujui batas Version 1.0 sebagaimana tercatat dalam dokumen ini.
+2. Menyetujui atau menolak pemindahan fitur pada bagian **Proposed Version 1.1 Deferrals** dari scope Version 1.0.
+
+Persetujuan scope tidak memberikan persetujuan untuk hosted access, database mutation, deployment, content publication, atau production GO. Seluruh tindakan tersebut tetap tunduk pada gate terpisah dalam `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
+
+### Proposed Version 1.0 interpretation
+
+Version 1.0 mencakup:
+
+- domain publik dan administrator yang telah tercatat sebagai implemented;
+- interactive tourism map;
+- centralized official contact capability;
+- Indonesian public content;
+- English homepage foundation;
+- English Village Profile pilot;
+- published-only data exposure;
+- signed public media delivery;
+- single-administrator content management;
+- release-quality, security, and validation foundations yang telah diterapkan.
+
+Version 1.0 tidak dianggap selesai hanya karena scope disetujui. Seluruh item pada bagian **Required Before Version 1.0 Release** dan **Release Gate** tetap wajib ditutup.
+
+### Decision record
+
+| Field | Required value |
+| --- | --- |
+| Decision status | `Pending`, `Approved`, atau `Rejected` |
+| Scope baseline | Exact reviewed commit SHA |
+| Version 1.0 scope | Approved atau rejected |
+| Proposed Version 1.1 deferrals | Approved, rejected, atau approved with exceptions |
+| Decision authority | Approved stakeholder role; do not place private contact details |
+| Decision date | ISO date |
+| Decision notes | Exceptions, conditions, atau required follow-up |
+| Production authorization | Must remain separate from this scope decision |
+
+**Current decision status:** Pending explicit stakeholder approval.
+
+Merging this document does not constitute stakeholder approval. Status hanya boleh diubah setelah keputusan nyata dicatat dengan authority, tanggal, baseline commit, dan catatan keputusan yang memadai.
+
+---
+
+## 7. Release Gate
 
 Version 1.0 hanya boleh diluncurkan apabila:
 

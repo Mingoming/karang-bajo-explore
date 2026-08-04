@@ -18,7 +18,7 @@
 
 ## Blockers Aktif
 
-- ⚠ Scope final Version 1.0 belum disetujui secara eksplisit.
+- ⚠ Scope final Version 1.0 masih menunggu keputusan eksplisit melalui approval packet pada `docs/MVP_RELEASE_SCOPE.md`.
 - ⚠ Nomor WhatsApp utama dan konten kontak resmi belum dikonfigurasi dengan data yang telah disetujui.
 - ⚠ Production owner belum ditetapkan.
 - ⚠ Supabase production project belum dibuat.
@@ -50,6 +50,8 @@
 - ☑ English Village Profile telah selesai pada baseline `main`.
 - ☑ Migration target English Village Profile adalah `supabase/migrations/20260804065739_village_profile_translation.sql`, merupakan migration 6/6, dan tidak memiliki migration sesudahnya pada baseline ini.
 - ☑ Dedicated production deployment runbook tersedia di `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
+- ☑ Version 1.0 scope approval packet tersedia di `docs/MVP_RELEASE_SCOPE.md`.
+- ⚠ Approval packet masih berstatus pending dan tidak memberikan production authorization.
 - ⚠ Hosted target yang telah digunakan adalah development target; production target belum disetujui.
 - ⚠ Hosted read-only preflight memerlukan approval terpisah.
 - ⚠ Database production mutation memerlukan approval terpisah setelah preflight.
