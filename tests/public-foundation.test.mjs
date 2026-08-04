@@ -6,14 +6,20 @@ import { PUBLIC_NAVIGATION } from "../config/public-navigation.ts";
 const read = (path) => readFileSync(path, "utf8");
 const page = read("app/(public)/page.tsx");
 const layout = read("app/(public)/layout.tsx");
+const shell = read("components/public/public-shell.tsx");
 const rootLayout = read("app/layout.tsx");
 const globalStyles = read("app/globals.css");
 const header = read("components/public/public-header.tsx");
 const mobileNavigation = read("components/public/public-mobile-navigation.tsx");
 const footer = read("components/public/public-footer.tsx");
-const publicSources = [page, layout, header, mobileNavigation, footer].join(
-  "\n",
-);
+const publicSources = [
+  page,
+  layout,
+  shell,
+  header,
+  mobileNavigation,
+  footer,
+].join("\n");
 
 test("homepage is owned by the public route group", () => {
   assert.match(page, /export default (?:async )?function HomePage/);
@@ -21,10 +27,12 @@ test("homepage is owned by the public route group", () => {
 });
 
 test("public layout provides header, main landmark, footer, and skip link", () => {
-  assert.match(layout, /<PublicHeader \/>/);
-  assert.match(layout, /<main id="konten-utama"/);
-  assert.match(layout, /<PublicFooter \/>/);
-  assert.match(layout, /Lewati ke konten utama/);
+  assert.match(layout, /<PublicShell locale="id">/);
+  assert.match(shell, /<PublicHeader locale={locale} dictionary={dictionary}/);
+  assert.match(shell, /<main[\s\S]*?id={mainContentId}/);
+  assert.match(shell, /<PublicFooter/);
+  assert.match(shell, /dictionary\.shell\.skipLink/);
+  assert.match(shell, /locale === "id" \? "konten-utama" : "main-content"/);
 });
 
 test("public navigation exposes the approved foundation labels", () => {
@@ -51,7 +59,7 @@ test("homepage presentation has exactly one primary heading", () => {
 });
 
 test("all Milestone 1 homepage sections are represented", () => {
-  assert.match(page, /<PublicHero \/>/);
+  assert.match(page, /<PublicHero locale="id"/);
   for (const sectionId of [
     "profil-desa",
     "destinasi",
@@ -77,7 +85,7 @@ test("public presentation imports neither admin code nor service-role configurat
 test("mobile navigation exposes explicit controls and closes on navigation", () => {
   assert.match(mobileNavigation, /aria-expanded={isOpen}/);
   assert.match(mobileNavigation, /aria-controls="navigasi-publik-mobile"/);
-  assert.match(mobileNavigation, /Tutup/);
+  assert.match(mobileNavigation, /dictionary\.navigation\.closeButton/);
   assert.equal(
     mobileNavigation.includes("onClick={() => setIsOpen(false)}"),
     true,
@@ -89,8 +97,11 @@ test("public foundation presentation has no migration dependency", () => {
 });
 
 test("public shell reserves viewport space and footer copyright meets contrast", () => {
-  assert.match(layout, /flex min-h-screen flex-col/);
-  assert.match(layout, /className="min-h-screen flex-1"/);
+  assert.match(
+    shell,
+    /className="[^"]*\bflex\b[^"]*\bmin-h-screen\b[^"]*\bflex-col\b/,
+  );
+  assert.match(shell, /className="[^"]*\bmin-h-screen\b[^"]*\bflex-1\b/);
 
   assert.match(footer, /pt-6 text-sm text-slate-400/);
   assert.doesNotMatch(footer, /pt-6 text-sm text-slate-500/);

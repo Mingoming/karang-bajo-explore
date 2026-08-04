@@ -52,7 +52,8 @@ test("shared public metadata contains search and social descriptions", () => {
   assert.match(helper, /description:\s*safeDescription/);
 
   assert.match(helper, /openGraph:\s*\{[\s\S]*?type:\s*"website"/);
-  assert.match(helper, /locale:\s*"id_ID"/);
+  assert.match(helper, /openGraphLocale = "id_ID"/);
+  assert.match(helper, /locale:\s*openGraphLocale/);
   assert.match(helper, /siteName:\s*SITE_CONFIG\.name/);
 
   assert.match(helper, /twitter:\s*\{[\s\S]*?card:\s*"summary"/);

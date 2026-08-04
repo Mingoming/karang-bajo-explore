@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 
 import { SITE_CONFIG } from "@/config/site";
+import { readTrustedLocale } from "@/lib/i18n/locale";
 
 import "./globals.css";
 
@@ -18,13 +20,15 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = readTrustedLocale(await headers());
+
   return (
-    <html lang={SITE_CONFIG.locale} data-scroll-behavior="smooth">
+    <html lang={locale} data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

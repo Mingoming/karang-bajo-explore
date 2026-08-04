@@ -5,14 +5,22 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import {
+  getPublicNavigation,
   isPublicNavigationItemActive,
-  PUBLIC_NAVIGATION,
 } from "@/config/public-navigation";
+import type { PublicDictionary } from "@/lib/i18n/dictionaries";
+import type { PublicLocale } from "@/lib/i18n/locale";
 
-export function PublicMobileNavigation() {
+import { LanguageSwitcher } from "./language-switcher";
+
+export function PublicMobileNavigation({
+  locale,
+  dictionary,
+}: Readonly<{ locale: PublicLocale; dictionary: PublicDictionary }>) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+  const navigation = getPublicNavigation(locale, dictionary);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -27,11 +35,13 @@ export function PublicMobileNavigation() {
   }, [isOpen]);
 
   return (
-    <div className="lg:hidden">
+    <div className="shrink-0 xl:hidden">
       <button
         ref={triggerRef}
         type="button"
-        aria-label={isOpen ? "Tutup navigasi" : "Buka navigasi"}
+        aria-label={
+          isOpen ? dictionary.navigation.close : dictionary.navigation.open
+        }
         aria-expanded={isOpen}
         aria-controls="navigasi-publik-mobile"
         onClick={() => setIsOpen((current) => !current)}
@@ -47,7 +57,9 @@ export function PublicMobileNavigation() {
           className="absolute top-full right-0 left-0 border-t border-emerald-950/10 bg-stone-50 px-5 py-5 shadow-xl"
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="font-serif text-lg font-bold">Menu jelajah</p>
+            <p className="font-serif text-lg font-bold">
+              {dictionary.navigation.mobileTitle}
+            </p>
             <button
               type="button"
               onClick={() => {
@@ -56,12 +68,12 @@ export function PublicMobileNavigation() {
               }}
               className="min-h-11 rounded-full px-4 text-sm font-bold text-emerald-900 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
             >
-              Tutup
+              {dictionary.navigation.closeButton}
             </button>
           </div>
-          <nav aria-label="Navigasi publik mobile">
+          <nav aria-label={dictionary.navigation.mobileLabel}>
             <ul className="grid gap-1">
-              {PUBLIC_NAVIGATION.map((item) => (
+              {navigation.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
@@ -79,6 +91,13 @@ export function PublicMobileNavigation() {
               ))}
             </ul>
           </nav>
+          <div className="mt-4 border-t border-emerald-950/10 pt-4">
+            <LanguageSwitcher
+              locale={locale}
+              dictionary={dictionary}
+              onNavigate={() => setIsOpen(false)}
+            />
+          </div>
         </div>
       ) : null}
     </div>

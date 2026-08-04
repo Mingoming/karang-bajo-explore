@@ -67,6 +67,13 @@ export type ExternalTourismLink = {
   href: string;
 };
 
+export const EXTERNAL_TOURISM_PLATFORM_LABELS: Readonly<
+  Record<ExternalTourismPlatform, readonly string[]>
+> = {
+  "google-maps": ["Karang Bajo Explore di Google Maps", "Google Maps Wisata"],
+  tripadvisor: ["Karang Bajo Explore di Tripadvisor", "Tripadvisor"],
+};
+
 export type PrimaryWhatsapp = {
   number: string;
   displayValue: string;
@@ -322,7 +329,7 @@ export function selectTripadvisorLink(
 ) {
   return selectExternalTourismLink(
     contacts,
-    ["Karang Bajo Explore di Tripadvisor", "Tripadvisor"],
+    EXTERNAL_TOURISM_PLATFORM_LABELS.tripadvisor,
     "tripadvisor",
   );
 }
@@ -332,7 +339,7 @@ export function selectGoogleMapsTourismLink(
 ) {
   return selectExternalTourismLink(
     contacts,
-    ["Karang Bajo Explore di Google Maps", "Google Maps Wisata"],
+    EXTERNAL_TOURISM_PLATFORM_LABELS["google-maps"],
     "google-maps",
   );
 }

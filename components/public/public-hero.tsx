@@ -1,8 +1,18 @@
 import Link from "next/link";
 
+import type { PublicDictionary } from "@/lib/i18n/dictionaries";
+import type { PublicLocale } from "@/lib/i18n/locale";
+
 import { PublicContainer } from "./public-container";
 
-export function PublicHero() {
+export function PublicHero({
+  locale,
+  dictionary,
+}: Readonly<{ locale: PublicLocale; dictionary: PublicDictionary }>) {
+  const primaryHref = locale === "id" ? "/#destinasi" : "/en#contact";
+  const secondaryHref =
+    locale === "id" ? "/#profil-desa" : "/en#english-information";
+
   return (
     <section className="relative isolate overflow-hidden bg-emerald-950 py-20 text-white sm:py-28 lg:py-32">
       <div
@@ -15,27 +25,26 @@ export function PublicHero() {
       <PublicContainer>
         <div className="max-w-4xl">
           <p className="text-sm font-bold tracking-[0.2em] text-amber-300 uppercase">
-            Desa Karang Bajo
+            {dictionary.home.hero.eyebrow}
           </p>
-          <h1 className="mt-5 font-serif text-4xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-            Jelajahi Alam, Budaya, dan Tradisi
+          <h1 className="mt-5 break-words font-serif text-4xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            {dictionary.home.hero.title}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-50/85 sm:text-xl">
-            Fondasi informasi pariwisata yang menghimpun konten terbit dan
-            terverifikasi tentang Desa Karang Bajo.
+            {dictionary.home.hero.description}
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/#destinasi"
+              href={primaryHref}
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-amber-300 px-6 py-3 font-bold text-emerald-950 transition-colors hover:bg-amber-200 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-amber-200 motion-reduce:transition-none"
             >
-              Jelajahi destinasi
+              {dictionary.home.hero.primaryAction}
             </Link>
             <Link
-              href="/#profil-desa"
+              href={secondaryHref}
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/35 px-6 py-3 font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none"
             >
-              Mengenal desa
+              {dictionary.home.hero.secondaryAction}
             </Link>
           </div>
         </div>

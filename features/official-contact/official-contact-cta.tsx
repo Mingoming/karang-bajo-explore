@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import type { PublicDictionary } from "@/lib/i18n/dictionaries";
+
 import { getPublicOfficialContacts } from "./data";
 
 type Props = Readonly<{
@@ -38,6 +40,32 @@ export async function OfficialContactCta({
       className={classes}
     >
       Hubungi WhatsApp Desa
+    </a>
+  );
+}
+
+export function EnglishOfficialContactCta({
+  whatsappHref,
+  copy,
+  className = "",
+}: Readonly<{
+  whatsappHref: string | null;
+  copy: PublicDictionary["home"]["contact"];
+  className?: string;
+}>) {
+  if (!whatsappHref) {
+    return <p className="text-sm font-semibold">{copy.unavailable}</p>;
+  }
+
+  return (
+    <a
+      href={whatsappHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={copy.accessibleLabel}
+      className={`inline-flex min-h-11 items-center justify-center rounded-full px-5 py-2.5 font-bold focus-visible:outline-3 focus-visible:outline-offset-3 ${className}`}
+    >
+      {copy.button}
     </a>
   );
 }

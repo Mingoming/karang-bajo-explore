@@ -9,12 +9,13 @@ const homepage = readFileSync("app/(public)/page.tsx", "utf8");
 const robotsRoute = readFileSync("app/robots.ts", "utf8");
 const siteConfig = readFileSync("config/site.ts", "utf8");
 
-test("root metadata establishes the Indonesian site identity", () => {
+test("root metadata keeps the Indonesian site identity and uses the trusted locale", () => {
   assert.match(rootLayout, /applicationName:\s*SITE_CONFIG\.name/);
   assert.match(rootLayout, /default:\s*SITE_CONFIG\.name/);
   assert.match(rootLayout, /template:\s*`%s \| \$\{SITE_CONFIG\.name\}`/);
   assert.match(rootLayout, /description:\s*SITE_CONFIG\.tagline/);
-  assert.match(rootLayout, /<html[^>]*lang=\{SITE_CONFIG\.locale\}[^>]*>/);
+  assert.match(rootLayout, /readTrustedLocale\(await headers\(\)\)/);
+  assert.match(rootLayout, /<html[^>]*lang=\{locale\}[^>]*>/);
   assert.match(siteConfig, /locale:\s*"id"/);
 });
 
