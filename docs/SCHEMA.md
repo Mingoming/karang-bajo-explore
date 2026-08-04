@@ -2622,11 +2622,59 @@ A revision system may be added if administrators require version comparison or r
 
 The current database schema is single-language. No multilingual translation entity, locale column, translated field, translated public view, or translation-specific policy exists.
 
-Reason:
+The merged bilingual public-shell Phase 1 localizes static application copy only and requires no schema change. Database-backed English content is now approved as a separate Phase 2 using one explicit translation table per translated domain. Polymorphic JSON translation storage and `_en` columns on source tables are not approved.
 
-The approved bilingual public-shell Phase 1 localizes static application copy only. It does not store or publish English database-managed content and therefore requires no schema change.
+### Phase 2A Approved Logical Model
 
-Database translation is a future, separately reviewed capability beginning with a proposed Village Profile pilot. Any translation columns or tables require an approved logical model, migration, RLS and public-view review, admin workflow, and publication rules before implementation. This document does not imply that those structures currently exist.
+Phase 2A is limited to the Village Profile pilot. The following objects are design approvals only and do not yet exist in the applied migration history:
+
+* `public.village_profile_translations`
+* One column-limited published-English Village Profile view
+* Domain-specific lifecycle and publication validation
+* RLS policies, explicit grants, indexes, and administrator-only mutations
+
+The proposed translation table has one row per source profile and locale. Its logical fields are:
+
+| Field | Purpose |
+| --- | --- |
+| `id` | Translation UUID primary key |
+| `village_profile_id` | Required foreign key to `village_profiles.id` using `on delete restrict` |
+| `locale` | Required locale constrained to exactly `en` in Phase 2A |
+| `name` | Approved English village name |
+| `summary` | Approved English summary when the source summary is populated |
+| `description` | Approved English main description |
+| `history` | Approved English history when the source history is populated |
+| `vision` | Approved English vision when the source vision is populated |
+| `mission` | Approved English mission when the source mission is populated |
+| `address` | Approved English address when the source address is populated |
+| `status` | Existing `public.publication_status`; defaults to `draft` |
+| `source_updated_at_at_publish` | Server-recorded source `updated_at` value reviewed at translation publication |
+| `published_at` | First successful English publication timestamp; remains unchanged after republication |
+| `created_at`, `updated_at` | Translation audit timestamps |
+| `created_by`, `updated_by` | Auth UUID audit references for the configured administrator |
+
+The table requires a unique constraint on `(village_profile_id, locale)` and an index covering the public eligibility lookup by locale, status, and source profile. RLS and explicit grants must allow the configured administrator to select, insert, and update while providing no application delete policy. Permanent deletion remains unavailable. English slugs are not part of the singleton pilot because the approved route is fixed at `/en/village-profile`.
+
+### Phase 2A Publication and Staleness Contract
+
+Translation lifecycle values are `draft`, `published`, and `archived`; restore changes `archived` to `draft`. Drafts may be incomplete. Translatable fields of a published translation cannot be edited directly. The administrator must first return the translation to draft. Returning the translation to draft clears `source_updated_at_at_publish`. Publishing again validates completeness and records the source's current `updated_at` server-side. `published_at` records the first successful English publication and remains unchanged after republication.
+
+The database records `source_updated_at_at_publish` from the source row during the trusted publication operation. It is not accepted from browser input. The published-English view returns a row only when:
+
+1. `village_profiles.status = 'published'`;
+2. the translation status is `published`;
+3. the translation locale is exactly `en`; and
+4. `village_profile_translations.source_updated_at_at_publish = village_profiles.updated_at`.
+
+Editing the Indonesian source changes `updated_at` and hides the English row until re-review. Archiving or otherwise unpublishing the source also hides English immediately. Restoring or republishing the source does not expose a stale translation because the review timestamp no longer matches. Automatic cross-table archival is not the primary synchronization mechanism.
+
+English publication requires `name` and `description`. If the source `summary`, `history`, `vision`, `mission`, or `address` is populated, the matching approved English field is also required. Proper names may remain unchanged only through explicit administrator entry and approval. Cultural and historical translations must be verified with an authorized village or customary source before publication; this model does not invent a reviewer identity, additional role, or multi-person approval workflow.
+
+* Cultural and historical verification is an operational prerequisite performed outside the application. The configured administrator is responsible for confirming it before publication.
+
+* Phase 2A does not store reviewer identities, reviewer credentials, approval records, or multi-person approval workflows. Automated validation enforces completeness and lifecycle rules but cannot establish factual correctness.
+
+The public view may expose approved English fields plus language-neutral source identity, coordinates, Google Maps URL, and publication timestamps. It must omit audit UUIDs, lifecycle internals, and `source_updated_at_at_publish`. Translation base tables grant no anonymous access. The configured administrator is the only identity permitted to manage translations through the existing `public.is_admin()` boundary.
 
 ---
 
@@ -2776,7 +2824,7 @@ When translating this logical model into Supabase PostgreSQL migrations:
 17. Define a documented synchronization rule for primary images and thumbnail paths.
 18. Preserve storage bucket and path together in every media reference.
 19. Test restore behavior before production handover.
-20. Do not add translation fields, tables, views, or policies as part of bilingual public-shell Phase 1; future database translation requires a separately approved schema revision.
+20. Do not add translation fields, tables, views, or policies to the merged bilingual public-shell Phase 1. Phase 2A may add only the separately approved Village Profile translation objects through a new reviewed migration; other domain translations remain deferred.
 21. Store facilities and included facilities as `text[]` with an empty-array default.
 22. Enforce the approved Indonesian-rupiah price semantics and optional `price_note` fields.
 23. Do not add booking, payment, rating, review, or PostGIS entities without an approved architecture and PRD change.

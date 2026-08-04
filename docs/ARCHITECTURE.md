@@ -635,11 +635,25 @@ The approved Phase 1 locale architecture is asymmetric: Indonesian remains unpre
 
 Static interface copy is provided by typed `id` and `en` dictionaries. A semantic route manifest records actual equivalents independently from visible labels; in Phase 1, only `/` and `/en` form an equivalent pair. A missing English path remains unavailable rather than being derived from an Indonesian segment or slug.
 
-The server-rendered document language must be derived from the requested path through a trusted server-side locale mechanism. The concrete Next.js 16 implementation, including the option of a Proxy-injected internal request header, remains subject to a spike that validates rendering and caching behavior. Caller-supplied locale indicators are never authoritative. Public locale classification must remain separate from the existing Supabase session-refresh and administrator-authorization flow so an English public request does not expand the authentication boundary.
+The server-rendered document language is derived from the requested path through a trusted Next.js 16 Proxy-injected internal request header. The Proxy removes caller-supplied locale values and sets the locale from the pathname before the root layout renders the document language. Public locale classification remains separate from the existing Supabase session-refresh and administrator-authorization flow so an English public request does not expand the authentication boundary.
 
 The English homepage does not query or render database-managed Indonesian descriptive content. It may reuse only approved language-neutral values: the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Contact labels and descriptions remain excluded. There is no browser-language redirect, machine translation, or Indonesian database-content fallback.
 
-Phase 1 adds no database translation layer. Canonical, alternate-language, `hreflang`, and sitemap work remains inactive until an approved production origin exists. Future database translation begins with a separately reviewed Village Profile pilot.
+Phase 1 adds no database translation layer. Canonical, alternate-language, `hreflang`, and sitemap work remains inactive until an approved production origin exists.
+
+### 6.17 English Content Phase 2A — Village Profile Pilot
+
+Phase 2 uses one explicit translation table per translated domain. Phase 2A is limited to the proposed `public.village_profile_translations` table, a column-limited published-English Village Profile view, domain-specific lifecycle validation, RLS, grants, indexes, and administrator-only mutations. These objects are approved architecture but are not yet implemented or deployed.
+
+The future English route is `/en/village-profile`. It becomes a real route equivalent only when the Phase 2A application and database work exists. The Indonesian `/profil-desa` route and source record remain authoritative and unchanged.
+
+The semantic route manifest may record the approved route shapes, but it does not by itself authorize a Village Profile language switch. The server must resolve public translation eligibility before providing the reciprocal English href to the language switcher.
+
+The Indonesian `/profil-desa` page must omit the English switch when the translation is missing, draft, archived, stale, or unavailable because the Indonesian source is not published. Client-side pathname logic must not infer translation eligibility. A successfully rendered `/en/village-profile` page may provide `/profil-desa` as its Indonesian equivalent because the English request has already passed the public eligibility checks.
+
+English public visibility requires the Indonesian source and English translation to be published, the translation locale to equal `en`, and the translation's server-recorded `source_updated_at_at_publish` value to equal the source record's current `updated_at`. Editing, archiving, restoring, or republishing the Indonesian source therefore hides an English translation whose review snapshot is stale. The system does not use automatic cross-table archival as its primary synchronization mechanism and must not restore English visibility until the translation is reviewed and published against the current source version.
+
+Translation base-table access follows the existing security boundary: anonymous and non-administrator identities receive no base-table mutation access, administrator mutations are authorized through `public.is_admin()`, and public reads use only the explicit published-English view. The view omits audit fields and the source-version review marker. No service-role application client, caller-selected table, machine translation, or Indonesian descriptive fallback is introduced.
 
 ---
 
@@ -1881,6 +1895,8 @@ They are not required for the current web-based information platform.
 | Back up database, media, and GIS files separately               | Each contains different information and cannot fully replace the others                                         |
 | Use one administrator account in Version 1                      | Keeps authentication and authorization proportional to the approved operating model                            |
 | Use an Indonesian-default asymmetric locale foundation          | Existing Indonesian routes remain unprefixed; Phase 1 adds only a static English public shell at `/en`          |
+| Use one explicit translation table per translated domain        | Preserves foreign-key integrity, domain validation, RLS, public-view isolation, and typed application boundaries |
+| Pilot database translation with Village Profile only            | Proves source-version staleness and publication isolation before other English domains are approved             |
 | Keep destination categories fixed                               | `Alam`, `Budaya`, and `Religi` are stable system data and require no dashboard management                       |
 | Generate and freeze public slugs                                | Slugs stay out of routine forms and remain stable after first publication                                       |
 | Use numeric Indonesian-rupiah price semantics                   | `0` means free, `null` unavailable, and positive values are rupiah; `price_note` remains optional                |

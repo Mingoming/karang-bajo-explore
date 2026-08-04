@@ -2620,6 +2620,37 @@ The application treats this as a singleton form.
 
 No “Create another village profile” action is shown in normal use.
 
+### Phase 2A English Translation Panel
+
+The approved Phase 2A design adds an Indonesian-language translation panel to the existing singleton administrator workflow. It does not add a second profile, another administrator, editor roles, or an approval workflow.
+
+```text
+Terjemahan Bahasa Inggris
+├── Status terjemahan dan status kesesuaian sumber
+├── Nama (English)
+├── Ringkasan (English)
+├── Deskripsi (English)
+├── Sejarah (English)
+├── Visi (English)
+├── Misi (English)
+├── Alamat (English)
+└── Simpan Draft / Terbitkan / Arsipkan / Pulihkan ke Draft
+```
+
+The panel shows the Indonesian source as read-only reference and makes translation fields visually distinct. It must never prefill English fields by machine translation or silently copy Indonesian descriptive text. Proper names may be entered unchanged only as an explicit administrator decision.
+
+Draft translations may be incomplete. Before publication, `name` and `description` are required, and every populated source `summary`, `history`, `vision`, `mission`, or `address` requires an approved English value. Cultural and historical text must be verified with an authorized village or customary source; the interface does not invent or display a reviewer identity.
+
+Cultural and historical verification is an operational publication prerequisite performed outside the application. The configured administrator is responsible for confirming that verification before publication. Phase 2A does not store reviewer identities, reviewer credentials, approval records, or a multi-person approval workflow. Automated validation can enforce completeness and lifecycle rules but cannot establish the factual correctness of a translation.
+
+When the translation is published, its translatable fields are read-only. The administrator must use an explicit return-to-draft action before editing. Returning to draft clears the previous `source_updated_at_at_publish` value. Republishing validates completeness and records the current source `updated_at` server-side. The first successful publication timestamp remains unchanged.
+
+The panel displays a stale warning when the translation's reviewed source timestamp does not match the current source `updated_at`. A stale translation is not public. The administrator must review the current Indonesian source and publish the English translation again. Source archive, restore, and republication must not cause stale English content to reappear.
+
+The future `/en/village-profile` page uses localized loading, error, empty, and not-found states. Missing, draft, archived, or stale translations produce no Indonesian fallback. The `/profil-desa` ↔ `/en/village-profile` switcher pair becomes active only after the Phase 2A implementation is complete and the English translation is publicly eligible.
+
+Phase 2A adds no English slug input, image alt/caption translation UI, contact translation UI, preview route, canonical control, or sitemap control.
+
 ---
 
 ## 9.10 Repeatable Fields

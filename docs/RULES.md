@@ -105,7 +105,7 @@ Minor wording differences that do not change behavior do not require implementat
 
 Version 1 has exactly two access states: anonymous public visitor and one authenticated administrator. Supabase Auth is required. The administrator can create, edit, publish, archive, restore, upload media, and manage approved settings.
 
-Editor roles, additional accounts, role management, user management, invitations, approval workflows, and permanent deletion are prohibited. New content starts as draft and restore returns content to draft. Indonesian remains the default locale; bilingual public-shell Phase 1 adds only `/en` with static English interface copy, while admin, authentication, and database-managed content remain single-language Indonesian.
+Editor roles, additional accounts, role management, user management, invitations, approval workflows, and permanent deletion are prohibited. New content starts as draft and restore returns content to draft. Indonesian remains the default locale; the merged bilingual public-shell Phase 1 adds only `/en` with static English interface copy, while the current database-managed content remains single-language Indonesian. Phase 2A design approval permits only the future Village Profile English translation pilot described in Section 3.5.
 
 Destination categories are fixed to `Alam`, `Budaya`, and `Religi` and are not dashboard-managed. Slugs are generated automatically, hidden from normal forms, and immutable after first publication.
 
@@ -196,7 +196,7 @@ Version 1 must not include:
 * Invitation flows
 * Approval workflows
 * Permanent deletion
-* Database-backed multilingual publishing in bilingual public-shell Phase 1
+* Database-backed multilingual publishing in bilingual public-shell Phase 1 or for any domain outside the approved Phase 2A Village Profile pilot
 
 Do not add optional features merely because they are common on tourism websites.
 
@@ -231,12 +231,33 @@ Do not add a route, table, column, dependency, service, or role merely to suppor
 * Do not invent English paths, slugs, or route equivalence. A missing equivalent must remain unavailable.
 * Render a language switcher only when the semantic route manifest contains a real equivalent.
 * Do not add database translation columns, tables, views, policies, migrations, or admin workflows in Phase 1.
-* Derive locale from the trusted request path through a server-side mechanism validated for Next.js 16. Caller-supplied locale indicators must not control document language. Do not finalize a request-header implementation until the rendering and caching spike passes.
+* Derive locale from the trusted request path through the implemented Next.js 16 Proxy-injected internal header. Caller-supplied locale indicators must not control document language.
 * Do not redirect according to browser language.
 * Do not derive a canonical origin from the request `Host`; wait for an approved production origin.
 * Do not access or mutate hosted Supabase for bilingual implementation or validation without explicit user instruction.
 * On `/en`, reusable database values are limited to the normalized central WhatsApp number or href and recognized Google Maps or Tripadvisor URLs. Do not render database contact labels or descriptions.
-* General Cultural Articles, Bayan Customary Institution Articles, standalone gallery, and database translation remain outside this scope.
+* General Cultural Articles, Bayan Customary Institution Articles, standalone gallery, and database translation remain outside Phase 1.
+
+## 3.5 English Public Content Phase 2A Rules
+
+* Phase 2 translation storage uses one explicit table per domain. Do not use polymorphic JSON translation records or `_en` columns on source tables.
+* Phase 2A is limited to Village Profile and the future `/en/village-profile` route. Do not add English routes or translation storage for another domain.
+* Use `draft`, `published`, and `archived`; restore returns an archived translation to draft. Missing means no translation row and is not an additional stored status.
+* Public English visibility requires a published source profile, published `en` translation, and a server-recorded `source_updated_at_at_publish` equal to the source's current `updated_at`.
+* Do not accept the reviewed source timestamp from browser input. Capture it at the trusted translation publication boundary.
+* Do not use automatic cross-table archival as the primary synchronization mechanism. Source edits or lifecycle changes must make the view's source-version match fail until explicit translation review and republication.
+* Require English `name` and `description`. For every populated source `summary`, `history`, `vision`, `mission`, or `address`, require its approved English translation before publication.
+* Never fall back to an Indonesian descriptive field. Proper names may remain textually unchanged only through explicit administrator entry and approval.
+* Cultural and historical translation must be verified with an authorized village or customary source before publication. Do not invent a reviewer, account, institution, role, or approval workflow.
+* Cultural and historical verification is an operational prerequisite performed outside the application. The configured administrator is responsible for confirming it before publication.
+* Phase 2A does not store reviewer identities, reviewer credentials, approval records, or multi-person approval workflows. Automated validation enforces completeness and lifecycle rules but cannot establish factual correctness.
+* Admin and authentication remain Indonesian-only. The existing configured administrator is the only translation manager.
+* Translation base tables must use RLS and explicit grants. Anonymous users read only the column-limited published-English view; non-administrator identities receive no mutation access.
+* Phase 2A does not include English slugs, translated media metadata, translated contacts, canonical links, alternates, `hreflang`, sitemap changes, machine translation, browser-language redirects, or hosted database work.
+* Translatable fields cannot be edited while a translation is `published`. The administrator must return it to `draft` first. Returning to draft clears `source_updated_at_at_publish`; successful republication records the current source `updated_at` server-side. `published_at` records the first successful English publication and remains unchanged after republication.
+* The semantic route manifest may describe `/profil-desa` and `/en/village-profile`, but it must not by itself authorize the language switcher.
+* The server must resolve public translation eligibility before providing the reciprocal English href. The switcher is absent when the translation is missing, draft, archived, stale, or hidden because the source profile is not published.
+* Client-side pathname logic must not infer or create translation eligibility.
 
 ---
 
