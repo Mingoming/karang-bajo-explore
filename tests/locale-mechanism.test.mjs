@@ -118,15 +118,21 @@ test("Proxy sanitizes the locale before entering the session-refresh helper", ()
   const deleteIndex = source.indexOf(
     "request.headers.delete(INTERNAL_LOCALE_HEADER)",
   );
-  const setIndex = source.indexOf(
-    "request.headers.set(\n      INTERNAL_LOCALE_HEADER",
-  );
+  const setIndex = source.indexOf("request.headers.set(", deleteIndex);
   const refreshIndex = source.indexOf("return updateSession(request)");
 
   assert.ok(trustedHeaderIndex >= 0 && trustedHeaderIndex < branchIndex);
   assert.ok(branchIndex < deleteIndex);
-  assert.ok(deleteIndex < setIndex);
-  assert.ok(setIndex < refreshIndex);
+  assert.ok(deleteIndex >= 0);
+  assert.ok(setIndex > deleteIndex);
+  assert.ok(refreshIndex > setIndex);
+
+  const localeSetBlock = source.slice(setIndex, refreshIndex);
+
+  assert.match(
+    localeSetBlock,
+    /request\.headers\.set\(\s*INTERNAL_LOCALE_HEADER,\s*trustedHeaders\.get\(INTERNAL_LOCALE_HEADER\)\s*\?\?\s*"id",?\s*\)/,
+  );
 });
 
 test("the internal locale-header literal has one production definition", () => {
