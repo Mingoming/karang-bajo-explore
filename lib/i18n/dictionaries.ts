@@ -88,6 +88,18 @@ const idDictionary = {
     notFoundDescription: "Halaman yang Anda cari tidak tersedia.",
     notFoundAction: "Kembali ke beranda",
   },
+  villageProfile: {
+    metadataTitlePrefix: "Profil Desa",
+    metadataUnavailableTitle: "Profil desa belum tersedia",
+    metadataUnavailableDescription:
+      "Profil resmi Desa Karang Bajo belum tersedia atau belum diterbitkan.",
+    eyebrow: "Mengenal desa",
+    historyHeading: "Sejarah",
+    visionHeading: "Visi",
+    missionHeading: "Misi",
+    locationHeading: "Lokasi",
+    openMap: "Buka lokasi di peta",
+  },
 } as const;
 
 type StringDictionary<T> = {
@@ -184,6 +196,18 @@ const enDictionary = {
     notFoundTitle: "Page not found",
     notFoundDescription: "The page you requested is not available.",
     notFoundAction: "Back to homepage",
+  },
+  villageProfile: {
+    metadataTitlePrefix: "Village Profile",
+    metadataUnavailableTitle: "Village profile not available",
+    metadataUnavailableDescription:
+      "The approved English Village Profile is not available yet.",
+    eyebrow: "Village profile",
+    historyHeading: "History",
+    visionHeading: "Vision",
+    missionHeading: "Mission",
+    locationHeading: "Location",
+    openMap: "Open location in maps",
   },
 } as const satisfies PublicDictionary;
 

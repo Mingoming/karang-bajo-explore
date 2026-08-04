@@ -10,7 +10,8 @@ import {
   readTrustedLocale,
 } from "../lib/i18n/locale.ts";
 
-const ENGLISH_PAGE = "app/en/page.tsx";
+const ENGLISH_HOME_PAGE = "app/en/page.tsx";
+const ENGLISH_VILLAGE_PROFILE_PAGE = "app/en/village-profile/page.tsx";
 
 function collectTypeScriptSources(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -30,6 +31,7 @@ test("pathnames use exact English-prefix classification", () => {
     ["/en", "en"],
     ["/en/", "en"],
     ["/en/example", "en"],
+    ["/en/village-profile", "en"],
     ["/enough", "id"],
     ["/admin", "id"],
     ["/fr", "id"],
@@ -81,19 +83,33 @@ test("only existing admin and auth paths require session refresh", () => {
     assert.equal(classifyProxyRequest(pathname), "session-refresh", pathname);
   }
 
-  for (const pathname of ["/", "/en", "/en/example", "/destinasi", "/fr"]) {
+  for (const pathname of [
+    "/",
+    "/en",
+    "/en/example",
+    "/en/village-profile",
+    "/destinasi",
+    "/fr",
+  ]) {
     assert.equal(classifyProxyRequest(pathname), "locale-only", pathname);
   }
 });
 
-test("the foundation creates only the approved English route", () => {
-  assert.equal(existsSync(ENGLISH_PAGE), true);
-  assert.equal(existsSync("app/en/admin/page.tsx"), false);
-  assert.equal(existsSync("app/en/destinations/page.tsx"), false);
+test("the foundation creates only the approved English routes", () => {
+  assert.equal(existsSync(ENGLISH_HOME_PAGE), true);
+  assert.equal(existsSync(ENGLISH_VILLAGE_PROFILE_PAGE), true);
+
+  for (const path of [
+    "app/en/admin/page.tsx",
+    "app/en/destinations/page.tsx",
+    "app/en/profile/page.tsx",
+  ]) {
+    assert.equal(existsSync(path), false, path);
+  }
 });
 
 test("the English homepage has no Indonesian descriptive-content dependency", () => {
-  const source = readFileSync(ENGLISH_PAGE, "utf8");
+  const source = readFileSync(ENGLISH_HOME_PAGE, "utf8");
 
   assert.doesNotMatch(
     source,

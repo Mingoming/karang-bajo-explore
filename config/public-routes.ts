@@ -20,7 +20,7 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
   Record<PublicRouteKey, Readonly<Record<PublicLocale, PublicRoutePath | null>>>
 > = {
   home: { id: "/", en: "/en" },
-  profile: { id: "/profil-desa", en: null },
+  profile: { id: "/profil-desa", en: "/en/village-profile" },
   destinations: { id: "/destinasi", en: null },
   tourismPackages: { id: "/paket-wisata", en: null },
   homestays: { id: "/homestay", en: null },
