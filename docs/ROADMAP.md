@@ -61,10 +61,11 @@ Authoritative references:
 | Development rules           | Defined                             |
 | Roadmap                     | This document                       |
 | Production repository       | Initialized with Next.js and npm lockfile |
-| Production Supabase project | Not yet created                     |
+| Hosted Supabase development target | Exists; not the production target     |
+| Production Supabase target | Not approved; no production access or mutation authorized |
 | Release-candidate code      | Implemented on `main`; not production-ready |
-| Application tests           | 19 suites and 236 tests passing      |
-| Local database tests        | 361 pgTAP assertions passing         |
+| Application tests           | 23 files and 283 tests passing      |
+| Local database tests        | 448 pgTAP assertions passing         |
 | GitHub quality gate         | Active `main` ruleset requires `Quality` |
 | Initial tourism data        | Partially collected                 |
 | Cultural content            | Incomplete                          |
@@ -82,8 +83,14 @@ Authoritative references:
 | Milestone 6 SEO, performance, and release quality gate | Merged through PR #1; README correction merged through PR #2 | Production origin, final assets, and production validation remain pending |
 | Public Village Profile | Merged through PR #3 | Approved production profile content and acceptance remain pending |
 | Centralized official contact and WhatsApp | Merged through PR #4, including `/kontak`, administrator contact management, and central WhatsApp configuration | Approved production contact data, ownership, and publication consent remain pending |
+| English Village Profile database | Merged through PR #12 | Production migration approval and post-migration validation remain pending |
+| Public English Village Profile | Merged through PR #13 at `/en/village-profile` | Verified English production content and smoke validation remain pending |
+| Admin English Village Profile workflow | Merged through PR #14 | Production administrator acceptance and content verification remain pending |
+| Production deployment runbook | Documented in `PRODUCTION_DEPLOYMENT_RUNBOOK.md` | Hosted read-only preflight and database mutation each require separate approval |
 
-PRs #1 through #4 are merged. The active development baseline is `main`, protected by an active repository ruleset that requires the `Quality` check. This status does not indicate production readiness.
+PRs #1 through #4 and PRs #12 through #14 are merged. PR #12 delivered the English Village Profile database migration, PR #13 delivered `/en/village-profile`, and PR #14 delivered the administrator workflow. The active development baseline is `main`, protected by an active repository ruleset that requires the `Quality` check.
+
+The previously used hosted Supabase target is a development target. It must not be treated as the production target. No production target, hosted read-only preflight, database mutation, application deployment, or content publication is approved by this documentation update.
 
 General Cultural Articles, Bayan Customary Institution Articles, the Standalone Public Gallery, Advanced Dashboard Analytics, responsive image derivatives, advanced structured data, and visitor analytics remain proposed Version 1.1 deferrals pending explicit approval.
 

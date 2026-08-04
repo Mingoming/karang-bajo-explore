@@ -37,13 +37,22 @@
 - ☑ Public Village Profile telah selesai dan di-merge melalui PR #3.
 - ☑ Kontak resmi terpusat dan WhatsApp telah selesai dan di-merge melalui PR #4.
 - ☑ Production build lulus.
-- ☑ Application tests lulus: 19 suite dan 236 test.
-- ☑ Local pgTAP database tests lulus: 361 assertion.
+- ☑ Application tests lulus: 23 file dan 283 test.
+- ☑ Local pgTAP database tests lulus: 448 assertions.
 - ☑ Typecheck script tersedia.
 - ☑ Aggregate quality-gate script tersedia.
 - ☑ GitHub Actions CI workflow tersedia.
 - ☑ README, TODO, ROADMAP, dan release scope telah disinkronkan dengan release candidate saat ini.
 - ☑ PR #1 sampai #4 telah di-merge ke `main`.
+- ☑ PR #12 telah menyelesaikan database English Village Profile pada `main`.
+- ☑ PR #13 telah menyelesaikan route publik `/en/village-profile` pada `main`.
+- ☑ PR #14 telah menyelesaikan workflow admin English Village Profile pada `main`.
+- ☑ English Village Profile telah selesai pada baseline `main`.
+- ☑ Migration target English Village Profile adalah `supabase/migrations/20260804065739_village_profile_translation.sql`, merupakan migration 6/6, dan tidak memiliki migration sesudahnya pada baseline ini.
+- ☑ Dedicated production deployment runbook tersedia di `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
+- ⚠ Hosted target yang telah digunakan adalah development target; production target belum disetujui.
+- ⚠ Hosted read-only preflight memerlukan approval terpisah.
+- ⚠ Database production mutation memerlukan approval terpisah setelah preflight.
 - ☑ Required GitHub Actions check `Quality` lulus pada PR yang relevan.
 - ☑ Ruleset perlindungan `main` aktif dan mewajibkan check `Quality`.
 
@@ -132,7 +141,7 @@
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Jalankan 361 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, official-contact dan site-setting RLS, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, dan federated published-media access untuk enam parent
+- ☑ Jalankan 448 assertions terhadap database lokal dengan 0 failure, termasuk private Storage, RPC-only mutation Media, transactional Tourism Package RPC, official-contact dan site-setting RLS, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, federated published-media access, dan English Village Profile.
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion

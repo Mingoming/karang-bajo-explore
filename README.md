@@ -29,9 +29,15 @@ Fitur utama yang telah tersedia:
 - SEO metadata foundation
 - Robots rules
 - Bilingual public-shell Phase 1 dengan `/en`, tanpa fallback konten deskriptif Indonesia
-- Automated application tests: 21 file test dengan 263 test case
-- Local pgTAP database tests: 361 assertion
+- Automated application tests: 23 file test dengan 283 test case
+- Local pgTAP database tests: 448 assertions
 - CI quality gate `Quality` yang diwajibkan oleh ruleset aktif pada `main`
+- PR #12: database English Village Profile telah di-merge ke `main`
+- PR #13: halaman publik `/en/village-profile` telah di-merge ke `main`
+- PR #14: workflow admin English Village Profile telah di-merge ke `main`
+- English Village Profile telah selesai pada baseline `main`
+- Hosted Supabase yang telah digunakan adalah development target; production target belum disetujui
+- Dedicated production deployment runbook tersedia di `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`
 
 Pekerjaan yang masih diperlukan sebelum production release:
 
@@ -47,7 +53,8 @@ Pekerjaan yang masih diperlukan sebelum production release:
 - Verifikasi seluruh konten
 - Backup dan restore test
 - Administrator acceptance testing
-- Implementasi Phase 2A terjemahan Profil Desa yang desainnya telah disetujui; migration, route `/en/village-profile`, admin workflow, dan validasinya belum dibuat
+- Penetapan dan persetujuan Supabase production target yang terpisah dari hosted development target
+- Eksekusi deployment production sesuai `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`; belum ada persetujuan untuk hosted read-only preflight maupun mutation
 
 ## Stack
 
@@ -160,6 +167,7 @@ Dokumen yang menjadi rujukan utama:
 - ROADMAP.md
 - TODO.md
 - MVP_RELEASE_SCOPE.md
+- PRODUCTION_DEPLOYMENT_RUNBOOK.md
 
 ## Aturan Konten
 
