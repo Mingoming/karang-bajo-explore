@@ -126,6 +126,7 @@ export async function saveVillageProfile(
 
   revalidatePath(VILLAGE_PROFILE_ADMIN_PATH);
   revalidatePath("/profil-desa");
+  revalidatePath("/en/village-profile");
   revalidatePath("/");
 
   return {

@@ -144,7 +144,7 @@ test("Village Profile saves revalidate all affected routes", () => {
   assert.ok(
     actionSource.includes("revalidatePath(VILLAGE_PROFILE_ADMIN_PATH)"),
   );
-  for (const path of ["/profil-desa", "/"]) {
+  for (const path of ["/profil-desa", "/en/village-profile", "/"]) {
     assert.ok(actionSource.includes(`revalidatePath("${path}")`));
   }
 });

@@ -63,7 +63,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
   ]);
   assert.deepEqual(PUBLIC_ROUTE_MANIFEST, {
     home: { id: "/", en: "/en" },
-    profile: { id: "/profil-desa", en: null },
+    profile: { id: "/profil-desa", en: "/en/village-profile" },
     destinations: { id: "/destinasi", en: null },
     tourismPackages: { id: "/paket-wisata", en: null },
     homestays: { id: "/homestay", en: null },
@@ -75,21 +75,33 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
   });
 });
 
-test("only home has an English route and equivalence is reciprocal", () => {
+test("home and Village Profile have reciprocal English routes", () => {
   assert.equal(getPublicRoute("home", "id"), "/");
   assert.equal(getPublicRoute("home", "en"), "/en");
   assert.equal(getEquivalentPublicRoute("/", "id"), "/en");
   assert.equal(getEquivalentPublicRoute("/en", "en"), "/");
 
-  for (const key of PUBLIC_ROUTE_KEYS.slice(1)) {
+  assert.equal(getPublicRoute("profile", "id"), "/profil-desa");
+  assert.equal(getPublicRoute("profile", "en"), "/en/village-profile");
+  assert.equal(
+    getEquivalentPublicRoute("/profil-desa", "id"),
+    "/en/village-profile",
+  );
+  assert.equal(
+    getEquivalentPublicRoute("/en/village-profile", "en"),
+    "/profil-desa",
+  );
+
+  for (const key of PUBLIC_ROUTE_KEYS.slice(2)) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
+
   for (const path of ["/destinasi", "/admin", "/en/destinations"]) {
     assert.equal(getEquivalentPublicRoute(path, "id"), null, path);
   }
 });
 
-test("localized navigation preserves Indonesian routes and limits English to home", () => {
+test("localized navigation preserves Indonesian routes and limits English to approved routes", () => {
   assert.deepEqual(
     getPublicNavigation("id", PUBLIC_DICTIONARIES.id).map(({ label, href }) => [
       label,
@@ -110,6 +122,11 @@ test("localized navigation preserves Indonesian routes and limits English to hom
   );
   assert.deepEqual(getPublicNavigation("en", PUBLIC_DICTIONARIES.en), [
     { key: "home", label: "Home", href: "/en" },
+    {
+      key: "profile",
+      label: "Village Profile",
+      href: "/en/village-profile",
+    },
   ]);
 });
 
@@ -197,14 +214,22 @@ test("English metadata is localized without canonical or alternate output", () =
   );
 });
 
-test("only /en is created and Proxy excludes actual assets without dotted bypass", () => {
+test("only approved English routes are created and Proxy excludes actual assets", () => {
   const proxy = read("proxy.ts");
   assert.equal(existsSync("app/en/page.tsx"), true);
+  assert.equal(existsSync("app/en/village-profile/page.tsx"), true);
   for (const path of [
     "app/id/page.tsx",
     "app/en/admin/page.tsx",
     "app/en/destinations/page.tsx",
     "app/en/profile/page.tsx",
+    "app/en/tourism-packages/page.tsx",
+    "app/en/homestays/page.tsx",
+    "app/en/local-businesses/page.tsx",
+    "app/en/traditional-houses/page.tsx",
+    "app/en/cultural-events/page.tsx",
+    "app/en/tourism-map/page.tsx",
+    "app/en/contact/page.tsx",
   ]) {
     assert.equal(existsSync(path), false, path);
   }
