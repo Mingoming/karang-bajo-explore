@@ -28,7 +28,8 @@ Fitur utama yang telah tersedia:
 - Normalisasi gambar menjadi WebP
 - SEO metadata foundation
 - Robots rules
-- Automated application tests: 19 suite dengan 236 test
+- Bilingual public-shell Phase 1 dengan `/en`, tanpa fallback konten deskriptif Indonesia
+- Automated application tests: 21 file test dengan 263 test case
 - Local pgTAP database tests: 361 assertion
 - CI quality gate `Quality` yang diwajibkan oleh ruleset aktif pada `main`
 
@@ -46,6 +47,7 @@ Pekerjaan yang masih diperlukan sebelum production release:
 - Verifikasi seluruh konten
 - Backup dan restore test
 - Administrator acceptance testing
+- Implementasi Phase 2A terjemahan Profil Desa yang desainnya telah disetujui; migration, route `/en/village-profile`, admin workflow, dan validasinya belum dibuat
 
 ## Stack
 

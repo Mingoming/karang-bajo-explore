@@ -779,15 +779,28 @@
 
 # Bilingual Public-Shell Foundation
 
-- ☐ Evaluate server-side path-derived locale mechanisms, including a trusted internal request-header option, without changing admin/auth session handling.
-- ☐ Verify the root locale mechanism's dynamic-rendering and caching impact under Next.js 16.
-- ☐ Implement typed `id` and `en` dictionaries and the ten-key semantic public-route manifest.
-- ☐ Implement `/en` as the only active English route without querying Indonesian domain content.
-- ☐ Localize the public header, mobile navigation, footer, homepage static UI, contact CTA UI, and external-tourism-link UI.
-- ☐ Add the `/` and `/en` language switcher without inventing unsupported English equivalents.
-- ☐ Add dictionary-parity, route-manifest, metadata, no-fallback, admin-isolation, and Indonesian-regression tests.
-- ☐ Validate server-rendered `<html lang="id">` and `<html lang="en">` through local HTTP responses.
-- ☐ Design the Village Profile database-translation pilot separately after Phase 1; include schema, RLS, views, admin workflow, and publication rules.
+- ☑ Path-derived locale uses a sanitized Proxy-injected internal request header without changing admin/auth session handling.
+- ☑ Root locale dynamic-rendering and caching behavior validated under Next.js 16.
+- ☑ Typed `id` and `en` dictionaries and the ten-key semantic public-route manifest implemented.
+- ☑ `/en` implemented as the only Phase 1 English route without querying Indonesian domain content.
+- ☑ Public header, mobile navigation, footer, homepage static UI, contact CTA UI, and external-tourism-link UI localized.
+- ☑ `/` and `/en` language switcher implemented without inventing unsupported English equivalents.
+- ☑ Dictionary-parity, route-manifest, metadata, no-fallback, admin-isolation, and Indonesian-regression tests added.
+- ☑ Server-rendered `<html lang="id">` and `<html lang="en">` validated through local HTTP responses.
+
+## English Public Content Phase 2A — Village Profile Translation Pilot
+
+- ☑ Database-backed English content approved as a separate Phase 2 using one explicit translation table per domain.
+- ☑ Village Profile-only pilot scope, `/en/village-profile` route, lifecycle, completeness, RLS boundary, and stale-source contract documented.
+- ☐ Create a new reviewed migration for `public.village_profile_translations`, its published-English view, lifecycle validation, RLS, grants, and indexes.
+- ☐ Implement the Indonesian-language administrator translation workflow.
+- ☐ Implement the published-English loader, `/en/village-profile`, metadata, route equivalence, and homepage excerpt integration.
+- ☐ Add pgTAP tests for authorization, lifecycle, completeness, source publication, and source-version staleness.
+- ☐ Add application tests for no fallback, route equivalence, metadata, states, and Indonesian/admin regression.
+- ☐ Run desktop and 390 px browser validation for the pilot routes.
+- ☐ Apply the future migration to a hosted development project only under a separate explicit authorization.
+
+Phase 2A excludes other domain translations, English slugs, media text translations, contact translations, canonical/alternate/`hreflang`/sitemap work, machine translation, browser-language redirects, and hosted Supabase work in the documentation-approval task.
 
 ---
 

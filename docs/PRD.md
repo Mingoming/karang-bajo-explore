@@ -71,7 +71,25 @@ Phase 1 of the bilingual rollout is limited to static public-interface localizat
 9. English Open Graph metadata uses `en_US`. Canonical URLs, `hreflang="en"`, alternates, and sitemap changes remain deferred until an approved production origin exists.
 10. Phase 1 introduces no database migration, translation entity, or database-content translation workflow.
 
-The product must not claim that all tourism information is bilingual. Database translation will be considered separately, beginning with a Village Profile pilot after its schema, authorization, editorial, and fallback rules are reviewed.
+The product must not claim that all tourism information is bilingual.
+
+### English Public Content — Phase 2A Village Profile Pilot
+
+Database-backed English content is approved as a separate Phase 2 using one explicit translation table per domain. Phase 2A implements only the Village Profile pilot and the future `/en/village-profile` route. Destination and all other domain translations remain deferred.
+
+The pilot must provide `missing`, `draft`, `published`, and `archived` translation conditions using the existing publication values for stored records. Restore returns an archived translation to draft. Public English visibility requires a published Indonesian source, a published `en` translation, and proof that the translation was reviewed against the source's current `updated_at`. The database records that source timestamp at publication; a mismatch hides the English translation without relying on automatic cross-table archival.
+
+A published translation cannot be edited directly. The administrator must first
+return it to draft. Returning to draft clears the previously reviewed source
+timestamp. Republishing must validate completeness and record the current source
+`updated_at` server-side. `published_at` records the first successful English
+publication and remains unchanged after republication.
+
+English `name` and `description` are required. When the Indonesian source contains `summary`, `history`, `vision`, `mission`, or `address`, the approved English equivalent is also required. Proper names may remain unchanged only when the administrator enters and approves them explicitly. Cultural and historical translations require verification with an authorized village or customary source before publication. The product does not invent a reviewer, new role, or approval workflow.
+
+Cultural and historical verification is an operational publication prerequisite performed outside the application. The configured administrator is responsible for confirming that verification before publication. Phase 2A does not store reviewer identities, reviewer credentials, approval records, or a multi-person approval workflow. Automated validation can enforce completeness and lifecycle rules but cannot establish the factual correctness of a translation.
+
+Phase 2A does not include machine translation, Indonesian descriptive fallback, English slugs, media text translations, contact translations, other English domain routes, browser-language redirects, production-origin metadata, canonical links, alternates, `hreflang`, or sitemap changes.
 
 ### Version 1 Boundary — Package Participant Limits
 
@@ -463,9 +481,10 @@ The system helps visitors discover, understand, and contact tourism providers. I
 | Social commenting          | Out of scope | Requires moderation and identity management                                  |
 | Multi-village management   | Out of scope | Product serves Desa Karang Bajo only                                         |
 | Automatic event recurrence | Out of scope | Each occurrence is managed separately                                        |
-| Database-content translation | Deferred   | Phase 1 localizes only the static public shell; a Village Profile pilot requires separate review |
 | Package participant limits | Out of scope | No approved product or data model                                            |
 | Structured stop timing     | Out of scope | No approved package-stop model                                               |
+
+Database-content translation remains out of scope except for the explicitly approved Phase 2A Village Profile pilot. Every other domain requires separate approval.
 
 ---
 
@@ -517,6 +536,9 @@ Only one current village profile is managed in Version 1.
 6. The application must prevent ordinary users from creating multiple active profiles.
 7. Empty optional sections must not appear publicly.
 8. Draft content must not appear in public navigation or public output.
+9. The approved Phase 2A pilot must support one English translation for the singleton profile without modifying the Indonesian source fields.
+10. `/en/village-profile` must show content only when both source and translation publication and source-version review requirements pass.
+11. Missing, draft, archived, or stale English translations must not expose Indonesian descriptive fallback.
 
 ## Acceptance Criteria
 
@@ -527,6 +549,16 @@ Only one current village profile is managed in Version 1.
 * [ ] Only one active village profile is presented publicly.
 * [ ] Empty history, vision, or mission sections are hidden.
 * [ ] Archived profile content is not publicly accessible.
+* [ ] The Phase 2A English profile route is absent until its database and application implementation is complete.
+* [ ] A published current English translation is available at `/en/village-profile` after Phase 2A implementation.
+* [ ] A published English translation cannot be edited until the administrator explicitly returns it to draft.
+* [ ] Returning the translation to draft clears its reviewed-source marker.
+* [ ] Republishing records the current source `updated_at` without changing the first-publication timestamp.
+* [ ] `/profil-desa` omits the English language switch when the English translation is missing, draft, archived, stale, or otherwise ineligible.
+* [ ] Client-side pathname logic cannot create or infer English translation eligibility.
+* [ ] Editing, archiving, restoring, or republishing the Indonesian source hides an English translation whose reviewed source timestamp is stale.
+* [ ] English publication rejects missing translations for populated source summary, history, vision, mission, or address fields.
+* [ ] English output never falls back to Indonesian descriptive content.
 
 ---
 
@@ -2458,7 +2490,7 @@ Future features require validated need, responsible ownership, and revised produ
 | Favorites                  | Requires persistent visitor identity or tracking                |
 | AI chatbot                 | Requires controlled knowledge and maintenance processes         |
 | Native mobile app          | Responsive web must be evaluated first                          |
-| Database-managed English content | Phase 1 has no database translation; a separately reviewed Village Profile pilot is the next proposed step |
+| Database-managed English content beyond Village Profile | Phase 2A Village Profile pilot is approved; all other domain translations remain deferred pending separate approval |
 | Multi-village support      | Current product serves one village                              |
 | Event recurrence           | Individual event entries are sufficient for Version 1           |
 | Social-media integration   | Requires platform ownership and content rules                   |
@@ -2625,7 +2657,8 @@ Version 1 is ready for production only when:
 | Invitation Flows           |  [ ]  |     [ ]    |      [x]     |
 | Approval Workflows         |  [ ]  |     [ ]    |      [x]     |
 | Permanent Deletion         |  [ ]  |     [ ]    |      [x]     |
-| Database Content Translation | [ ]  |     [ ]    |      [x]     |
+| Village Profile English Translation Pilot | [ ]  |     [x]    |      [ ]     |
+| Other Database Content Translation | [ ]  |     [ ]    |      [x]     |
 | Automatic Event Recurrence |  [ ]  |     [ ]    |      [x]     |
 | Package Participant Limits |  [ ]  |     [ ]    |      [x]     |
 | Structured Stop Timing     |  [ ]  |     [ ]    |      [x]     |

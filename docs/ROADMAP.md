@@ -2000,9 +2000,9 @@ A risk must be escalated when:
 
 # 25. Bilingual and Future Roadmap
 
-The bilingual public-shell foundation below is approved product scope. Implementation begins only after the locale-mechanism spike validates the selected Next.js 16 rendering and caching behavior. Other future phases are not part of Version 1 unless separately approved.
+The bilingual public-shell foundation below is approved and merged. Its Next.js 16 pathname-derived Proxy locale mechanism and caching behavior have been validated. Database-backed English content is a separate Phase 2; only the Phase 2A Village Profile pilot is currently approved.
 
-Those other future phases may begin only after:
+Bilingual phases after the approved Village Profile pilot and other future features may begin only after:
 
 * Version 1 is stable
 * Village ownership is active
@@ -2010,7 +2010,7 @@ Those other future phases may begin only after:
 * Operational responsibility is assigned
 * Product and architecture documents are updated
 
-## Bilingual Rollout — Phase 1 Public-Shell Foundation
+## Bilingual Rollout — Phase 1 Public-Shell Foundation — Complete
 
 Approved scope:
 
@@ -2032,9 +2032,63 @@ Explicit exclusions:
 * Canonical, `hreflang`, alternate, or sitemap changes
 * General Cultural Articles, Bayan Customary Institution Articles, or standalone gallery
 
+## Phase 2A — Village Profile Translation Pilot — Design Approved
+
+Objective:
+
+* Prove database-backed English publication for the singleton Village Profile without changing Indonesian routes, content, administration language, or the one-administrator access model.
+
+Approved design deliverables:
+
+* One explicit `public.village_profile_translations` table; no polymorphic JSON translation table and no `_en` columns.
+* A column-limited published-English Village Profile view.
+* Translation lifecycle validation for `draft`, `published`, `archived`, and restore to `draft`.
+* RLS, explicit grants, indexes, and administrator-only mutation through `public.is_admin()`.
+* Server-recorded `source_updated_at_at_publish` comparison so stale translations remain hidden.
+* Indonesian-language administrator editing and publication controls for the English translation.
+* Future `/en/village-profile` route and server-resolved `/profil-desa` language-switcher equivalence that is exposed only when the English translation is publicly eligible.
+* English loader, metadata, loading, error, empty, not-found, no-fallback, and source-staleness behavior.
+
+Publication requirements:
+
+* The source Village Profile is published.
+* The translation locale is exactly `en` and its status is `published`.
+* The reviewed source timestamp equals the source record's current `updated_at`.
+* English `name` and `description` are present.
+* Every populated source `summary`, `history`, `vision`, `mission`, and `address` has an approved English translation.
+* Cultural and historical content has been verified with an authorized village or customary source without inventing a reviewer or approval workflow.
+
+Implementation dependencies:
+
+* A new reviewed migration that implements only the approved pilot objects.
+* Updated database types or reviewed feature-local row types following the repository's approved type workflow.
+* Local migration, RLS, lifecycle, stale-source, and public-view tests.
+* Application tests for loader isolation, route equivalence, metadata, states, and Indonesian regression.
+* Desktop and 390 px browser smoke validation for `/`, `/en`, `/profil-desa`, `/en/village-profile`, and `/admin`.
+
+Exit criteria:
+
+* Missing, draft, archived, stale, or source-unpublished translations never appear publicly.
+* No Indonesian descriptive field is used as English fallback.
+* Editing, archiving, restoring, or republishing the source cannot re-expose a stale translation.
+* Anonymous and non-administrator identities cannot mutate or read translation base-table data.
+* The configured administrator can create, validate, publish, archive, and restore the translation through the Indonesian admin UI.
+* The approved English route and language switcher work without changing existing Indonesian or admin behavior.
+* Migration application to any hosted project remains a separately authorized operation.
+
+Explicit Phase 2A exclusions:
+
+* Translation tables or English routes for any other domain
+* English slugs
+* Media alt-text or caption translations
+* Contact translations
+* Machine translation or Indonesian descriptive fallback
+* Browser-language redirects
+* Canonical, alternate-language, `hreflang`, sitemap, or production-origin work
+
 ## Later Bilingual Phases
 
-The next proposed step is a separately reviewed Village Profile translation pilot. It must define the translation schema, RLS, public views, administrator workflow, publication approval, and missing-translation behavior before implementation. Additional English domain routes follow only after their own content and route approval. Canonical URLs, future `hreflang="en"`, alternates, and locale-aware sitemap work wait for an approved production origin.
+Additional English domains require their own content, schema, route, privacy, media, and publication approval after the Village Profile pilot. Canonical URLs, future `hreflang="en"`, alternates, and locale-aware sitemap work wait for an approved production origin.
 
 ---
 
@@ -2238,6 +2292,7 @@ The project is complete only when all of the following are true.
 * [x] `roadmap.md` approved for the Version 1 baseline
 * [x] Single-administrator access approved
 * [x] Indonesian-default baseline and bilingual public-shell Phase 1 boundary approved
+* [x] Phase 2A Village Profile translation architecture, lifecycle, stale-source behavior, and route approved
 * [x] Package boundary approved
 * [x] Fixed categories, slugs, prices, contacts, maps, and lifecycle approved
 * [ ] Content owners assigned
