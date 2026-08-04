@@ -1,25 +1,19 @@
 import { PublicContainer } from "@/components/public/public-container";
+import {
+  PUBLIC_DICTIONARIES,
+  type PublicDictionary,
+} from "@/lib/i18n/dictionaries";
 
 import { getPublicOfficialContacts } from "./data";
 import { selectExternalTourismLinks, type ExternalTourismLink } from "./model";
 
-const PLATFORM_CONTENT: Record<
-  ExternalTourismLink["platform"],
-  { label: string; accessibleLabel: string }
-> = {
-  "google-maps": {
-    label: "Buka di Google Maps",
-    accessibleLabel: "Buka Karang Bajo Explore di Google Maps (tab baru)",
-  },
-  tripadvisor: {
-    label: "Buka Tripadvisor",
-    accessibleLabel: "Buka informasi Karang Bajo di Tripadvisor (tab baru)",
-  },
-};
-
 export function ExternalTourismLinksSection({
   links,
-}: Readonly<{ links: readonly ExternalTourismLink[] }>) {
+  copy,
+}: Readonly<{
+  links: readonly ExternalTourismLink[];
+  copy: PublicDictionary["home"]["externalTourism"];
+}>) {
   if (links.length === 0) return null;
 
   return (
@@ -30,21 +24,29 @@ export function ExternalTourismLinksSection({
       <PublicContainer>
         <div className="rounded-3xl border border-emerald-900/15 bg-emerald-50/60 px-6 py-8 sm:px-8">
           <p className="text-sm font-bold tracking-[0.16em] text-emerald-800 uppercase">
-            Jelajahi lebih lanjut
+            {copy.eyebrow}
           </p>
           <h2
             id="platform-wisata-title"
             className="mt-3 max-w-3xl font-serif text-2xl font-bold text-slate-950 sm:text-3xl"
           >
-            Temukan Karang Bajo di platform pilihan Anda
+            {copy.title}
           </h2>
           <p className="mt-3 max-w-3xl leading-7 text-slate-600">
-            Buka peta wisata melalui Google Maps atau temukan informasi Karang
-            Bajo di Tripadvisor.
+            {copy.description}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {links.map((link) => {
-              const content = PLATFORM_CONTENT[link.platform];
+              const content =
+                link.platform === "google-maps"
+                  ? {
+                      label: copy.googleMaps,
+                      accessibleLabel: copy.googleMapsAccessible,
+                    }
+                  : {
+                      label: copy.tripadvisor,
+                      accessibleLabel: copy.tripadvisorAccessible,
+                    };
               return (
                 <a
                   key={link.platform}
@@ -72,6 +74,7 @@ export async function ExternalTourismLinks() {
   return (
     <ExternalTourismLinksSection
       links={selectExternalTourismLinks(result.contacts)}
+      copy={PUBLIC_DICTIONARIES.id.home.externalTourism}
     />
   );
 }

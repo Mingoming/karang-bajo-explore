@@ -1,20 +1,34 @@
+import {
+  PUBLIC_DICTIONARIES,
+  type PublicDictionary,
+} from "../lib/i18n/dictionaries.ts";
+import type { PublicLocale } from "../lib/i18n/locale.ts";
+import {
+  PUBLIC_ROUTE_KEYS,
+  PUBLIC_ROUTE_MANIFEST,
+  type PublicRouteKey,
+} from "./public-routes.ts";
+
 export type PublicNavigationItem = Readonly<{
+  key: PublicRouteKey;
   label: string;
   href: `/${string}`;
 }>;
 
-export const PUBLIC_NAVIGATION: readonly PublicNavigationItem[] = [
-  { label: "Beranda", href: "/" },
-  { label: "Profil Desa", href: "/profil-desa" },
-  { label: "Destinasi", href: "/destinasi" },
-  { label: "Paket Wisata", href: "/paket-wisata" },
-  { label: "Homestay", href: "/homestay" },
-  { label: "UMKM", href: "/umkm" },
-  { label: "Rumah Adat", href: "/rumah-adat" },
-  { label: "Acara Budaya", href: "/acara-budaya" },
-  { label: "Peta Wisata", href: "/peta-wisata" },
-  { label: "Kontak", href: "/kontak" },
-] as const;
+export function getPublicNavigation(
+  locale: PublicLocale,
+  dictionary: PublicDictionary,
+): readonly PublicNavigationItem[] {
+  return PUBLIC_ROUTE_KEYS.flatMap((key) => {
+    const href = PUBLIC_ROUTE_MANIFEST[key][locale];
+    return href ? [{ key, href, label: dictionary.navigation[key] }] : [];
+  });
+}
+
+export const PUBLIC_NAVIGATION = getPublicNavigation(
+  "id",
+  PUBLIC_DICTIONARIES.id,
+);
 
 export function isPublicNavigationItemActive(pathname: string, href: string) {
   const route = href.split("#", 1)[0];

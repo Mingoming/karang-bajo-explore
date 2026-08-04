@@ -4,17 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
+  getPublicNavigation,
   isPublicNavigationItemActive,
-  PUBLIC_NAVIGATION,
 } from "@/config/public-navigation";
+import type { PublicDictionary } from "@/lib/i18n/dictionaries";
+import type { PublicLocale } from "@/lib/i18n/locale";
 
-export function PublicNavigationLinks() {
+export function PublicNavigationLinks({
+  locale,
+  dictionary,
+}: Readonly<{ locale: PublicLocale; dictionary: PublicDictionary }>) {
   const pathname = usePathname();
+  const navigation = getPublicNavigation(locale, dictionary);
 
   return (
-    <nav aria-label="Navigasi publik utama" className="hidden lg:block">
+    <nav aria-label={dictionary.navigation.label}>
       <ul className="flex items-center gap-1">
-        {PUBLIC_NAVIGATION.map((item) => {
+        {navigation.map((item) => {
           const active = isPublicNavigationItemActive(pathname, item.href);
           return (
             <li key={item.href}>

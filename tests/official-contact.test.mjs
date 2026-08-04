@@ -262,7 +262,10 @@ test("public footer preserves WhatsApp and safely falls back for absent or faile
   });
 
   const footer = readFileSync("components/public/public-footer.tsx", "utf8");
-  assert.match(footer, /selectPublicFooterContactAction\(contact\)/);
+  assert.match(
+    footer,
+    /selectPublicFooterContactAction\(await getPublicOfficialContacts\(\)\)/,
+  );
   assert.match(footer, /contactAction\.kind === "whatsapp"/);
   assert.match(footer, /href="\/kontak"/);
   assert.match(footer, /target="_blank"/);

@@ -8,6 +8,7 @@ import { PublicContentCard } from "@/components/public/public-content-card";
 import { PublicHero } from "@/components/public/public-hero";
 import { SectionHeading } from "@/components/public/section-heading";
 import { SITE_CONFIG } from "@/config/site";
+import { PUBLIC_DICTIONARIES } from "@/lib/i18n/dictionaries";
 import { getPublishedDestinations } from "@/features/public-destinations/data";
 import {
   getPublishedCulturalEvents,
@@ -23,9 +24,8 @@ import { OfficialContactCta } from "@/features/official-contact/official-contact
 import { ExternalTourismLinks } from "@/features/official-contact/external-tourism-links";
 
 export const metadata = buildPublicMetadata({
-  title: "Beranda",
-  description:
-    "Jelajahi destinasi, budaya, homestay, UMKM, paket wisata, dan acara di Desa Karang Bajo.",
+  title: PUBLIC_DICTIONARIES.id.home.metadataTitle,
+  description: PUBLIC_DICTIONARIES.id.home.metadataDescription,
 });
 
 function HomeCollection({
@@ -119,7 +119,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <PublicHero />
+      <PublicHero locale="id" dictionary={PUBLIC_DICTIONARIES.id} />
       <section id="profil-desa" className="scroll-mt-24 py-16 sm:py-20">
         <PublicContainer>
           {profile.kind === "ready" ? (

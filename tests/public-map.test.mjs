@@ -10,8 +10,6 @@ const leaflet = readFileSync(
   "features/public-map/public-map-leaflet.tsx",
   "utf8",
 );
-const navigation = readFileSync("config/public-navigation.ts", "utf8");
-
 const {
   PUBLIC_MAP_ENTITY_TYPES,
   buildPublicMapMarkers,
@@ -21,6 +19,7 @@ const {
   getPublicMapNavigationUrl,
   isValidPublicMapCoordinate,
 } = await import("../features/public-map/model.ts");
+const { PUBLIC_NAVIGATION } = await import("../config/public-navigation.ts");
 
 function mapItem(overrides = {}) {
   return {
@@ -327,8 +326,18 @@ test("Google Maps navigation uses an approved URL or coordinate fallback", () =>
 
 test("public tourism map route and navigation use the approved path", () => {
   assert.equal(existsSync("app/(public)/peta-wisata/page.tsx"), true);
-  assert.match(navigation, /\{ label: "Peta Wisata", href: "\/peta-wisata" \}/);
-  assert.doesNotMatch(navigation, /href: "\/peta"/);
+  assert.deepEqual(
+    PUBLIC_NAVIGATION.find((item) => item.key === "tourismMap"),
+    {
+      key: "tourismMap",
+      label: "Peta Wisata",
+      href: "/peta-wisata",
+    },
+  );
+  assert.equal(
+    PUBLIC_NAVIGATION.some((item) => item.href === "/peta"),
+    false,
+  );
 });
 
 test("map page loads only the published map data contract", () => {

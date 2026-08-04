@@ -1,22 +1,7 @@
-import { PublicFooter } from "@/components/public/public-footer";
-import { PublicHeader } from "@/components/public/public-header";
+import { PublicShell } from "@/components/public/public-shell";
 
 export default function PublicLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <div className="flex min-h-screen flex-col bg-stone-50 text-slate-950">
-      <a
-        href="#konten-utama"
-        className="sr-only z-50 rounded-md bg-emerald-950 px-4 py-3 font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-      >
-        Lewati ke konten utama
-      </a>
-      <PublicHeader />
-      <main id="konten-utama" tabIndex={-1} className="min-h-screen flex-1">
-        {children}
-      </main>
-      <PublicFooter />
-    </div>
-  );
+  return <PublicShell locale="id">{children}</PublicShell>;
 }
