@@ -25,7 +25,6 @@
 - ⚠ Vercel production project belum dibuat.
 - ⚠ Domain production belum ditetapkan.
 - ⚠ Password recovery belum divalidasi pada production environment.
-- ⚠ Dependency vulnerabilities belum ditriage.
 - ⚠ Konten publik belum seluruhnya diverifikasi.
 - ⚠ Backup dan restore belum diuji.
 
@@ -752,13 +751,12 @@
 
 ## Dependency Audit Status
 
-- ⚠ Full npm audit: 12 high-severity findings.
-- ⚠ Production-only audit: 3 high-severity findings.
-- ⚠ Development-only findings include the ESLint dependency chain.
-- ⚠ Production transitive findings originate from PostCSS and Sharp bundled through Next.js.
-- ⚠ No compatible stable Next.js upgrade is currently available.
-- ⚠ `npm audit fix --force` must not be used because it proposes an incompatible breaking downgrade.
-- ⚠ Reassess these findings before media processing or production deployment.
+- ☑ Dependency remediation was completed and merged in baseline `f2226bd56081293b5002f0339a07acfc0a04cbd2`.
+- ☑ Baseline completion evidence recorded `npm audit` with 0 vulnerabilities, `npm ci` passing, and `npm run check` passing.
+- ⚠ The older full-audit result of 12 high-severity findings and production-only result of 3 high-severity findings are superseded historical records, not the current dependency status.
+- ⚠ Historical context only: the superseded audit attributed development findings to the ESLint dependency chain, production transitive findings to PostCSS and Sharp through Next.js, and reported no compatible stable Next.js upgrade at that time.
+- ⚠ Future audits may change as the npm advisory database changes; dependency monitoring remains ongoing maintenance.
+- ⚠ `npm audit fix --force` remains prohibited because it can propose incompatible breaking changes.
 
 ## Deferred Documentation Reconciliation
 
@@ -812,6 +810,22 @@
 - ⚠ Verified English production content and production administrator acceptance remain pending.
 
 Phase 2A excludes other domain translations, English slugs, media text translations, contact translations, canonical/alternate/`hreflang`/sitemap work, machine translation, and browser-language redirects. Any production hosted access or mutation remains governed by the separate approval gates in `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
+
+---
+
+# Bilingual Public Rollout — Proposed / Pending Approval
+
+The full bilingual public-content rollout is a proposed Version 1.1/post-V1 workstream. The authoritative `docs/MVP_RELEASE_SCOPE.md` records “Version 1.0 scope approval: Pending explicit stakeholder decision” and “Current decision status: Pending explicit stakeholder approval.” The rollout remains outside that documented Version 1.0 scope boundary, and this checklist does not authorize implementation, production migration, or content publication.
+
+- ☑ Phase 3A documentation artifact has been drafted and locally validated by this change in [`docs/BILINGUAL_PUBLIC_ROLLOUT_PLAN.md`](BILINGUAL_PUBLIC_ROLLOUT_PLAN.md).
+- ☐ Stakeholders approve the proposed route pairs, English terminology, translation contract, and no-fallback policy.
+- ☐ Stakeholders approve the per-domain schema, RLS, publication, stale-source, and deletion contracts.
+- ☐ English content owners and review responsibilities are assigned for every public domain.
+- ☐ Implementation authorization is granted for the phased 3B–3J rollout.
+- ☐ Each rollout phase passes its database, application, route, rendering, SEO, and regression gates.
+- ☐ Production migration, content publication, and production post-deployment validation are separately authorized.
+
+All unchecked items remain proposed and pending explicit stakeholder decisions. The complete scope, audit, sequence, and acceptance gates are in [`docs/BILINGUAL_PUBLIC_ROLLOUT_PLAN.md`](BILINGUAL_PUBLIC_ROLLOUT_PLAN.md).
 ---
 
 # Future Features
