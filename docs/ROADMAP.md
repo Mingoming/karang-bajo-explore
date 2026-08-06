@@ -2093,6 +2093,16 @@ Explicit Phase 2A exclusions:
 * Browser-language redirects
 * Canonical, alternate-language, `hreflang`, sitemap, or production-origin work
 
+## Proposed post-V1 bilingual rollout — Phase 3A
+
+The full bilingual public-content rollout is a proposed Version 1.1/post-V1 workstream and remains pending stakeholder approval. The authoritative `docs/MVP_RELEASE_SCOPE.md` records “Version 1.0 scope approval: Pending explicit stakeholder decision” and “Current decision status: Pending explicit stakeholder approval.” The rollout remains outside that documented Version 1.0 scope boundary and does not authorize implementation, production migration, or content publication.
+
+* [ ] Stakeholder approval of the route, content, schema, ownership, and release gates in [`docs/BILINGUAL_PUBLIC_ROLLOUT_PLAN.md`](BILINGUAL_PUBLIC_ROLLOUT_PLAN.md)
+* [ ] Implementation authorization for the phased 3B–3J rollout after the Phase 3A contract audit
+* [ ] Content-owner and production-owner decisions for English content and publication
+
+The complete proposed contract, schema audit, phased sequence, and acceptance gates are recorded in [`docs/BILINGUAL_PUBLIC_ROLLOUT_PLAN.md`](BILINGUAL_PUBLIC_ROLLOUT_PLAN.md). Historical Phase 3 milestones elsewhere in this roadmap are unchanged; “Phase 3A” here is the bilingual planning label.
+
 ## Later Bilingual Phases
 
 Additional English domains require their own content, schema, route, privacy, media, and publication approval after the Village Profile pilot. Canonical URLs, future `hreflang="en"`, alternates, and locale-aware sitemap work wait for an approved production origin.
