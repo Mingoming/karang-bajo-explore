@@ -30,6 +30,8 @@ select ok(
 insert into auth.users (id)
 values ('b1000000-0000-4000-8000-000000000001');
 
+select set_config('request.jwt.claim.sub', 'b1000000-0000-4000-8000-000000000001', true);
+
 insert into public.destinations (
   id, category_id, name, slug, summary, description, latitude, longitude,
   thumbnail_bucket, thumbnail_path, status, created_by, updated_by

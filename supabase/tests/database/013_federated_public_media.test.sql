@@ -23,6 +23,8 @@ select is(
 insert into auth.users (id)
 values ('f0000000-0000-4000-8000-000000000001');
 
+select set_config('request.jwt.claim.sub', 'f0000000-0000-4000-8000-000000000001', true);
+
 update private.app_config
 set administrator_user_id = 'f0000000-0000-4000-8000-000000000001';
 
