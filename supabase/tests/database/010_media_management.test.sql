@@ -151,6 +151,13 @@ select lives_ok(
   $$insert into storage.objects (id, bucket_id, name, owner_id) values ('a1300000-0000-4000-8000-000000000003', 'tourism-media', 'destination/a1100000-0000-4000-8000-000000000001/a1200000-0000-4000-8000-000000000001.jpg', 'a1000000-0000-4000-8000-000000000001')$$,
   'administrator Storage upload remains allowed for a valid path'
 );
+select lives_ok(
+  $$insert into storage.objects (id, bucket_id, name, owner_id) values
+    ('a1300000-0000-4000-8000-000000000005', 'tourism-media', 'destination/a1100000-0000-4000-8000-000000000001/a1200000-0000-4000-8000-000000000002.webp', 'a1000000-0000-4000-8000-000000000001'),
+    ('a1300000-0000-4000-8000-000000000006', 'tourism-media', 'destination/a1100000-0000-4000-8000-000000000001/a1200000-0000-4000-8000-000000000003.png', 'a1000000-0000-4000-8000-000000000001'),
+    ('a1300000-0000-4000-8000-000000000007', 'tourism-media', 'destination/a1100000-0000-4000-8000-000000000001/a1200000-0000-4000-8000-000000000004.jpg', 'a1000000-0000-4000-8000-000000000001')$$,
+  'administrator uploads replacement and additional destination media objects before metadata writes'
+);
 select throws_ok(
   $$insert into storage.objects (id, bucket_id, name, owner_id) values ('a1300000-0000-4000-8000-000000000004', 'tourism-media', '../escape.svg', 'a1000000-0000-4000-8000-000000000001')$$,
   '42501'::char(5), null, 'Storage policy rejects an invalid path'

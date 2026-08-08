@@ -8,6 +8,7 @@ insert into auth.users (id) values
   ('d9000000-0000-4000-8000-000000000001'),
   ('d9000000-0000-4000-8000-000000000002');
 update private.app_config set administrator_user_id = 'd9000000-0000-4000-8000-000000000001';
+select set_config('request.jwt.claim.sub', 'd9000000-0000-4000-8000-000000000001', true);
 
 insert into public.destinations (id, category_id, name, slug, summary, description, latitude, longitude, thumbnail_bucket, thumbnail_path, created_by, updated_by)
 select 'd9100000-0000-4000-8000-000000000001', id, 'Destination Package Test', 'destination-package-test', 'Ringkasan terverifikasi', 'Deskripsi terverifikasi', -8.27, 116.42, 'test-media', 'destinations/package-test.webp', 'd9000000-0000-4000-8000-000000000001', 'd9000000-0000-4000-8000-000000000001'

@@ -217,6 +217,11 @@ select is(
 );
 
 -- Child-image public visibility follows its parent publication status.
+insert into storage.objects (id, bucket_id, name, owner_id)
+values
+  ('e4300000-0000-4000-8000-000000000001', 'tourism-media', 'destination/e0000000-0000-4000-8000-000000000001/e4000000-0000-4000-8000-000000000001.webp', 'b0000000-0000-4000-8000-000000000001'),
+  ('e4300000-0000-4000-8000-000000000002', 'tourism-media', 'destination/e0000000-0000-4000-8000-000000000002/e4000000-0000-4000-8000-000000000002.webp', 'b0000000-0000-4000-8000-000000000001');
+
 select lives_ok(
   $$select public.media_insert('destination', 'e0000000-0000-4000-8000-000000000001', 'e4000000-0000-4000-8000-000000000001', 'destination/e0000000-0000-4000-8000-000000000001/e4000000-0000-4000-8000-000000000001.webp', 'Test-only draft child image', null, 0, true, array['e4000000-0000-4000-8000-000000000001'::uuid])$$,
   'administrator adds the draft child image through the approved media RPC'
