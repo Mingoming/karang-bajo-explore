@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizeMediaImage } from "./image-normalization";
+import {
+  getPublicEnglishDestinationPath,
+  PUBLIC_ENGLISH_DESTINATIONS_PATH,
+} from "@/config/public-routes";
+import { queryDestinationById } from "@/features/destinations/data";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,6 +33,15 @@ import {
 } from "./storage";
 
 const LIST_PATH = "/admin/media";
+
+function revalidateEnglishDestinationPaths(
+  trustedDestinationSlug: string | null,
+) {
+  if (!trustedDestinationSlug) return;
+
+  revalidatePath(PUBLIC_ENGLISH_DESTINATIONS_PATH);
+  revalidatePath(getPublicEnglishDestinationPath(trustedDestinationSlug));
+}
 
 function nextState(
   previous: MediaActionState,
@@ -108,7 +122,22 @@ async function readTrustedContext(entityType: string, parentId: string) {
   if (!parent) return { kind: "not-found" as const };
   const images = await queryMediaImages(supabase, entityType, parent.id);
   if (!images) return { kind: "database-error" as const };
-  return { kind: "ready" as const, supabase, parent, images };
+
+  let destinationSlug: string | null = null;
+  if (entityType === "destination") {
+    const destinationResult = await queryDestinationById(supabase, parent.id);
+    if (!destinationResult.success) return { kind: "database-error" as const };
+    if (!destinationResult.destination) return { kind: "not-found" as const };
+    destinationSlug = destinationResult.destination.slug;
+  }
+
+  return {
+    kind: "ready" as const,
+    supabase,
+    parent,
+    images,
+    destinationSlug,
+  };
 }
 
 export async function createMedia(
@@ -271,6 +300,7 @@ export async function createMedia(
 
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/kelola`);
+  revalidateEnglishDestinationPaths(context.destinationSlug);
   redirect(
     mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
@@ -368,6 +398,7 @@ export async function updateMedia(
         "Perubahan media belum dapat disimpan.",
       );
     }
+    revalidateEnglishDestinationPaths(context.destinationSlug);
   } else {
     const normalized = await normalizeMediaImage(fileValidation.file);
 
@@ -443,6 +474,7 @@ export async function updateMedia(
         "Penggantian media belum dapat disimpan.",
       );
     }
+    revalidateEnglishDestinationPaths(context.destinationSlug);
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
       logMediaStorageFailure(
@@ -529,6 +561,7 @@ export async function deleteMedia(
       "Media belum dapat dihapus.",
     );
   }
+  revalidateEnglishDestinationPaths(context.destinationSlug);
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
     logMediaStorageFailure(

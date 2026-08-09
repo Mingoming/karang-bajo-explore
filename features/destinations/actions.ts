@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  getPublicEnglishDestinationPath,
+  PUBLIC_ENGLISH_DESTINATIONS_PATH,
+} from "@/config/public-routes";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +24,18 @@ import {
 } from "./model";
 
 const DESTINATION_LIST_PATH = "/admin/destinasi";
+
+function revalidateEnglishDestinationPaths(
+  ...trustedSlugs: readonly (string | null | undefined)[]
+) {
+  revalidatePath(PUBLIC_ENGLISH_DESTINATIONS_PATH);
+
+  for (const slug of new Set(
+    trustedSlugs.filter((slug): slug is string => Boolean(slug)),
+  )) {
+    revalidatePath(getPublicEnglishDestinationPath(slug));
+  }
+}
 
 function nextState(
   previousState: DestinationActionState,
@@ -170,11 +186,11 @@ export async function createDestination(
   const { data, error } = await supabase
     .from("destinations")
     .insert(payload)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
 
-  const destinationId = data?.length === 1 ? data[0].id : null;
-  if (error || !destinationId) {
+  const createdDestination = data?.length === 1 ? data[0] : null;
+  if (error || !createdDestination) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembuatan destinasi gagal.", { code });
     return mutationFailureState(
@@ -185,8 +201,10 @@ export async function createDestination(
     );
   }
 
+  const destinationId = createdDestination.id;
   revalidatePath(DESTINATION_LIST_PATH);
   revalidatePath(`${DESTINATION_LIST_PATH}/${destinationId}/edit`);
+  revalidateEnglishDestinationPaths(createdDestination.slug);
   redirect(`${DESTINATION_LIST_PATH}/${destinationId}/edit?success=created`);
 }
 
@@ -286,10 +304,11 @@ export async function updateDestination(
     .from("destinations")
     .update(payload)
     .eq("id", existingDestination.id)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
 
-  if (error || data?.length !== 1) {
+  const updatedDestination = data?.length === 1 ? data[0] : null;
+  if (error || !updatedDestination) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembaruan destinasi gagal.", { code });
     return mutationFailureState(
@@ -302,6 +321,10 @@ export async function updateDestination(
 
   revalidatePath(DESTINATION_LIST_PATH);
   revalidatePath(`${DESTINATION_LIST_PATH}/${existingDestination.id}/edit`);
+  revalidateEnglishDestinationPaths(
+    existingDestination.slug,
+    updatedDestination.slug,
+  );
   redirect(
     `${DESTINATION_LIST_PATH}/${existingDestination.id}/edit?success=updated`,
   );
