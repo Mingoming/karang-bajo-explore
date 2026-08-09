@@ -4,11 +4,13 @@ import { useActionState, useEffect, useRef } from "react";
 
 import { manageDestinationTranslation } from "./actions";
 import {
-  getDestinationTranslationStatusLabel,
+  getDestinationTranslationLifecycleLabel,
+  getDestinationTranslationLifecycleStatus,
   isDestinationTranslationEditable,
   isDestinationTranslationFieldRequiredForPublication,
   type DestinationTranslationActionState,
   type DestinationTranslationField,
+  type DestinationTranslationLifecycleStatus,
   type DestinationTranslationSource,
 } from "./model";
 
@@ -74,17 +76,21 @@ function FieldMessage({ error, helper, id }: FieldMessageProps) {
   return null;
 }
 
-function statusClasses(state: DestinationTranslationActionState) {
-  if (state.status === "published" && state.publicEligibility === "eligible") {
+function statusClasses(lifecycleStatus: DestinationTranslationLifecycleStatus) {
+  if (lifecycleStatus === "published") {
     return "border-emerald-200 bg-emerald-50 text-emerald-800";
   }
 
-  if (state.status === "published" && state.publicEligibility !== "eligible") {
+  if (lifecycleStatus === "stale") {
     return "border-amber-200 bg-amber-50 text-amber-900";
   }
 
-  if (state.status === "archived") {
+  if (lifecycleStatus === "archived") {
     return "border-slate-300 bg-slate-100 text-slate-700";
+  }
+
+  if (lifecycleStatus === "reviewed") {
+    return "border-violet-200 bg-violet-50 text-violet-900";
   }
 
   return "border-blue-200 bg-blue-50 text-blue-800";
@@ -176,11 +182,27 @@ export function DestinationTranslationForm({
     state.reviewState,
   );
   const sourceStatusLabel = SOURCE_STATUS_LABELS[sourceReference.status];
-  const statusLabel = getDestinationTranslationStatusLabel(
+  const lifecycleStatus = getDestinationTranslationLifecycleStatus(
     state.status,
     state.reviewState,
     state.publicEligibility,
   );
+  const lifecycleLabel =
+    getDestinationTranslationLifecycleLabel(lifecycleStatus);
+  const lifecycleDescription =
+    lifecycleStatus === "stale"
+      ? "Kelayakan publik diblokir oleh database dan memerlukan review baru sebelum publikasi kembali."
+      : lifecycleStatus === "published"
+        ? state.publicEligibility === "unknown"
+          ? "Status publik belum dapat diverifikasi dari database."
+          : "Database melaporkan terjemahan ini memenuhi kelayakan publik Inggris."
+        : lifecycleStatus === "reviewed"
+          ? "Review selesai; publikasi tetap merupakan tindakan terpisah."
+          : lifecycleStatus === "awaiting-review"
+            ? "Draf Inggris menunggu pemeriksaan reviewer."
+            : lifecycleStatus === "archived"
+              ? "Terjemahan diarsipkan dan tidak memenuhi kelayakan publik."
+              : "Draf Inggris dapat diedit dan belum memiliki checkpoint review yang selesai.";
   const canReview =
     editable &&
     (state.status === null ||
@@ -219,23 +241,34 @@ export function DestinationTranslationForm({
         </div>
 
         <span
+          aria-label={`Translation lifecycle: ${lifecycleLabel}`}
+          data-lifecycle-status={lifecycleStatus}
           className={`inline-flex w-fit rounded-full border px-3 py-1 text-sm font-semibold ${statusClasses(
-            state,
+            lifecycleStatus,
           )}`}
         >
-          {statusLabel}
+          {lifecycleLabel}
         </span>
       </div>
 
-      {state.status === "published" && state.publicEligibility === "blocked" ? (
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        <span className="font-semibold text-slate-800">Lifecycle:</span>{" "}
+        {lifecycleDescription}
+      </p>
+
+      {lifecycleStatus === "stale" ? (
         <div
           role="alert"
           className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"
         >
-          Terjemahan ini tidak memenuhi kelayakan publik terbaru. Batalkan
-          publikasi, simpan perubahan bila diperlukan, kirim untuk review baru,
-          lalu terbitkan kembali. Kelayakan dan fingerprint ditentukan oleh
-          database.
+          <p className="font-semibold">Stale: kelayakan publik diblokir.</p>
+          <p className="mt-1">
+            Perubahan pada source, media, thumbnail, atau fingerprint terjemahan
+            dapat membatalkan checkpoint sebelumnya. Batalkan publikasi, simpan
+            perubahan bila diperlukan, kirim untuk review baru, lalu terbitkan
+            kembali. Database tetap menjadi satu-satunya penentu kelayakan dan
+            fingerprint; antarmuka ini tidak dapat melewati aturan tersebut.
+          </p>
         </div>
       ) : null}
 
