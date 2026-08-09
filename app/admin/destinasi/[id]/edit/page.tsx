@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { getDestinationTranslationAdminData } from "@/features/destination-translation/data";
+import { DestinationTranslationForm } from "@/features/destination-translation/destination-translation-form";
+import { createDestinationTranslationActionState } from "@/features/destination-translation/model";
 import { getDestinationEditorData } from "@/features/destinations/data";
 import { DestinationForm } from "@/features/destinations/destination-form";
 import {
@@ -24,8 +27,9 @@ export default async function EditDestinationPage({
     notFound();
   }
 
-  const [result, resolvedSearchParams] = await Promise.all([
+  const [result, translationResult, resolvedSearchParams] = await Promise.all([
     getDestinationEditorData(id),
+    getDestinationTranslationAdminData(id),
     searchParams,
   ]);
 
@@ -110,6 +114,35 @@ export default async function EditDestinationPage({
         initialState={createDestinationInitialState(result.destination)}
         mode="update"
       />
+
+      {translationResult.success ? (
+        <DestinationTranslationForm
+          key={`${translationResult.source.updated_at}:${translationResult.translation?.edit_revision ?? "none"}:${translationResult.publicEligibility}`}
+          initialState={createDestinationTranslationActionState(
+            translationResult.source,
+            translationResult.translation,
+            translationResult.publicEligibility,
+            translationResult.history,
+          )}
+          sourceReference={translationResult.source}
+        />
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English translation
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Terjemahan Destinasi
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Terjemahan destinasi belum dapat dimuat. Tidak ada perubahan
+            terjemahan yang dapat dilakukan sampai data admin tersedia.
+          </div>
+        </section>
+      )}
     </section>
   );
 }
