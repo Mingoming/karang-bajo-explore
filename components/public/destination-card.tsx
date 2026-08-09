@@ -6,15 +6,16 @@ import { DestinationImage } from "./destination-image";
 
 export function DestinationCard({
   destination,
+  href,
   highPriority = false,
 }: Readonly<{
   destination: PublicDestination;
+  href: string;
   highPriority?: boolean;
 }>) {
   return (
     <Link
-      href={`/destinasi/${encodeURIComponent(destination.slug)}`}
-      aria-label={`Lihat detail destinasi ${destination.name}`}
+      href={href}
       className="group block h-full rounded-2xl focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
     >
       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow group-hover:shadow-lg group-focus-visible:shadow-lg motion-reduce:transition-none">
@@ -40,7 +41,7 @@ export function DestinationCard({
           </p>
 
           <p className="mt-5 text-sm font-bold text-emerald-800 group-hover:text-emerald-950">
-            Lihat detail <span aria-hidden="true">→</span>
+            <span aria-hidden="true">→</span>
           </p>
         </div>
       </article>

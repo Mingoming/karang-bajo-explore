@@ -111,7 +111,11 @@ test("destination queries use the shared public Media signer", () => {
 
 test("the entire destination card remains linked", () => {
   assert.match(destinationCard, /return \(\s*<Link[\s\S]*?<article/);
-  assert.match(destinationCard, /href={`\/destinasi\/\$\{/);
+  assert.match(destinationCard, /<Link[\s\S]*?href=\{href\}/);
+  assert.match(
+    listPage,
+    /<DestinationCard[\s\S]*?href=\{`\/destinasi\/\$\{encodeURIComponent\(destination\.slug\)\}`\}/,
+  );
 });
 
 test("destination location summary links to the implemented tourism map", () => {

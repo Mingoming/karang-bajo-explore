@@ -64,7 +64,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
   assert.deepEqual(PUBLIC_ROUTE_MANIFEST, {
     home: { id: "/", en: "/en" },
     profile: { id: "/profil-desa", en: "/en/village-profile" },
-    destinations: { id: "/destinasi", en: null },
+    destinations: { id: "/destinasi", en: "/en/destinations" },
     tourismPackages: { id: "/paket-wisata", en: null },
     homestays: { id: "/homestay", en: null },
     umkm: { id: "/umkm", en: null },
@@ -92,11 +92,22 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/profil-desa",
   );
 
-  for (const key of PUBLIC_ROUTE_KEYS.slice(2)) {
+  assert.equal(getPublicRoute("destinations", "id"), "/destinasi");
+  assert.equal(getPublicRoute("destinations", "en"), "/en/destinations");
+  assert.equal(
+    getEquivalentPublicRoute("/destinasi", "id"),
+    "/en/destinations",
+  );
+  assert.equal(
+    getEquivalentPublicRoute("/en/destinations", "en"),
+    "/destinasi",
+  );
+
+  for (const key of PUBLIC_ROUTE_KEYS.slice(3)) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
 
-  for (const path of ["/destinasi", "/admin", "/en/destinations"]) {
+  for (const path of ["/admin", "/en/destinations"]) {
     assert.equal(getEquivalentPublicRoute(path, "id"), null, path);
   }
 });
@@ -127,6 +138,7 @@ test("localized navigation preserves Indonesian routes and limits English to app
       label: "Village Profile",
       href: "/en/village-profile",
     },
+    { key: "destinations", label: "Destinations", href: "/en/destinations" },
   ]);
 });
 
@@ -221,7 +233,6 @@ test("only approved English routes are created and Proxy excludes actual assets"
   for (const path of [
     "app/id/page.tsx",
     "app/en/admin/page.tsx",
-    "app/en/destinations/page.tsx",
     "app/en/profile/page.tsx",
     "app/en/tourism-packages/page.tsx",
     "app/en/homestays/page.tsx",
