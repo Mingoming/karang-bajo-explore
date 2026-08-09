@@ -98,12 +98,9 @@ test("only existing admin and auth paths require session refresh", () => {
 test("the foundation creates only the approved English routes", () => {
   assert.equal(existsSync(ENGLISH_HOME_PAGE), true);
   assert.equal(existsSync(ENGLISH_VILLAGE_PROFILE_PAGE), true);
+  assert.equal(existsSync("app/en/destinations/page.tsx"), true);
 
-  for (const path of [
-    "app/en/admin/page.tsx",
-    "app/en/destinations/page.tsx",
-    "app/en/profile/page.tsx",
-  ]) {
+  for (const path of ["app/en/admin/page.tsx", "app/en/profile/page.tsx"]) {
     assert.equal(existsSync(path), false, path);
   }
 });

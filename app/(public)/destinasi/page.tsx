@@ -122,6 +122,7 @@ export default async function DestinationListPage({
                 <DestinationCard
                   key={destination.id}
                   destination={destination}
+                  href={`/destinasi/${encodeURIComponent(destination.slug)}`}
                   highPriority={index === 0}
                 />
               ))}

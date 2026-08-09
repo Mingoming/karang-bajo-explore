@@ -2,27 +2,40 @@ import type { PublicDestinationImage } from "@/features/public-destinations/mode
 
 import { DestinationImage } from "./destination-image";
 
+type DestinationGalleryCopy = Readonly<{
+  sectionId: string;
+  heading: string;
+  primaryImageLabel: string;
+}>;
+
+const INDONESIAN_DESTINATION_GALLERY_COPY: DestinationGalleryCopy = {
+  sectionId: "galeri-destinasi",
+  heading: "Galeri",
+  primaryImageLabel: "Gambar utama",
+};
+
 export function DestinationGallery({
   images,
   primaryImageId,
+  copy = INDONESIAN_DESTINATION_GALLERY_COPY,
 }: Readonly<{
   images: PublicDestinationImage[];
   primaryImageId?: string | null;
+  copy?: DestinationGalleryCopy;
 }>) {
   const visibleImages = images.filter(
-    (image) =>
-      image.signedUrl !== null && image.id !== primaryImageId,
+    (image) => image.signedUrl !== null && image.id !== primaryImageId,
   );
 
   if (visibleImages.length === 0) return null;
 
   return (
-    <section aria-labelledby="galeri-destinasi">
+    <section aria-labelledby={copy.sectionId}>
       <h2
-        id="galeri-destinasi"
+        id={copy.sectionId}
         className="font-serif text-3xl font-bold text-slate-950"
       >
-        Galeri
+        {copy.heading}
       </h2>
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visibleImages.map((image) => (
@@ -38,7 +51,7 @@ export function DestinationGallery({
                 {image.caption}
                 {image.isPrimary ? (
                   <span className="ml-2 font-bold text-emerald-800">
-                    Gambar utama
+                    {copy.primaryImageLabel}
                   </span>
                 ) : null}
               </figcaption>
