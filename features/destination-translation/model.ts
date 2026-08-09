@@ -25,6 +25,9 @@ export type DestinationTranslationReviewState =
 export type DestinationTranslationPublicEligibility =
   "eligible" | "blocked" | "unknown";
 
+export type DestinationTranslationLifecycleStatus =
+  "draft" | "awaiting-review" | "reviewed" | "published" | "stale" | "archived";
+
 export type DestinationTranslationSource = Pick<
   DestinationRecord,
   | "id"
@@ -456,6 +459,37 @@ export function isDestinationTranslationEditable(
   reviewState: DestinationTranslationReviewState | null,
 ) {
   return (status === null || status === "draft") && reviewState !== "reviewed";
+}
+
+export function getDestinationTranslationLifecycleStatus(
+  status: DestinationTranslationStatus | null,
+  reviewState: DestinationTranslationReviewState | null,
+  publicEligibility: DestinationTranslationPublicEligibility,
+): DestinationTranslationLifecycleStatus {
+  if (status === "archived") return "archived";
+
+  if (status === "published") {
+    return publicEligibility === "blocked" ? "stale" : "published";
+  }
+
+  if (reviewState === "reviewed") return "reviewed";
+  if (reviewState === "pending") return "awaiting-review";
+  return "draft";
+}
+
+export function getDestinationTranslationLifecycleLabel(
+  lifecycleStatus: DestinationTranslationLifecycleStatus,
+) {
+  const labels: Record<DestinationTranslationLifecycleStatus, string> = {
+    draft: "Draft",
+    "awaiting-review": "Awaiting review",
+    reviewed: "Reviewed",
+    published: "Published",
+    stale: "Stale",
+    archived: "Archived",
+  };
+
+  return labels[lifecycleStatus];
 }
 
 export function getDestinationTranslationStatusLabel(
