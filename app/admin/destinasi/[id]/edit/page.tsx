@@ -1,3 +1,6 @@
+import { getDestinationImageTranslationAdminData } from "@/features/destination-image-translation/data";
+import { DestinationImageTranslationForm } from "@/features/destination-image-translation/destination-image-translation-form";
+import { createDestinationImageTranslationActionState } from "@/features/destination-image-translation/model";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -27,9 +30,15 @@ export default async function EditDestinationPage({
     notFound();
   }
 
-  const [result, translationResult, resolvedSearchParams] = await Promise.all([
+  const [
+    result,
+    translationResult,
+    imageTranslationResult,
+    resolvedSearchParams,
+  ] = await Promise.all([
     getDestinationEditorData(id),
     getDestinationTranslationAdminData(id),
+    getDestinationImageTranslationAdminData(id),
     searchParams,
   ]);
 
@@ -140,6 +149,65 @@ export default async function EditDestinationPage({
           >
             Terjemahan destinasi belum dapat dimuat. Tidak ada perubahan
             terjemahan yang dapat dilakukan sampai data admin tersedia.
+          </div>
+        </section>
+      )}
+
+      {imageTranslationResult.success ? (
+        <>
+          <section className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+              English image translations
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+              Terjemahan Gambar Destinasi
+            </h2>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+              Kelola alt text dan caption Inggris untuk setiap gambar sumber.
+              Media Indonesia tetap menjadi referensi read-only dan semua
+              kelayakan publik ditentukan oleh database.
+            </p>
+          </section>
+
+          {imageTranslationResult.images.length > 0 ? (
+            imageTranslationResult.images.map((image) => (
+              <DestinationImageTranslationForm
+                key={`${image.source.id}:${image.translation?.edit_revision ?? "none"}:${image.publicEligibility}`}
+                destinationId={imageTranslationResult.destinationId}
+                initialState={createDestinationImageTranslationActionState(
+                  image.translation,
+                  image.publicEligibility,
+                  image.history,
+                )}
+                sourceReference={image.source}
+              />
+            ))
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+              <p className="font-semibold text-slate-900">
+                Belum ada gambar destinasi.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Tambahkan media sumber terlebih dahulu sebelum mengelola
+                terjemahan gambar.
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English image translations
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Terjemahan Gambar Destinasi
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Terjemahan gambar destinasi belum dapat dimuat. Tidak ada perubahan
+            terjemahan gambar yang dapat dilakukan sampai data admin tersedia.
           </div>
         </section>
       )}
