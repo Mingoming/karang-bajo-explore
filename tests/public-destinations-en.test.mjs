@@ -188,7 +188,7 @@ test("English pages provide localized metadata and never use Indonesian fallback
   );
 });
 
-test("English destination pages reuse shared components with explicit routes", () => {
+test("English destination pages reuse localized shared detail components", () => {
   const sources = `${listPage}\n${detailPage}\n${modelSource}`;
 
   assert.match(listPage, /DestinationCard/);
@@ -199,8 +199,24 @@ test("English destination pages reuse shared components with explicit routes", (
   assert.doesNotMatch(listPage, /hrefBase|copy=/);
   assert.match(detailPage, /DestinationGallery/);
   assert.match(detailPage, /DestinationLocationSummary/);
-  assert.match(detailPage, /heading: "Gallery"/);
-  assert.match(detailPage, /heading: "Coordinates"/);
+  assert.match(detailPage, /copy=\{\{/);
+  for (const localizedCopy of [
+    "locationEyebrow",
+    "locationHeading",
+    "locationLatitudeLabel",
+    "locationLongitudeLabel",
+    "locationDescription",
+    "mapLabel",
+    "googleMapsLabel",
+    "googleMapsAccessibleLabel",
+    "galleryHeading",
+    "primaryImageLabel",
+  ]) {
+    assert.match(
+      detailPage,
+      new RegExp(`ENGLISH_DESTINATION_COPY\\.detail\\.${localizedCopy}`),
+    );
+  }
   assert.doesNotMatch(
     sources,
     /\/destinasi|\/peta-wisata|Lihat detail|Galeri|Lokasi|Gambar utama|Gratis|Tanpa kategori/,
