@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -293,6 +294,45 @@ test("create versus update mode depends on the server-read record", () => {
     getDestinationMutationMode({ id: "server-read-destination-id" }),
     "update",
   );
+});
+
+test("successful source mutations revalidate trusted English destination paths", () => {
+  const actions = readFileSync("features/destinations/actions.ts", "utf8");
+  const helperStart = actions.indexOf(
+    "function revalidateEnglishDestinationPaths",
+  );
+  const helperEnd = actions.indexOf("function nextState", helperStart);
+  const helperSource = actions.slice(helperStart, helperEnd);
+  const createStart = actions.indexOf(
+    "export async function createDestination",
+  );
+  const updateStart = actions.indexOf(
+    "export async function updateDestination",
+  );
+  const createSource = actions.slice(createStart, updateStart);
+  const updateSource = actions.slice(updateStart);
+
+  assert.notEqual(helperStart, -1);
+  assert.notEqual(helperEnd, -1);
+  assert.match(helperSource, /PUBLIC_ENGLISH_DESTINATIONS_PATH/);
+  assert.match(helperSource, /getPublicEnglishDestinationPath\(slug\)/);
+
+  assert.match(createSource, /\.select\("id,slug"\)/);
+  assert.match(
+    createSource,
+    /revalidateEnglishDestinationPaths\(createdDestination\.slug\)/,
+  );
+  assert.match(updateSource, /\.select\("id,slug"\)/);
+  assert.match(
+    updateSource,
+    /revalidateEnglishDestinationPaths\(\s*existingDestination\.slug,\s*updatedDestination\.slug,\s*\)/,
+  );
+  assert.doesNotMatch(updateSource, /formData\.get\(["']slug["']\)/);
+
+  for (const source of [createSource, updateSource]) {
+    assert.match(source, /revalidatePath\(DESTINATION_LIST_PATH\)/);
+    assert.match(source, /revalidatePath\(`\$\{DESTINATION_LIST_PATH\}/);
+  }
 });
 
 test("unknown fields and malformed values are rejected", () => {

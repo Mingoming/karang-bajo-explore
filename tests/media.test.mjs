@@ -392,6 +392,86 @@ test("successful media creation redirects back to the parent gallery", () => {
   assert.match(galleryPage, /Gambar berhasil ditambahkan ke galeri/);
 });
 
+test("destination media mutations revalidate trusted English destination paths", () => {
+  const actions = readFileSync("features/media/actions.ts", "utf8");
+  const helperStart = actions.indexOf(
+    "function revalidateEnglishDestinationPaths",
+  );
+  const contextStart = actions.indexOf("async function readTrustedContext");
+  const createStart = actions.indexOf("export async function createMedia");
+  const updateStart = actions.indexOf("export async function updateMedia");
+  const deleteStart = actions.indexOf("export async function deleteMedia");
+  const helperEnd = actions.indexOf("function nextState", helperStart);
+  const helperSource = actions.slice(helperStart, helperEnd);
+  const contextSource = actions.slice(contextStart, createStart);
+  const createSource = actions.slice(createStart, updateStart);
+  const updateSource = actions.slice(updateStart, deleteStart);
+  const deleteSource = actions.slice(deleteStart);
+
+  for (const offset of [
+    helperStart,
+    contextStart,
+    createStart,
+    updateStart,
+    deleteStart,
+    helperEnd,
+  ]) {
+    assert.notEqual(offset, -1);
+  }
+
+  assert.match(helperSource, /if \(!trustedDestinationSlug\) return;/);
+  assert.match(helperSource, /PUBLIC_ENGLISH_DESTINATIONS_PATH/);
+  assert.match(
+    helperSource,
+    /getPublicEnglishDestinationPath\(trustedDestinationSlug\)/,
+  );
+  assert.equal(
+    actions.match(/revalidatePath\(PUBLIC_ENGLISH_DESTINATIONS_PATH\)/g)
+      ?.length,
+    1,
+  );
+
+  assert.match(contextSource, /queryDestinationById/);
+  assert.match(contextSource, /if \(entityType === "destination"\)/);
+  assert.match(contextSource, /destinationResult\.destination\.slug/);
+  assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
+
+  assert.match(
+    createSource,
+    /revalidateEnglishDestinationPaths\(context\.destinationSlug\)/,
+  );
+  assert.equal(
+    updateSource.match(
+      /revalidateEnglishDestinationPaths\(context\.destinationSlug\)/g,
+    )?.length,
+    2,
+  );
+  assert.match(
+    deleteSource,
+    /revalidateEnglishDestinationPaths\(context\.destinationSlug\)/,
+  );
+
+  const replacementRevalidation = updateSource.indexOf(
+    "revalidateEnglishDestinationPaths(context.destinationSlug)",
+  );
+  const replacementCleanup = updateSource.indexOf(
+    "const oldCleanup = await removeMediaObject",
+  );
+  assert.ok(replacementRevalidation < replacementCleanup);
+
+  const deleteRevalidation = deleteSource.indexOf(
+    "revalidateEnglishDestinationPaths(context.destinationSlug)",
+  );
+  const deleteCleanup = deleteSource.indexOf(
+    "const cleanup = await removeMediaObject",
+  );
+  assert.ok(deleteRevalidation < deleteCleanup);
+
+  for (const source of [createSource, updateSource, deleteSource]) {
+    assert.match(source, /revalidatePath\(LIST_PATH\)/);
+  }
+});
+
 test("media normalization converts uploads into bounded WebP images", async () => {
   const input = await sharp({
     create: {
