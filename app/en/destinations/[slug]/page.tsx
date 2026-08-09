@@ -160,19 +160,23 @@ export default async function EnglishDestinationDetailPage({
                 destination={destination}
                 copy={{
                   sectionId: "destination-location",
-                  eyebrow: "Location",
-                  heading: "Coordinates",
+                  eyebrow: ENGLISH_DESTINATION_COPY.detail.locationEyebrow,
+                  heading: ENGLISH_DESTINATION_COPY.detail.locationHeading,
                   description: (currentDestination) => (
                     <>
-                      Latitude {currentDestination.latitude}, longitude{" "}
-                      {currentDestination.longitude}. Use Google Maps for the
-                      saved directions when available.
+                      {ENGLISH_DESTINATION_COPY.detail.locationLatitudeLabel}{" "}
+                      {currentDestination.latitude},{" "}
+                      {ENGLISH_DESTINATION_COPY.detail.locationLongitudeLabel}{" "}
+                      {currentDestination.longitude}.{" "}
+                      {ENGLISH_DESTINATION_COPY.detail.locationDescription}
                     </>
                   ),
                   mapHref: null,
-                  mapLabel: "Open tourism map",
-                  googleMapsLabel: "Open Google Maps",
-                  googleMapsAccessibleLabel: "in a new tab",
+                  mapLabel: ENGLISH_DESTINATION_COPY.detail.mapLabel,
+                  googleMapsLabel:
+                    ENGLISH_DESTINATION_COPY.detail.googleMapsLabel,
+                  googleMapsAccessibleLabel:
+                    ENGLISH_DESTINATION_COPY.detail.googleMapsAccessibleLabel,
                 }}
               />
               <DestinationGallery
@@ -180,8 +184,9 @@ export default async function EnglishDestinationDetailPage({
                 primaryImageId={destination.primaryImage?.id ?? null}
                 copy={{
                   sectionId: "destination-gallery",
-                  heading: "Gallery",
-                  primaryImageLabel: "Primary image",
+                  heading: ENGLISH_DESTINATION_COPY.detail.galleryHeading,
+                  primaryImageLabel:
+                    ENGLISH_DESTINATION_COPY.detail.primaryImageLabel,
                 }}
               />
             </div>
