@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  getPublicEnglishTraditionalHousePath,
+  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
+} from "@/config/public-routes";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +24,21 @@ import {
 } from "./model";
 
 const LIST_PATH = "/admin/rumah-adat";
+
+function revalidateEnglishTraditionalHousePaths(
+  trustedSlugs: readonly string[],
+) {
+  revalidatePath(PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH);
+
+  for (const slug of new Set(trustedSlugs)) {
+    revalidateEnglishTraditionalHouseDetailPath(slug);
+  }
+}
+
+function revalidateEnglishTraditionalHouseDetailPath(trustedSlug: string) {
+  if (!isValidTraditionalHouseSlug(trustedSlug)) return;
+  revalidatePath(getPublicEnglishTraditionalHousePath(trustedSlug));
+}
 
 function nextState(
   previous: TraditionalHouseActionState,
@@ -120,15 +139,9 @@ export async function createTraditionalHouse(
     created_by: administrator.id,
     updated_by: administrator.id,
   };
-  const { data, error } = await (
-    await createClient()
-  )
-    .from("traditional_houses")
-    .insert(payload)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  const id = data?.length === 1 ? data[0].id : null;
-  if (error || !id) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("traditional_houses").insert(payload);
+  if (error) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembuatan rumah adat gagal.", { code });
     return mutationFailure(
@@ -140,7 +153,24 @@ export async function createTraditionalHouse(
   }
 
   revalidatePath(LIST_PATH);
+  revalidateEnglishTraditionalHousePaths([]);
+
+  const { data: createdHouse, error: createdHouseReadError } = await supabase
+    .from("traditional_houses")
+    .select("id,slug")
+    .eq("slug", slug)
+    .maybeSingle()
+    .overrideTypes<{ id: string; slug: string } | null, { merge: false }>();
+  if (createdHouseReadError || !createdHouse) {
+    console.error("Rumah adat berhasil disimpan tetapi belum dapat dibaca.", {
+      code: createdHouseReadError?.code ?? "missing-created-row",
+    });
+    return databaseFailure(previous, validation.values);
+  }
+
+  const id = createdHouse.id;
   revalidatePath(`${LIST_PATH}/${id}/edit`);
+  revalidateEnglishTraditionalHouseDetailPath(createdHouse.slug);
   redirect(`${LIST_PATH}/${id}/edit?success=created`);
 }
 
@@ -211,13 +241,11 @@ export async function updateTraditionalHouse(
     ...validation.data,
     updated_by: administrator.id,
   };
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("traditional_houses")
     .update(payload)
-    .eq("id", existing.id)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  if (error || data?.length !== 1) {
+    .eq("id", existing.id);
+  if (error) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembaruan rumah adat gagal.", { code });
     return mutationFailure(
@@ -228,7 +256,24 @@ export async function updateTraditionalHouse(
     );
   }
 
+  revalidateEnglishTraditionalHousePaths([existing.slug]);
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${existing.id}/edit`);
+
+  const refreshedResult = await queryTraditionalHouseById(
+    supabase,
+    existing.id,
+  );
+  if (!refreshedResult.success || !refreshedResult.house) {
+    console.error(
+      "Pembaruan rumah adat berhasil tetapi hasilnya belum dapat dibaca.",
+    );
+    return databaseFailure(previous, validation.values);
+  }
+
+  if (refreshedResult.house.slug !== existing.slug) {
+    revalidateEnglishTraditionalHouseDetailPath(refreshedResult.house.slug);
+  }
+
   redirect(`${LIST_PATH}/${existing.id}/edit?success=updated`);
 }

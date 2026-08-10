@@ -5,9 +5,13 @@ import { redirect } from "next/navigation";
 import { normalizeMediaImage } from "./image-normalization";
 import {
   getPublicEnglishDestinationPath,
+  getPublicEnglishTraditionalHousePath,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
+  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
 } from "@/config/public-routes";
 import { queryDestinationById } from "@/features/destinations/data";
+import { queryTraditionalHouseById } from "@/features/traditional-houses/data";
+import { isValidTraditionalHouseSlug } from "@/features/traditional-houses/model";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,6 +45,22 @@ function revalidateEnglishDestinationPaths(
 
   revalidatePath(PUBLIC_ENGLISH_DESTINATIONS_PATH);
   revalidatePath(getPublicEnglishDestinationPath(trustedDestinationSlug));
+}
+
+function revalidateEnglishTraditionalHousePaths(
+  trustedTraditionalHouseSlug: string | null,
+) {
+  if (
+    !trustedTraditionalHouseSlug ||
+    !isValidTraditionalHouseSlug(trustedTraditionalHouseSlug)
+  ) {
+    return;
+  }
+
+  revalidatePath(PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH);
+  revalidatePath(
+    getPublicEnglishTraditionalHousePath(trustedTraditionalHouseSlug),
+  );
 }
 
 function nextState(
@@ -124,11 +144,21 @@ async function readTrustedContext(entityType: string, parentId: string) {
   if (!images) return { kind: "database-error" as const };
 
   let destinationSlug: string | null = null;
+  let traditionalHouseSlug: string | null = null;
   if (entityType === "destination") {
     const destinationResult = await queryDestinationById(supabase, parent.id);
     if (!destinationResult.success) return { kind: "database-error" as const };
     if (!destinationResult.destination) return { kind: "not-found" as const };
     destinationSlug = destinationResult.destination.slug;
+  } else if (entityType === "traditional-house") {
+    const traditionalHouseResult = await queryTraditionalHouseById(
+      supabase,
+      parent.id,
+    );
+    if (!traditionalHouseResult.success)
+      return { kind: "database-error" as const };
+    if (!traditionalHouseResult.house) return { kind: "not-found" as const };
+    traditionalHouseSlug = traditionalHouseResult.house.slug;
   }
 
   return {
@@ -137,6 +167,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
     parent,
     images,
     destinationSlug,
+    traditionalHouseSlug,
   };
 }
 
@@ -301,6 +332,7 @@ export async function createMedia(
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/kelola`);
   revalidateEnglishDestinationPaths(context.destinationSlug);
+  revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   redirect(
     mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
@@ -399,6 +431,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
+    revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   } else {
     const normalized = await normalizeMediaImage(fileValidation.file);
 
@@ -475,6 +508,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
+    revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
       logMediaStorageFailure(
@@ -562,6 +596,7 @@ export async function deleteMedia(
     );
   }
   revalidateEnglishDestinationPaths(context.destinationSlug);
+  revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
     logMediaStorageFailure(
