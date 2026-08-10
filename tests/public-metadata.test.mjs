@@ -10,6 +10,10 @@ const destinationDetail = readFileSync(
   "utf8",
 );
 const mapPage = readFileSync("app/(public)/peta-wisata/page.tsx", "utf8");
+const englishTraditionalHouseList = readFileSync(
+  "app/en/traditional-houses/page.tsx",
+  "utf8",
+);
 
 const remainingListPages = [
   "app/(public)/paket-wisata/page.tsx",
@@ -44,6 +48,11 @@ const remainingDetailPages = [
     source: readFileSync("app/(public)/acara-budaya/[slug]/page.tsx", "utf8"),
     metadataLoader: "getPublishedCulturalEventMetadata",
     detailLoader: "getPublishedCulturalEvent",
+  },
+  {
+    source: readFileSync("app/en/traditional-houses/[slug]/page.tsx", "utf8"),
+    metadataLoader: "getPublishedEnglishTraditionalHouseMetadata",
+    detailLoader: "getPublishedEnglishTraditionalHouseBySlug",
   },
 ];
 
@@ -83,6 +92,7 @@ test("all public content routes use the shared metadata builder", () => {
     destinationList,
     destinationDetail,
     mapPage,
+    englishTraditionalHouseList,
     ...remainingListPages,
     ...remainingDetailPages.map(({ source }) => source),
   ];
@@ -137,7 +147,10 @@ test("remaining dynamic metadata stays published-safe and noindexes missing cont
     assert.notEqual(pageStart, -1);
     assert.ok(pageStart > metadataStart);
 
-    const metadataBlock = source.slice(metadataStart, pageStart);
+    const helperStart = source.indexOf("\nfunction ", metadataStart);
+    const metadataEnd =
+      helperStart === -1 ? pageStart : Math.min(helperStart, pageStart);
+    const metadataBlock = source.slice(metadataStart, metadataEnd);
 
     assert.equal(
       metadataBlock.includes(`${metadataLoader}(`),

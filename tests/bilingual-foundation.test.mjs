@@ -68,7 +68,10 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
     tourismPackages: { id: "/paket-wisata", en: null },
     homestays: { id: "/homestay", en: null },
     umkm: { id: "/umkm", en: null },
-    traditionalHouses: { id: "/rumah-adat", en: null },
+    traditionalHouses: {
+      id: "/rumah-adat",
+      en: "/en/traditional-houses",
+    },
     culturalEvents: { id: "/acara-budaya", en: null },
     tourismMap: { id: "/peta-wisata", en: null },
     contact: { id: "/kontak", en: null },
@@ -103,7 +106,23 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/destinasi",
   );
 
-  for (const key of PUBLIC_ROUTE_KEYS.slice(3)) {
+  assert.equal(
+    getPublicRoute("traditionalHouses", "en"),
+    "/en/traditional-houses",
+  );
+  assert.equal(
+    getEquivalentPublicRoute("/en/traditional-houses", "en"),
+    "/rumah-adat",
+  );
+
+  for (const key of [
+    "tourismPackages",
+    "homestays",
+    "umkm",
+    "culturalEvents",
+    "tourismMap",
+    "contact",
+  ]) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
 
@@ -139,6 +158,11 @@ test("localized navigation preserves Indonesian routes and limits English to app
       href: "/en/village-profile",
     },
     { key: "destinations", label: "Destinations", href: "/en/destinations" },
+    {
+      key: "traditionalHouses",
+      label: "Traditional Houses",
+      href: "/en/traditional-houses",
+    },
   ]);
 });
 
@@ -230,6 +254,7 @@ test("only approved English routes are created and Proxy excludes actual assets"
   const proxy = read("proxy.ts");
   assert.equal(existsSync("app/en/page.tsx"), true);
   assert.equal(existsSync("app/en/village-profile/page.tsx"), true);
+  assert.equal(existsSync("app/en/traditional-houses/page.tsx"), true);
   for (const path of [
     "app/id/page.tsx",
     "app/en/admin/page.tsx",
@@ -237,7 +262,6 @@ test("only approved English routes are created and Proxy excludes actual assets"
     "app/en/tourism-packages/page.tsx",
     "app/en/homestays/page.tsx",
     "app/en/local-businesses/page.tsx",
-    "app/en/traditional-houses/page.tsx",
     "app/en/cultural-events/page.tsx",
     "app/en/tourism-map/page.tsx",
     "app/en/contact/page.tsx",

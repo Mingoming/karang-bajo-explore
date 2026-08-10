@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 
 import {
+  emptyTraditionalHouseFormValues,
   getAllowedTraditionalHouseStatuses,
   getTraditionalHouseMutationMode,
   isTraditionalHouseDuplicateConstraintError,
@@ -11,6 +14,11 @@ import {
   validateTraditionalHouseFormData,
   validateTraditionalHouseInput,
 } from "../features/traditional-houses/model.ts";
+
+const HOUSE_ID = "10000000-0000-4000-8000-000000000001";
+const TRUSTED_OLD_SLUG = "rumah-adat-lama";
+const TRUSTED_NEW_SLUG = "rumah-adat-baru";
+const TRUSTED_CREATED_SLUG = "rumah-adat-terpercaya";
 
 function validInput(overrides = {}) {
   return {
@@ -290,6 +298,375 @@ test("malformed text and featured values are rejected", () => {
   assert.equal(
     validateTraditionalHouseInput(validInput({ is_featured: "ya" }), context())
       .success,
+    false,
+  );
+});
+
+function trustedSource(overrides = {}) {
+  return {
+    id: HOUSE_ID,
+    name: "Rumah Adat Karang Bajo",
+    slug: TRUSTED_OLD_SLUG,
+    source_revision: 1,
+    summary: null,
+    description: "Deskripsi rumah adat yang sudah diverifikasi",
+    history: null,
+    cultural_significance: null,
+    location_name: null,
+    latitude: null,
+    longitude: null,
+    google_maps_url: null,
+    visitor_information: null,
+    thumbnail_path: null,
+    thumbnail_bucket: null,
+    status: "draft",
+    published_at: null,
+    is_featured: false,
+    display_order: 0,
+    created_at: "2026-08-10T10:00:00.000Z",
+    updated_at: "2026-08-10T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function sourceForm(overrides = {}) {
+  const formData = new FormData();
+  for (const [field, value] of Object.entries({
+    name: "Rumah Adat Karang Bajo",
+    description: "Deskripsi rumah adat yang sudah diverifikasi",
+    display_order: "0",
+    status: "draft",
+    ...overrides,
+  })) {
+    formData.set(field, String(value));
+  }
+  return formData;
+}
+
+function previousSourceActionState() {
+  return {
+    kind: "idle",
+    values: emptyTraditionalHouseFormValues(),
+    fieldErrors: {},
+    formErrors: [],
+    message: null,
+    revision: 0,
+  };
+}
+
+function createSourceRuntime() {
+  const runtime = {
+    client: null,
+    events: [],
+    paths: [],
+    writes: [],
+    reads: [],
+    authCalls: 0,
+    authorizationError: null,
+    insertResponse: { error: null },
+    createdReadResponse: {
+      data: { id: HOUSE_ID, slug: TRUSTED_CREATED_SLUG },
+      error: null,
+    },
+    updateResponse: { error: null },
+    refreshResponse: {
+      success: true,
+      house: trustedSource(),
+    },
+    queryCalls: 0,
+  };
+
+  runtime.client = {
+    from(table) {
+      assert.equal(table, "traditional_houses");
+      return {
+        insert(payload) {
+          runtime.events.push("mutation:insert");
+          runtime.writes.push({ operation: "insert", payload });
+          return Promise.resolve(runtime.insertResponse);
+        },
+        update(payload) {
+          runtime.events.push("mutation:update");
+          runtime.writes.push({ operation: "update", payload });
+          return {
+            eq(field, value) {
+              runtime.events.push(`update-filter:${field}:${value}`);
+              return Promise.resolve(runtime.updateResponse);
+            },
+          };
+        },
+        select(columns) {
+          runtime.events.push(`post-write-read:${columns}`);
+          const chain = {
+            eq(field, value) {
+              runtime.reads.push({ field, value });
+              return chain;
+            },
+            maybeSingle() {
+              return chain;
+            },
+            overrideTypes() {
+              return Promise.resolve(runtime.createdReadResponse);
+            },
+          };
+          return chain;
+        },
+      };
+    },
+  };
+
+  return runtime;
+}
+
+async function loadTraditionalHouseActions(runtime) {
+  const actionSource = readFileSync(
+    "features/traditional-houses/actions.ts",
+    "utf8",
+  )
+    .replace(/^"use server";\s*/m, "")
+    .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
+  const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
+  const key = `__traditionalHouseActionDeps_${Math.random().toString(36).slice(2)}`;
+  globalThis[key] = {
+    revalidatePath: (path) => {
+      runtime.paths.push(path);
+      runtime.events.push(`revalidate:${path}`);
+    },
+    getPublicEnglishTraditionalHousePath: (slug) =>
+      `/en/traditional-houses/${encodeURIComponent(slug)}`,
+    PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
+    redirect: (path) => {
+      runtime.events.push(`redirect:${path}`);
+      const error = new Error("REDIRECT");
+      error.path = path;
+      throw error;
+    },
+    requireAdministrator: async () => {
+      runtime.authCalls += 1;
+      runtime.events.push("authorization");
+      if (runtime.authorizationError) throw runtime.authorizationError;
+      return { id: "administrator-id" };
+    },
+    createClient: async () => runtime.client,
+    queryTraditionalHouseById: async (supabase, id) => {
+      assert.equal(supabase, runtime.client);
+      assert.equal(id, HOUSE_ID);
+      runtime.queryCalls += 1;
+      runtime.events.push(
+        runtime.queryCalls === 1
+          ? "authoritative-read"
+          : "post-mutation-refresh",
+      );
+      return runtime.queryCalls === 1
+        ? { success: true, house: trustedSource() }
+        : runtime.refreshResponse;
+    },
+    isTraditionalHouseDuplicateConstraintError,
+    isValidTraditionalHouseId,
+    isValidTraditionalHouseSlug,
+    normalizeTraditionalHouseSlug,
+    validateTraditionalHouseFormData,
+  };
+
+  try {
+    return await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(
+        `const deps = globalThis.${key};
+const { revalidatePath, getPublicEnglishTraditionalHousePath,
+  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH, redirect, requireAdministrator, createClient,
+  queryTraditionalHouseById, isTraditionalHouseDuplicateConstraintError,
+  isValidTraditionalHouseId, isValidTraditionalHouseSlug,
+  normalizeTraditionalHouseSlug, validateTraditionalHouseFormData } = deps;
+${stripped}`,
+      )}`
+    );
+  } finally {
+    delete globalThis[key];
+  }
+}
+
+const sourceRuntime = createSourceRuntime();
+const sourceActions = loadTraditionalHouseActions(sourceRuntime);
+
+async function invokeSource({
+  mode,
+  formOverrides = {},
+  clientSlug = null,
+  insertResponse = { error: null },
+  createdReadResponse = sourceRuntime.createdReadResponse,
+  updateResponse = { error: null },
+  refreshResponse = { success: true, house: trustedSource() },
+}) {
+  sourceRuntime.events = [];
+  sourceRuntime.paths = [];
+  sourceRuntime.writes = [];
+  sourceRuntime.reads = [];
+  sourceRuntime.authCalls = 0;
+  sourceRuntime.authorizationError = null;
+  sourceRuntime.insertResponse = insertResponse;
+  sourceRuntime.createdReadResponse = createdReadResponse;
+  sourceRuntime.updateResponse = updateResponse;
+  sourceRuntime.refreshResponse = refreshResponse;
+  sourceRuntime.queryCalls = 0;
+
+  const formData = sourceForm(formOverrides);
+  if (clientSlug) formData.set("slug", clientSlug);
+  const actionModule = await sourceActions;
+  const previous = previousSourceActionState();
+
+  try {
+    const result =
+      mode === "create"
+        ? await actionModule.createTraditionalHouse(previous, formData)
+        : await actionModule.updateTraditionalHouse(
+            HOUSE_ID,
+            previous,
+            formData,
+          );
+    return { result, redirectPath: null };
+  } catch (error) {
+    if (error?.message === "REDIRECT") {
+      return { result: null, redirectPath: error.path };
+    }
+    throw error;
+  }
+}
+
+test("Traditional House source actions revalidate only after successful writes", async () => {
+  const created = await invokeSource({
+    mode: "create",
+    createdReadResponse: {
+      data: { id: HOUSE_ID, slug: TRUSTED_CREATED_SLUG },
+      error: null,
+    },
+  });
+  assert.equal(
+    created.redirectPath,
+    `/admin/rumah-adat/${HOUSE_ID}/edit?success=created`,
+  );
+  assert.deepEqual(sourceRuntime.paths, [
+    "/admin/rumah-adat",
+    "/en/traditional-houses",
+    `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    `/en/traditional-houses/${TRUSTED_CREATED_SLUG}`,
+  ]);
+  assert.ok(
+    sourceRuntime.events.indexOf("mutation:insert") <
+      sourceRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+  );
+  assert.ok(
+    sourceRuntime.events.indexOf("revalidate:/en/traditional-houses") <
+      sourceRuntime.events.indexOf("post-write-read:id,slug"),
+  );
+
+  const createdReadFailure = await invokeSource({
+    mode: "create",
+    createdReadResponse: {
+      data: null,
+      error: { code: "read-failed" },
+    },
+  });
+  assert.equal(createdReadFailure.result.kind, "database-error");
+  assert.deepEqual(sourceRuntime.paths, [
+    "/admin/rumah-adat",
+    "/en/traditional-houses",
+  ]);
+  assert.equal(
+    sourceRuntime.events.some((event) => event.startsWith("redirect:")),
+    false,
+  );
+
+  const mutationFailure = await invokeSource({
+    mode: "create",
+    insertResponse: {
+      error: {
+        code: "23505",
+        message: 'unique constraint "traditional_houses_slug_key"',
+      },
+    },
+  });
+  assert.equal(mutationFailure.result.kind, "duplicate-error");
+  assert.deepEqual(sourceRuntime.paths, []);
+});
+
+test("Traditional House updates invalidate trusted old/current slugs around refresh", async () => {
+  const unchanged = await invokeSource({
+    mode: "update",
+    refreshResponse: { success: true, house: trustedSource() },
+  });
+  assert.equal(
+    unchanged.redirectPath,
+    `/admin/rumah-adat/${HOUSE_ID}/edit?success=updated`,
+  );
+  assert.deepEqual(sourceRuntime.paths, [
+    "/en/traditional-houses",
+    `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
+    "/admin/rumah-adat",
+    `/admin/rumah-adat/${HOUSE_ID}/edit`,
+  ]);
+  assert.ok(
+    sourceRuntime.events.indexOf("mutation:update") <
+      sourceRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+  );
+  assert.ok(
+    sourceRuntime.events.indexOf(
+      `revalidate:/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
+    ) < sourceRuntime.events.indexOf("post-mutation-refresh"),
+  );
+
+  const changed = await invokeSource({
+    mode: "update",
+    refreshResponse: {
+      success: true,
+      house: trustedSource({ slug: TRUSTED_NEW_SLUG }),
+    },
+  });
+  assert.equal(
+    changed.redirectPath,
+    `/admin/rumah-adat/${HOUSE_ID}/edit?success=updated`,
+  );
+  assert.deepEqual(sourceRuntime.paths, [
+    "/en/traditional-houses",
+    `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
+    "/admin/rumah-adat",
+    `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    `/en/traditional-houses/${TRUSTED_NEW_SLUG}`,
+  ]);
+
+  const refreshFailure = await invokeSource({
+    mode: "update",
+    refreshResponse: { success: false },
+  });
+  assert.equal(refreshFailure.result.kind, "database-error");
+  assert.deepEqual(sourceRuntime.paths, [
+    "/en/traditional-houses",
+    `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
+    "/admin/rumah-adat",
+    `/admin/rumah-adat/${HOUSE_ID}/edit`,
+  ]);
+
+  const failedUpdate = await invokeSource({
+    mode: "update",
+    updateResponse: {
+      error: {
+        code: "23505",
+        message: 'unique constraint "traditional_houses_slug_key"',
+      },
+    },
+  });
+  assert.equal(failedUpdate.result.kind, "duplicate-error");
+  assert.deepEqual(sourceRuntime.paths, []);
+
+  const clientSlug = await invokeSource({
+    mode: "update",
+    clientSlug: "attacker-controlled-slug",
+  });
+  assert.equal(clientSlug.result.kind, "validation-error");
+  assert.deepEqual(sourceRuntime.paths, []);
+  assert.equal(
+    sourceRuntime.paths.includes(
+      "/en/traditional-houses/attacker-controlled-slug",
+    ),
     false,
   );
 });

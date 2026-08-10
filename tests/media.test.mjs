@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 import sharp from "sharp";
 
@@ -31,6 +32,7 @@ import {
   validateMediaFile,
   validateMediaFileField,
 } from "../features/media/file-validation.ts";
+import { isValidTraditionalHouseSlug } from "../features/traditional-houses/model.ts";
 
 const parentId = "10000000-0000-4000-8000-000000000001";
 const imageId = "20000000-0000-4000-8000-000000000001";
@@ -472,6 +474,62 @@ test("destination media mutations revalidate trusted English destination paths",
   }
 });
 
+test("Traditional House media mutations revalidate trusted English paths only", () => {
+  const actions = readFileSync("features/media/actions.ts", "utf8");
+  const helperStart = actions.indexOf(
+    "function revalidateEnglishTraditionalHousePaths",
+  );
+  const contextStart = actions.indexOf("async function readTrustedContext");
+  const createStart = actions.indexOf("export async function createMedia");
+  const updateStart = actions.indexOf("export async function updateMedia");
+  const deleteStart = actions.indexOf("export async function deleteMedia");
+  const helperEnd = actions.indexOf("function nextState", helperStart);
+  const helperSource = actions.slice(helperStart, helperEnd);
+  const contextSource = actions.slice(contextStart, createStart);
+  const createSource = actions.slice(createStart, updateStart);
+  const updateSource = actions.slice(updateStart, deleteStart);
+  const deleteSource = actions.slice(deleteStart);
+
+  for (const offset of [
+    helperStart,
+    contextStart,
+    createStart,
+    updateStart,
+    deleteStart,
+    helperEnd,
+  ]) {
+    assert.notEqual(offset, -1);
+  }
+
+  assert.match(helperSource, /PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH/);
+  assert.match(
+    helperSource,
+    /getPublicEnglishTraditionalHousePath\(trustedTraditionalHouseSlug\)/,
+  );
+  assert.match(contextSource, /queryTraditionalHouseById/);
+  assert.match(
+    contextSource,
+    /entityType === "traditional-house"[\s\S]*?traditionalHouseSlug/,
+  );
+  assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
+
+  for (const source of [createSource, updateSource, deleteSource]) {
+    assert.match(
+      source,
+      /revalidateEnglishTraditionalHousePaths\(context\.traditionalHouseSlug\)/,
+    );
+  }
+
+  assert.match(
+    actions,
+    /if \(entityType === "destination"\)[\s\S]*?else if \(entityType === "traditional-house"\)/,
+  );
+  assert.doesNotMatch(
+    helperSource,
+    /PUBLIC_ENGLISH_DESTINATIONS_PATH|\/en\/destinations/,
+  );
+});
+
 test("media normalization converts uploads into bounded WebP images", async () => {
   const input = await sharp({
     create: {
@@ -527,4 +585,428 @@ test("media actions normalize create and replacement uploads before storage", ()
   assert.equal(actions.match(/normalizeMediaImage\(/g)?.length, 2);
   assert.equal(actions.match(/normalized\.image\.extension/g)?.length, 2);
   assert.equal(actions.match(/normalized\.image\.file/g)?.length, 2);
+});
+
+const TRUSTED_TRADITIONAL_HOUSE_SLUG = "rumah-adat-terpercaya";
+const TRUSTED_DESTINATION_SLUG = "destinasi-terpercaya";
+
+function mediaActionForm(overrides = {}) {
+  const { fileMode, ...fieldOverrides } = overrides;
+  const formData = trustedForm(fieldOverrides);
+  if (fileMode) {
+    formData.set("file", file([0xff, 0xd8, 0xff], "image/jpeg", "upload.jpg"));
+  }
+  return formData;
+}
+
+function mediaActionPrevious(entityType, ownerId, image = null) {
+  return createMediaInitialState(entityType, ownerId, image);
+}
+
+function mediaImage(id, ownerId, overrides = {}) {
+  return {
+    id,
+    parentId: ownerId,
+    storageBucket: "tourism-media",
+    storagePath: `traditional-house/${ownerId}/${id}.webp`,
+    caption: "Keterangan sumber",
+    altText: "Teks alternatif sumber",
+    displayOrder: 0,
+    isPrimary: true,
+    createdAt: "2026-08-10T00:00:00.000Z",
+    previewUrl: null,
+    ...overrides,
+  };
+}
+
+function createMediaActionRuntime({
+  entityType = "traditional-house",
+  ownerId = parentId,
+  ownerSlug = TRUSTED_TRADITIONAL_HOUSE_SLUG,
+  images = [mediaImage(imageId, ownerId)],
+} = {}) {
+  const runtime = {
+    entityType,
+    ownerId,
+    ownerSlug,
+    images,
+    events: [],
+    paths: [],
+    calls: [],
+    storageCalls: [],
+    authCalls: 0,
+    authorizationError: null,
+    ownerParentResponse: {
+      entityType,
+      id: ownerId,
+      label: "Parent",
+      status: "draft",
+      updatedAt: "2026-08-10T00:00:00.000Z",
+      imageCount: images.length,
+      primaryImageId: images.find((image) => image.isPrimary)?.id ?? null,
+      primaryPath: images.find((image) => image.isPrimary)?.storagePath ?? null,
+      previewUrl: null,
+    },
+    imagesResponse: images,
+    destinationResponse: {
+      success: true,
+      destination: { slug: TRUSTED_DESTINATION_SLUG },
+    },
+    traditionalHouseResponse: {
+      success: true,
+      house: { slug: ownerSlug },
+    },
+    rpcResponses: new Map(),
+    fileMode: "metadata",
+    client: null,
+  };
+
+  runtime.client = {
+    rpc(name, args) {
+      runtime.calls.push({ name, args });
+      runtime.events.push(`mutation:${name}`);
+      if (runtime.rpcResponses.has(name)) {
+        return Promise.resolve(runtime.rpcResponses.get(name));
+      }
+      if (name === "media_replace" || name === "media_delete") {
+        return Promise.resolve({ data: "old/path.webp", error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    },
+  };
+
+  return runtime;
+}
+
+async function loadMediaActions(runtime) {
+  const source = readFileSync("features/media/actions.ts", "utf8")
+    .replace(/^"use server";\s*/m, "")
+    .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
+  const stripped = stripTypeScriptTypes(source, { mode: "strip" });
+  const key = `__mediaActionDeps_${Math.random().toString(36).slice(2)}`;
+  const uploadFile = file([0xff, 0xd8, 0xff], "image/webp", "normalized.webp");
+
+  globalThis[key] = {
+    revalidatePath: (path) => {
+      runtime.paths.push(path);
+      runtime.events.push(`revalidate:${path}`);
+    },
+    redirect: (path) => {
+      runtime.events.push(`redirect:${path}`);
+      const error = new Error("REDIRECT");
+      error.path = path;
+      throw error;
+    },
+    normalizeMediaImage: async () => ({
+      success: true,
+      image: { extension: "webp", file: uploadFile },
+    }),
+    getPublicEnglishDestinationPath: (slug) =>
+      `/en/destinations/${encodeURIComponent(slug)}`,
+    getPublicEnglishTraditionalHousePath: (slug) =>
+      `/en/traditional-houses/${encodeURIComponent(slug)}`,
+    PUBLIC_ENGLISH_DESTINATIONS_PATH: "/en/destinations",
+    PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
+    queryDestinationById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.destinationResponse;
+    },
+    queryTraditionalHouseById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.traditionalHouseResponse;
+    },
+    isValidTraditionalHouseSlug,
+    requireAdministrator: async () => {
+      runtime.authCalls += 1;
+      runtime.events.push("authorization");
+      if (runtime.authorizationError) throw runtime.authorizationError;
+      return { id: "administrator-id" };
+    },
+    createClient: async () => runtime.client,
+    queryMediaImages: async () => {
+      runtime.events.push("media-images-read");
+      return runtime.imagesResponse;
+    },
+    queryMediaParentById: async () => {
+      runtime.events.push("media-parent-read");
+      return runtime.ownerParentResponse;
+    },
+    validateMediaFileField: async (_formData, required) => {
+      const replacement = runtime.fileMode === "replacement";
+      if (required || replacement) {
+        return { success: true, file: uploadFile, extension: "webp" };
+      }
+      return { success: true, file: null, extension: null };
+    },
+    canAddMediaImage,
+    createMediaStoragePath,
+    isMediaRecordOwnedBy,
+    isMediaEntityType,
+    isValidMediaUuid,
+    moveMediaImageToOrder,
+    parseMediaRouteIdentity,
+    shouldMakeMediaPrimary,
+    validateTrustedMediaFormData,
+    logMediaStorageFailure: () => {
+      runtime.events.push("storage-log");
+    },
+    uploadMediaObject: async () => {
+      runtime.storageCalls.push("upload");
+      runtime.events.push("storage:upload");
+      return { error: null };
+    },
+    removeMediaObject: async () => {
+      runtime.storageCalls.push("remove");
+      runtime.events.push("storage:remove");
+      return { success: true, error: null };
+    },
+  };
+
+  try {
+    return await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(
+        `const deps = globalThis.${key};
+const {
+  canAddMediaImage,
+  createMediaStoragePath,
+  createClient,
+  getPublicEnglishDestinationPath,
+  getPublicEnglishTraditionalHousePath,
+  isMediaRecordOwnedBy,
+  isMediaEntityType,
+  isValidMediaUuid,
+  isValidTraditionalHouseSlug,
+  logMediaStorageFailure,
+  moveMediaImageToOrder,
+  normalizeMediaImage,
+  parseMediaRouteIdentity,
+  PUBLIC_ENGLISH_DESTINATIONS_PATH,
+  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
+  queryDestinationById,
+  queryMediaImages,
+  queryMediaParentById,
+  queryTraditionalHouseById,
+  redirect,
+  removeMediaObject,
+  revalidatePath,
+  requireAdministrator,
+  shouldMakeMediaPrimary,
+  uploadMediaObject,
+  validateMediaFileField,
+  validateTrustedMediaFormData,
+} = deps;
+${stripped}`,
+      )}`
+    );
+  } finally {
+    delete globalThis[key];
+  }
+}
+
+async function invokeMedia(runtime, actionName, options = {}) {
+  runtime.events = [];
+  runtime.paths = [];
+  runtime.calls = [];
+  runtime.storageCalls = [];
+  runtime.fileMode = options.fileMode ?? "metadata";
+  runtime.rpcResponses = options.rpcResponses ?? new Map();
+
+  const actions = await loadMediaActions(runtime);
+  const formData = mediaActionForm(options.formOverrides ?? {});
+  const image = runtime.images.find((item) => item.id === imageId) ?? null;
+  const previous = mediaActionPrevious(
+    runtime.entityType,
+    runtime.ownerId,
+    image,
+  );
+
+  try {
+    const result =
+      actionName === "create"
+        ? await actions.createMedia(
+            runtime.entityType,
+            runtime.ownerId,
+            previous,
+            formData,
+          )
+        : actionName === "update"
+          ? await actions.updateMedia(
+              runtime.entityType,
+              runtime.ownerId,
+              imageId,
+              previous,
+              formData,
+            )
+          : await actions.deleteMedia(
+              runtime.entityType,
+              runtime.ownerId,
+              imageId,
+              previous,
+            );
+    return { result, redirectPath: null };
+  } catch (error) {
+    if (error?.message === "REDIRECT") {
+      return { result: null, redirectPath: error.path };
+    }
+    throw error;
+  }
+}
+
+test("Traditional House media actions execute create, metadata, primary, reorder, replacement, and delete paths", async () => {
+  const createdRuntime = createMediaActionRuntime({ images: [] });
+  const created = await invokeMedia(createdRuntime, "create", {
+    fileMode: "create",
+    formOverrides: { fileMode: "create", is_primary: "on" },
+  });
+  assert.ok(created.redirectPath);
+  assert.deepEqual(
+    createdRuntime.calls.map(({ name }) => name),
+    ["media_insert"],
+  );
+  assert.deepEqual(createdRuntime.paths.slice(-2), [
+    "/en/traditional-houses",
+    `/en/traditional-houses/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
+  ]);
+  assert.ok(
+    createdRuntime.events.indexOf("mutation:media_insert") <
+      createdRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+  );
+  assert.ok(
+    createdRuntime.events.indexOf("authorization") <
+      createdRuntime.events.indexOf("owner-slug-read"),
+  );
+  assert.ok(
+    createdRuntime.events.indexOf("owner-slug-read") <
+      createdRuntime.events.indexOf("mutation:media_insert"),
+  );
+
+  const metadataRuntime = createMediaActionRuntime();
+  const metadataResult = await invokeMedia(metadataRuntime, "update");
+  assert.ok(metadataResult.redirectPath);
+  assert.deepEqual(
+    metadataRuntime.calls.map(({ name }) => name),
+    ["media_update"],
+  );
+  assert.ok(metadataRuntime.paths.includes("/en/traditional-houses"));
+  assert.ok(
+    metadataRuntime.paths.includes(
+      `/en/traditional-houses/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
+    ),
+  );
+  assert.ok(
+    metadataRuntime.events.indexOf("mutation:media_update") <
+      metadataRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+  );
+
+  const reorderRuntime = createMediaActionRuntime({
+    images: [
+      mediaImage(imageId, parentId, { displayOrder: 0, isPrimary: true }),
+      mediaImage(otherParentId, parentId, {
+        id: "20000000-0000-4000-8000-000000000002",
+        displayOrder: 1,
+        isPrimary: false,
+      }),
+    ],
+  });
+  const reorderResult = await invokeMedia(reorderRuntime, "update", {
+    formOverrides: { display_order: "1", is_primary: "on" },
+  });
+  assert.ok(reorderResult.redirectPath);
+  assert.equal(reorderRuntime.calls[0].name, "media_update");
+  assert.equal(reorderRuntime.calls[0].args.p_display_order, 1);
+  assert.equal(reorderRuntime.calls[0].args.p_is_primary, true);
+  assert.deepEqual(reorderRuntime.calls[0].args.p_image_ids, [
+    "20000000-0000-4000-8000-000000000002",
+    imageId,
+  ]);
+
+  const replacementRuntime = createMediaActionRuntime();
+  const replacement = await invokeMedia(replacementRuntime, "update", {
+    fileMode: "replacement",
+    formOverrides: { fileMode: "replacement" },
+  });
+  assert.ok(replacement.redirectPath);
+  assert.deepEqual(
+    replacementRuntime.calls.map(({ name }) => name),
+    ["media_replace"],
+  );
+  assert.ok(
+    replacementRuntime.events.indexOf("mutation:media_replace") <
+      replacementRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+  );
+
+  const deleteRuntime = createMediaActionRuntime();
+  const deleted = await invokeMedia(deleteRuntime, "delete");
+  assert.ok(deleted.redirectPath);
+  assert.deepEqual(
+    deleteRuntime.calls.map(({ name }) => name),
+    ["media_delete"],
+  );
+  assert.ok(deleteRuntime.paths.includes("/en/traditional-houses"));
+});
+
+test("failed media mutations do not revalidate English routes", async () => {
+  const runtime = createMediaActionRuntime();
+  const result = await invokeMedia(runtime, "update", {
+    rpcResponses: new Map([
+      ["media_update", { data: null, error: { code: "mutation-failed" } }],
+    ]),
+  });
+
+  assert.equal(result.redirectPath, null);
+  assert.equal(result.result.kind, "database-error");
+  assert.equal(runtime.paths.includes("/en/traditional-houses"), false);
+  assert.equal(
+    runtime.paths.some((path) => path.includes(TRUSTED_TRADITIONAL_HOUSE_SLUG)),
+    false,
+  );
+  assert.equal(runtime.events.includes("mutation:media_update"), true);
+});
+
+test("Traditional House media owner identity is trusted and read failures stop mutation safely", async () => {
+  const runtime = createMediaActionRuntime();
+  runtime.traditionalHouseResponse = { success: false };
+  const result = await invokeMedia(runtime, "update");
+
+  assert.equal(result.result.kind, "database-error");
+  assert.deepEqual(runtime.calls, []);
+  assert.deepEqual(runtime.paths, []);
+  assert.equal(
+    runtime.events.some((event) => event.startsWith("revalidate:")),
+    false,
+  );
+});
+
+test("unrelated media owners do not invalidate Traditional House English routes and Destination behavior remains intact", async () => {
+  for (const entityType of [
+    "homestay",
+    "umkm",
+    "cultural-event",
+    "tourism-package",
+  ]) {
+    const runtime = createMediaActionRuntime({ entityType });
+    const result = await invokeMedia(runtime, "update");
+    assert.ok(result.redirectPath);
+    assert.equal(runtime.paths.includes("/en/traditional-houses"), false);
+    assert.equal(
+      runtime.paths.some((path) => path.includes("/en/traditional-houses/")),
+      false,
+    );
+  }
+
+  const destinationRuntime = createMediaActionRuntime({
+    entityType: "destination",
+  });
+  const destination = await invokeMedia(destinationRuntime, "update");
+  assert.ok(destination.redirectPath);
+  assert.ok(destinationRuntime.paths.includes("/en/destinations"));
+  assert.ok(
+    destinationRuntime.paths.includes(
+      `/en/destinations/${TRUSTED_DESTINATION_SLUG}`,
+    ),
+  );
+  assert.equal(
+    destinationRuntime.paths.includes("/en/traditional-houses"),
+    false,
+  );
 });
