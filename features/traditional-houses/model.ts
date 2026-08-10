@@ -30,6 +30,7 @@ export type TraditionalHouseRecord = {
   id: string;
   name: string;
   slug: string;
+  source_revision: number;
   summary: string | null;
   description: string;
   history: string | null;

@@ -14,6 +14,7 @@ const EDIT_COLUMNS = [
   "id",
   "name",
   "slug",
+  "source_revision",
   "summary",
   "description",
   "history",
