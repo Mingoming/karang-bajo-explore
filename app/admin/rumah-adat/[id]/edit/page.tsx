@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 
 import { getTraditionalHouseEditorData } from "@/features/traditional-houses/data";
 import { TraditionalHouseForm } from "@/features/traditional-houses/traditional-house-form";
+import { getTraditionalHouseTranslationAdminData } from "@/features/traditional-house-translation/data";
+import { TraditionalHouseTranslationForm } from "@/features/traditional-house-translation/traditional-house-translation-form";
+import { createTraditionalHouseTranslationActionState } from "@/features/traditional-house-translation/model";
+import { getTraditionalHouseImageTranslationAdminData } from "@/features/traditional-house-image-translation/data";
+import { TraditionalHouseImageTranslationForm } from "@/features/traditional-house-image-translation/traditional-house-image-translation-form";
+import { createTraditionalHouseImageTranslationActionState } from "@/features/traditional-house-image-translation/model";
 import {
   createTraditionalHouseInitialState,
   getTraditionalHouseStatusLabel,
@@ -21,10 +27,13 @@ export default async function EditTraditionalHousePage({
   const { id } = await params;
   if (!isValidTraditionalHouseId(id)) notFound();
 
-  const [result, query] = await Promise.all([
-    getTraditionalHouseEditorData(id),
-    searchParams,
-  ]);
+  const [result, translationResult, imageTranslationResult, query] =
+    await Promise.all([
+      getTraditionalHouseEditorData(id),
+      getTraditionalHouseTranslationAdminData(id),
+      getTraditionalHouseImageTranslationAdminData(id),
+      searchParams,
+    ]);
   if (result.kind === "invalid-id" || result.kind === "not-found") notFound();
   if (result.kind !== "ready") {
     return (
@@ -96,6 +105,94 @@ export default async function EditTraditionalHousePage({
         initialState={createTraditionalHouseInitialState(result.house)}
         mode="update"
       />
+
+      {translationResult.success ? (
+        <TraditionalHouseTranslationForm
+          key={`${translationResult.source.updated_at}:${translationResult.translation?.edit_revision ?? "none"}:${translationResult.translation?.lifecycle_state ?? "draft"}`}
+          initialState={createTraditionalHouseTranslationActionState(
+            translationResult.source,
+            translationResult.translation,
+            translationResult.history,
+          )}
+          sourceReference={translationResult.source}
+        />
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English translation
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Terjemahan Rumah Adat
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Terjemahan rumah adat belum dapat dimuat. Tidak ada perubahan
+            terjemahan yang dapat dilakukan sampai data admin tersedia.
+          </div>
+        </section>
+      )}
+
+      {imageTranslationResult.success ? (
+        <>
+          <section className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+              English image translations
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+              Terjemahan Gambar Rumah Adat
+            </h2>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+              Kelola alt text dan caption Inggris untuk setiap gambar sumber.
+              Media Indonesia tetap read-only; lifecycle dan kelayakan publik
+              berasal dari database.
+            </p>
+          </section>
+
+          {imageTranslationResult.images.length > 0 ? (
+            imageTranslationResult.images.map((image) => (
+              <TraditionalHouseImageTranslationForm
+                key={`${image.source.id}:${image.translation?.edit_revision ?? "none"}:${image.translation?.lifecycle_state ?? "draft"}`}
+                traditionalHouseId={imageTranslationResult.traditionalHouseId}
+                initialState={createTraditionalHouseImageTranslationActionState(
+                  image.source,
+                  image.translation,
+                  image.history,
+                  { sourceStatus: image.sourceStatus },
+                )}
+                sourceReference={image.source}
+              />
+            ))
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+              <p className="font-semibold text-slate-900">
+                Belum ada gambar rumah adat.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Tambahkan media sumber terlebih dahulu sebelum mengelola
+                terjemahan gambar.
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English image translations
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Terjemahan Gambar Rumah Adat
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Terjemahan gambar rumah adat belum dapat dimuat. Tidak ada perubahan
+            terjemahan gambar yang dapat dilakukan sampai data admin tersedia.
+          </div>
+        </section>
+      )}
     </section>
   );
 }
