@@ -25,6 +25,11 @@ export const PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH =
 export const PUBLIC_ENGLISH_TRADITIONAL_HOUSE_DETAIL_PATH =
   "/en/traditional-houses/[slug]" as const;
 
+export const PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH =
+  "/en/cultural-events" as const;
+export const PUBLIC_ENGLISH_CULTURAL_EVENT_DETAIL_PATH =
+  "/en/cultural-events/[slug]" as const;
+
 export function getPublicEnglishDestinationPath(slug: string): PublicRoutePath {
   return `${PUBLIC_ENGLISH_DESTINATIONS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
 }
@@ -33,6 +38,12 @@ export function getPublicEnglishTraditionalHousePath(
   slug: string,
 ): PublicRoutePath {
   return `${PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
+}
+
+export function getPublicEnglishCulturalEventPath(
+  slug: string,
+): PublicRoutePath {
+  return `${PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
 }
 
 export const PUBLIC_ROUTE_MANIFEST: Readonly<
@@ -48,7 +59,10 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
     id: "/rumah-adat",
     en: PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
   },
-  culturalEvents: { id: "/acara-budaya", en: null },
+  culturalEvents: {
+    id: "/acara-budaya",
+    en: PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
+  },
   tourismMap: { id: "/peta-wisata", en: null },
   contact: { id: "/kontak", en: null },
 };

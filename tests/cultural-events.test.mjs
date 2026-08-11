@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 
 import {
   getAllowedCulturalEventStatuses,
   getCulturalEventMutationMode,
+  emptyCulturalEventFormValues,
   isCulturalEventDuplicateConstraintError,
   isValidCulturalEventId,
   isValidCulturalEventSlug,
@@ -341,4 +344,325 @@ test("unknown fields and malformed boolean values are rejected", () => {
       .success,
     false,
   );
+});
+
+test("source mutations revalidate trusted English Cultural Event paths", () => {
+  const actions = readFileSync("features/cultural-events/actions.ts", "utf8");
+  const helperStart = actions.indexOf(
+    "function revalidateEnglishCulturalEventDetailPath",
+  );
+  const createStart = actions.indexOf(
+    "export async function createCulturalEvent",
+  );
+  const updateStart = actions.indexOf(
+    "export async function updateCulturalEvent",
+  );
+  const helperEnd = actions.indexOf("function nextState", helperStart);
+  const helperSource = actions.slice(helperStart, helperEnd);
+  const createSource = actions.slice(createStart, updateStart);
+  const updateSource = actions.slice(updateStart);
+
+  for (const offset of [helperStart, createStart, updateStart, helperEnd]) {
+    assert.notEqual(offset, -1);
+  }
+
+  assert.match(helperSource, /PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH/);
+  assert.match(
+    helperSource,
+    /getPublicEnglishCulturalEventPath\(trustedSlug\)/,
+  );
+  assert.match(createSource, /\.select\("id,slug"\)/);
+  assert.match(
+    createSource,
+    /revalidateEnglishCulturalEventPaths\(\[createdEvent\.slug\]\)/,
+  );
+  assert.match(updateSource, /queryCulturalEventById\(\s*supabase/);
+  assert.match(
+    updateSource,
+    /revalidateEnglishCulturalEventPaths\(\[existing\.slug\]\)/,
+  );
+  assert.match(
+    updateSource,
+    /revalidateEnglishCulturalEventDetailPath\(refreshedResult\.event\.slug\)/,
+  );
+  assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
+
+  const updateMutation = updateSource.indexOf(".update(payload)");
+  const knownPathRevalidation = updateSource.indexOf(
+    "revalidateEnglishCulturalEventPaths([existing.slug])",
+  );
+  const refresh = updateSource.indexOf("const refreshedResult");
+  assert.ok(updateMutation >= 0);
+  assert.ok(knownPathRevalidation > updateMutation);
+  assert.ok(refresh > knownPathRevalidation);
+});
+
+function sourceActionForm(overrides = {}) {
+  const formData = new FormData();
+  for (const [field, value] of Object.entries(
+    validInput({
+      status: "draft",
+      ...overrides,
+    }),
+  )) {
+    formData.set(field, String(value));
+  }
+  return formData;
+}
+
+function sourceActionPrevious() {
+  return {
+    kind: "idle",
+    values: emptyCulturalEventFormValues(),
+    fieldErrors: {},
+    formErrors: [],
+    message: null,
+    revision: 0,
+  };
+}
+
+function trustedEvent(overrides = {}) {
+  return {
+    id: "10000000-0000-4000-8000-000000000001",
+    title: "Festival Budaya Karang Bajo",
+    slug: "festival-budaya-karang-bajo",
+    summary: null,
+    description: "Informasi acara yang telah diverifikasi",
+    event_type: null,
+    start_at: "2030-08-17T01:30:00.000Z",
+    end_at: null,
+    all_day: false,
+    date_note: null,
+    location_name: null,
+    address: null,
+    latitude: null,
+    longitude: null,
+    google_maps_url: null,
+    organizer: null,
+    contact_phone: null,
+    contact_consent_confirmed: false,
+    visitor_information: null,
+    thumbnail_path: null,
+    thumbnail_bucket: null,
+    status: "draft",
+    is_featured: false,
+    published_at: null,
+    updated_at: "2030-08-16T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function createCulturalEventActionRuntime({
+  mutationResponse = {
+    data: [
+      {
+        id: "10000000-0000-4000-8000-000000000001",
+        slug: "festival-budaya-karang-bajo",
+      },
+    ],
+    error: null,
+  },
+  existing = trustedEvent(),
+  refreshed = trustedEvent(),
+} = {}) {
+  const runtime = {
+    events: [],
+    paths: [],
+    reads: [],
+    writes: [],
+    authCalls: 0,
+    authorizationError: null,
+    mutationResponse,
+    existing,
+    refreshed,
+    client: null,
+  };
+
+  function writeChain(operation, payload) {
+    runtime.events.push(`mutation:${operation}`);
+    runtime.writes.push({ operation, payload });
+    const chain = {
+      eq(field, value) {
+        runtime.events.push(`update-filter:${field}:${value}`);
+        return chain;
+      },
+      select(columns) {
+        runtime.events.push(`mutation-select:${columns}`);
+        return chain;
+      },
+      overrideTypes() {
+        return Promise.resolve(runtime.mutationResponse);
+      },
+    };
+    return chain;
+  }
+
+  runtime.client = {
+    from(table) {
+      assert.equal(table, "cultural_events");
+      return {
+        insert(payload) {
+          return writeChain("insert", payload);
+        },
+        update(payload) {
+          return writeChain("update", payload);
+        },
+      };
+    },
+  };
+
+  return runtime;
+}
+
+async function loadCulturalEventActions(runtime) {
+  const source = readFileSync("features/cultural-events/actions.ts", "utf8")
+    .replace(/^"use server";\s*/m, "")
+    .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
+  const stripped = stripTypeScriptTypes(source, { mode: "strip" });
+  const key = `__culturalEventActionDeps_${Math.random()
+    .toString(36)
+    .slice(2)}`;
+  globalThis[key] = {
+    revalidatePath: (path) => {
+      runtime.paths.push(path);
+      runtime.events.push(`revalidate:${path}`);
+    },
+    getPublicEnglishCulturalEventPath: (slug) =>
+      `/en/cultural-events/${encodeURIComponent(slug)}`,
+    PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH: "/en/cultural-events",
+    redirect: (path) => {
+      const error = new Error("REDIRECT");
+      error.path = path;
+      throw error;
+    },
+    requireAdministrator: async () => {
+      runtime.authCalls += 1;
+      runtime.events.push("authorization");
+      if (runtime.authorizationError) throw runtime.authorizationError;
+      return { id: "administrator-id" };
+    },
+    createClient: async () => runtime.client,
+    queryCulturalEventById: async (_supabase, id) => {
+      assert.equal(id, runtime.existing.id);
+      runtime.events.push(
+        runtime.reads.length === 0
+          ? "authoritative-read"
+          : "post-mutation-refresh",
+      );
+      const result =
+        runtime.reads.length === 0 ? runtime.existing : runtime.refreshed;
+      runtime.reads.push(result);
+      return { success: true, event: result };
+    },
+    isCulturalEventDuplicateConstraintError,
+    isValidCulturalEventId,
+    isValidCulturalEventSlug,
+    normalizeCulturalEventSlug,
+    validateCulturalEventFormData,
+  };
+
+  try {
+    return await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(
+        `const deps = globalThis.${key};
+const {
+  revalidatePath,
+  getPublicEnglishCulturalEventPath,
+  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
+  redirect,
+  requireAdministrator,
+  createClient,
+  queryCulturalEventById,
+  isCulturalEventDuplicateConstraintError,
+  isValidCulturalEventId,
+  isValidCulturalEventSlug,
+  normalizeCulturalEventSlug,
+  validateCulturalEventFormData,
+} = deps;
+${stripped}`,
+      )}`
+    );
+  } finally {
+    delete globalThis[key];
+  }
+}
+
+async function invokeCulturalEventAction(runtime, actionName, id) {
+  const actions = await loadCulturalEventActions(runtime);
+  try {
+    const result =
+      actionName === "create"
+        ? await actions.createCulturalEvent(
+            sourceActionPrevious(),
+            sourceActionForm(),
+          )
+        : await actions.updateCulturalEvent(
+            id,
+            sourceActionPrevious(),
+            sourceActionForm(),
+          );
+    return { result, redirectPath: null };
+  } catch (error) {
+    if (error?.message === "REDIRECT") {
+      return { result: null, redirectPath: error.path };
+    }
+    throw error;
+  }
+}
+
+test("Cultural Event source action revalidation is behavioral and failure-safe", async () => {
+  const createRuntime = createCulturalEventActionRuntime();
+  const created = await invokeCulturalEventAction(createRuntime, "create");
+  assert.ok(created.redirectPath);
+  assert.ok(createRuntime.paths.includes("/en/cultural-events"));
+  assert.ok(
+    createRuntime.paths.includes(
+      "/en/cultural-events/festival-budaya-karang-bajo",
+    ),
+  );
+  assert.ok(
+    createRuntime.events.indexOf("mutation:insert") <
+      createRuntime.events.indexOf("revalidate:/en/cultural-events"),
+  );
+
+  const updateRuntime = createCulturalEventActionRuntime({
+    refreshed: trustedEvent({ slug: "festival-budaya-baru" }),
+  });
+  const updated = await invokeCulturalEventAction(
+    updateRuntime,
+    "update",
+    updateRuntime.existing.id,
+  );
+  assert.ok(updated.redirectPath);
+  assert.ok(
+    updateRuntime.paths.includes(
+      "/en/cultural-events/festival-budaya-karang-bajo",
+    ),
+  );
+  assert.ok(
+    updateRuntime.paths.includes("/en/cultural-events/festival-budaya-baru"),
+  );
+  assert.ok(
+    updateRuntime.events.indexOf("mutation:update") <
+      updateRuntime.events.indexOf("revalidate:/en/cultural-events"),
+  );
+  assert.ok(
+    updateRuntime.events.indexOf(
+      "revalidate:/en/cultural-events/festival-budaya-baru",
+    ) > updateRuntime.events.indexOf("post-mutation-refresh"),
+  );
+
+  const failedRuntime = createCulturalEventActionRuntime({
+    mutationResponse: {
+      data: [],
+      error: { code: "mutation-failed" },
+    },
+  });
+  const failed = await invokeCulturalEventAction(
+    failedRuntime,
+    "update",
+    failedRuntime.existing.id,
+  );
+  assert.equal(failed.redirectPath, null);
+  assert.equal(failedRuntime.paths.length, 0);
 });
