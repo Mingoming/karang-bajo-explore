@@ -718,6 +718,10 @@ function createMediaActionRuntime({
       success: true,
       event: { slug: TRUSTED_CULTURAL_EVENT_SLUG },
     },
+    homestayResponse: {
+      success: true,
+      homestay: { slug: "homestay-karang-bajo" },
+    },
     rpcResponses: new Map(),
     fileMode: "metadata",
     client: null,
@@ -767,10 +771,13 @@ async function loadMediaActions(runtime) {
       `/en/destinations/${encodeURIComponent(slug)}`,
     getPublicEnglishTraditionalHousePath: (slug) =>
       `/en/traditional-houses/${encodeURIComponent(slug)}`,
+    getPublicEnglishHomestayPath: (slug) =>
+      `/en/homestays/${encodeURIComponent(slug)}`,
     getPublicEnglishCulturalEventPath: (slug) =>
       `/en/cultural-events/${encodeURIComponent(slug)}`,
     PUBLIC_ENGLISH_DESTINATIONS_PATH: "/en/destinations",
     PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
+    PUBLIC_ENGLISH_HOMESTAYS_PATH: "/en/homestays",
     PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH: "/en/cultural-events",
     queryDestinationById: async () => {
       runtime.events.push("owner-slug-read");
@@ -780,12 +787,17 @@ async function loadMediaActions(runtime) {
       runtime.events.push("owner-slug-read");
       return runtime.traditionalHouseResponse;
     },
+    queryHomestayById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.homestayResponse;
+    },
     queryCulturalEventById: async () => {
       runtime.events.push("owner-slug-read");
       return runtime.culturalEventResponse;
     },
     isValidCulturalEventSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidTraditionalHouseSlug,
+    isValidHomestaySlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     requireAdministrator: async () => {
       runtime.authCalls += 1;
       runtime.events.push("authorization");
@@ -842,11 +854,13 @@ const {
   createClient,
   getPublicEnglishDestinationPath,
   getPublicEnglishTraditionalHousePath,
+  getPublicEnglishHomestayPath,
   getPublicEnglishCulturalEventPath,
   isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidMediaUuid,
   isValidTraditionalHouseSlug,
+  isValidHomestaySlug,
   isValidCulturalEventSlug,
   logMediaStorageFailure,
   moveMediaImageToOrder,
@@ -854,11 +868,13 @@ const {
   parseMediaRouteIdentity,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
+  PUBLIC_ENGLISH_HOMESTAYS_PATH,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   queryDestinationById,
   queryMediaImages,
   queryMediaParentById,
   queryTraditionalHouseById,
+  queryHomestayById,
   queryCulturalEventById,
   redirect,
   removeMediaObject,
@@ -1017,6 +1033,63 @@ test("Traditional House media actions execute create, metadata, primary, reorder
     ["media_delete"],
   );
   assert.ok(deleteRuntime.paths.includes("/en/traditional-houses"));
+});
+
+test("Homestay media mutations invalidate only trusted English Homestay routes", async () => {
+  const createdRuntime = createMediaActionRuntime({
+    entityType: "homestay",
+    images: [],
+  });
+  const created = await invokeMedia(createdRuntime, "create", {
+    fileMode: "create",
+    formOverrides: { fileMode: "create", is_primary: "on" },
+  });
+  assert.ok(created.redirectPath);
+  assert.ok(createdRuntime.calls.some((call) => call.name === "media_insert"));
+  assert.deepEqual(
+    createdRuntime.paths.filter((path) => path.startsWith("/en/")),
+    ["/en/homestays", "/en/homestays/homestay-karang-bajo"],
+  );
+  assert.ok(
+    createdRuntime.events.indexOf("mutation:media_insert") <
+      createdRuntime.events.indexOf("revalidate:/en/homestays"),
+  );
+
+  const updatedRuntime = createMediaActionRuntime({ entityType: "homestay" });
+  const updated = await invokeMedia(updatedRuntime, "update");
+  assert.ok(updated.redirectPath);
+  assert.ok(updatedRuntime.calls.some((call) => call.name === "media_update"));
+  assert.ok(updatedRuntime.paths.includes("/en/homestays"));
+  assert.ok(
+    updatedRuntime.paths.includes("/en/homestays/homestay-karang-bajo"),
+  );
+
+  const deletedRuntime = createMediaActionRuntime({ entityType: "homestay" });
+  const deleted = await invokeMedia(deletedRuntime, "delete");
+  assert.ok(deleted.redirectPath);
+  assert.ok(deletedRuntime.calls.some((call) => call.name === "media_delete"));
+  assert.ok(deletedRuntime.paths.includes("/en/homestays"));
+  assert.ok(
+    deletedRuntime.paths.includes("/en/homestays/homestay-karang-bajo"),
+  );
+  for (const runtime of [createdRuntime, updatedRuntime, deletedRuntime]) {
+    assert.equal(
+      runtime.paths.some((path) => path.includes("attacker")),
+      false,
+    );
+    assert.equal(
+      runtime.paths.some((path) => path.startsWith("/en/destinations")),
+      false,
+    );
+    assert.equal(
+      runtime.paths.some((path) => path.startsWith("/en/traditional-houses")),
+      false,
+    );
+    assert.equal(
+      runtime.paths.some((path) => path.startsWith("/en/cultural-events")),
+      false,
+    );
+  }
 });
 
 test("failed media mutations do not revalidate English routes", async () => {
