@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 
 import { getUmkmEditorData } from "@/features/umkm/data";
 import { UmkmForm } from "@/features/umkm/umkm-form";
+import { getUmkmTranslationAdminData } from "@/features/umkm-translation/data";
+import { UmkmTranslationForm } from "@/features/umkm-translation/umkm-translation-form";
+import { createUmkmTranslationActionState } from "@/features/umkm-translation/model";
+import { getUmkmImageTranslationAdminData } from "@/features/umkm-image-translation/data";
+import { UmkmImageTranslationForm } from "@/features/umkm-image-translation/umkm-image-translation-form";
+import { createUmkmImageTranslationActionState } from "@/features/umkm-image-translation/model";
 import {
   createUmkmInitialState,
   getUmkmStatusLabel,
@@ -18,10 +24,13 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
   const { id } = await params;
   if (!isValidUmkmId(id)) notFound();
 
-  const [result, query] = await Promise.all([
-    getUmkmEditorData(id),
-    searchParams,
-  ]);
+  const [result, translationResult, imageTranslationResult, query] =
+    await Promise.all([
+      getUmkmEditorData(id),
+      getUmkmTranslationAdminData(id),
+      getUmkmImageTranslationAdminData(id),
+      searchParams,
+    ]);
   if (result.kind === "invalid-id" || result.kind === "not-found") notFound();
   if (result.kind !== "ready") {
     return (
@@ -92,6 +101,92 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
         initialState={createUmkmInitialState(result.umkm)}
         mode="update"
       />
+
+      {translationResult.success ? (
+        <UmkmTranslationForm
+          key={`${translationResult.source.updated_at}:${translationResult.translation?.edit_revision ?? "none"}:${translationResult.translation?.lifecycle_state ?? "draft"}`}
+          initialState={createUmkmTranslationActionState(
+            translationResult.source,
+            translationResult.translation,
+            translationResult.history,
+          )}
+          sourceReference={translationResult.source}
+        />
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English translation
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            UMKM English translation
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Translation data is not available. No translation mutation is
+            offered until the administrator read succeeds.
+          </div>
+        </section>
+      )}
+
+      {imageTranslationResult.success ? (
+        <>
+          <section className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+              English image translations
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+              UMKM image translations
+            </h2>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+              Source media remains read-only. English alt text and captions are
+              written through the translation RPC workflow; Storage and generic
+              media operations are not part of this form.
+            </p>
+          </section>
+          {imageTranslationResult.images.length > 0 ? (
+            imageTranslationResult.images.map((image) => (
+              <UmkmImageTranslationForm
+                key={`${image.source.id}:${image.translation?.edit_revision ?? "none"}:${image.translation?.lifecycle_state ?? "draft"}`}
+                umkmId={imageTranslationResult.umkmId}
+                initialState={createUmkmImageTranslationActionState(
+                  image.source,
+                  image.translation,
+                  image.history,
+                  { sourceStatus: image.sourceStatus },
+                )}
+                sourceReference={image.source}
+              />
+            ))
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+              <p className="font-semibold text-slate-900">
+                No source images are available.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Add source media before managing English image translations.
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English image translations
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            UMKM image translations
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Image translation data is not available. No image translation
+            mutation is offered until the administrator read succeeds.
+          </div>
+        </section>
+      )}
     </section>
   );
 }

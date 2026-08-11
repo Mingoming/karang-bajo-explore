@@ -33,6 +33,9 @@ export const PUBLIC_ENGLISH_CULTURAL_EVENT_DETAIL_PATH =
 export const PUBLIC_ENGLISH_HOMESTAYS_PATH = "/en/homestays" as const;
 export const PUBLIC_ENGLISH_HOMESTAY_DETAIL_PATH =
   "/en/homestays/[slug]" as const;
+export const PUBLIC_ENGLISH_UMKMS_PATH = "/en/local-businesses" as const;
+export const PUBLIC_ENGLISH_UMKM_DETAIL_PATH =
+  "/en/local-businesses/[slug]" as const;
 export const PUBLIC_ENGLISH_TOURISM_MAP_PATH = "/en/tourism-map" as const;
 
 export function getPublicEnglishDestinationPath(slug: string): PublicRoutePath {
@@ -55,6 +58,10 @@ export function getPublicEnglishHomestayPath(slug: string): PublicRoutePath {
   return `${PUBLIC_ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
 }
 
+export function getPublicEnglishUmkmPath(slug: string): PublicRoutePath {
+  return `${PUBLIC_ENGLISH_UMKMS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
+}
+
 export const PUBLIC_ROUTE_MANIFEST: Readonly<
   Record<PublicRouteKey, Readonly<Record<PublicLocale, PublicRoutePath | null>>>
 > = {
@@ -63,7 +70,7 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
   destinations: { id: "/destinasi", en: PUBLIC_ENGLISH_DESTINATIONS_PATH },
   tourismPackages: { id: "/paket-wisata", en: null },
   homestays: { id: "/homestay", en: PUBLIC_ENGLISH_HOMESTAYS_PATH },
-  umkm: { id: "/umkm", en: null },
+  umkm: { id: "/umkm", en: PUBLIC_ENGLISH_UMKMS_PATH },
   traditionalHouses: {
     id: "/rumah-adat",
     en: PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,

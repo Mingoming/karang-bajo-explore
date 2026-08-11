@@ -722,6 +722,10 @@ function createMediaActionRuntime({
       success: true,
       homestay: { slug: "homestay-karang-bajo" },
     },
+    umkmResponse: {
+      success: true,
+      umkm: { slug: "usaha-karang-bajo" },
+    },
     rpcResponses: new Map(),
     fileMode: "metadata",
     client: null,
@@ -773,11 +777,14 @@ async function loadMediaActions(runtime) {
       `/en/traditional-houses/${encodeURIComponent(slug)}`,
     getPublicEnglishHomestayPath: (slug) =>
       `/en/homestays/${encodeURIComponent(slug)}`,
+    getPublicEnglishUmkmPath: (slug) =>
+      `/en/local-businesses/${encodeURIComponent(slug)}`,
     getPublicEnglishCulturalEventPath: (slug) =>
       `/en/cultural-events/${encodeURIComponent(slug)}`,
     PUBLIC_ENGLISH_DESTINATIONS_PATH: "/en/destinations",
     PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
     PUBLIC_ENGLISH_HOMESTAYS_PATH: "/en/homestays",
+    PUBLIC_ENGLISH_UMKMS_PATH: "/en/local-businesses",
     PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH: "/en/cultural-events",
     queryDestinationById: async () => {
       runtime.events.push("owner-slug-read");
@@ -791,6 +798,10 @@ async function loadMediaActions(runtime) {
       runtime.events.push("owner-slug-read");
       return runtime.homestayResponse;
     },
+    queryUmkmById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.umkmResponse;
+    },
     queryCulturalEventById: async () => {
       runtime.events.push("owner-slug-read");
       return runtime.culturalEventResponse;
@@ -798,6 +809,7 @@ async function loadMediaActions(runtime) {
     isValidCulturalEventSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidTraditionalHouseSlug,
     isValidHomestaySlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
+    isValidUmkmSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     requireAdministrator: async () => {
       runtime.authCalls += 1;
       runtime.events.push("authorization");
@@ -855,12 +867,14 @@ const {
   getPublicEnglishDestinationPath,
   getPublicEnglishTraditionalHousePath,
   getPublicEnglishHomestayPath,
+  getPublicEnglishUmkmPath,
   getPublicEnglishCulturalEventPath,
   isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidMediaUuid,
   isValidTraditionalHouseSlug,
   isValidHomestaySlug,
+  isValidUmkmSlug,
   isValidCulturalEventSlug,
   logMediaStorageFailure,
   moveMediaImageToOrder,
@@ -869,12 +883,14 @@ const {
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
   PUBLIC_ENGLISH_HOMESTAYS_PATH,
+  PUBLIC_ENGLISH_UMKMS_PATH,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   queryDestinationById,
   queryMediaImages,
   queryMediaParentById,
   queryTraditionalHouseById,
   queryHomestayById,
+  queryUmkmById,
   queryCulturalEventById,
   redirect,
   removeMediaObject,
@@ -1090,6 +1106,67 @@ test("Homestay media mutations invalidate only trusted English Homestay routes",
       false,
     );
   }
+});
+
+test("UMKM media mutations invalidate trusted English local-business routes only after success", async () => {
+  const createdRuntime = createMediaActionRuntime({
+    entityType: "umkm",
+    images: [],
+  });
+  const created = await invokeMedia(createdRuntime, "create", {
+    fileMode: "create",
+    formOverrides: { fileMode: "create", is_primary: "on" },
+  });
+  assert.ok(created.redirectPath);
+  assert.deepEqual(
+    createdRuntime.paths.filter((path) => path.startsWith("/en/")),
+    ["/en/local-businesses", "/en/local-businesses/usaha-karang-bajo"],
+  );
+  assert.ok(
+    createdRuntime.events.indexOf("mutation:media_insert") <
+      createdRuntime.events.indexOf("revalidate:/en/local-businesses"),
+  );
+
+  const metadataRuntime = createMediaActionRuntime({ entityType: "umkm" });
+  const metadataResult = await invokeMedia(metadataRuntime, "update");
+  assert.ok(metadataResult.redirectPath);
+  assert.ok(metadataRuntime.paths.includes("/en/local-businesses"));
+  assert.ok(
+    metadataRuntime.paths.includes("/en/local-businesses/usaha-karang-bajo"),
+  );
+
+  const replacementRuntime = createMediaActionRuntime({ entityType: "umkm" });
+  const replacement = await invokeMedia(replacementRuntime, "update", {
+    fileMode: "replacement",
+    formOverrides: { fileMode: "replacement" },
+  });
+  assert.ok(replacement.redirectPath);
+  assert.ok(
+    replacementRuntime.calls.some((call) => call.name === "media_replace"),
+  );
+  assert.ok(replacementRuntime.paths.includes("/en/local-businesses"));
+
+  const deletedRuntime = createMediaActionRuntime({ entityType: "umkm" });
+  const deleted = await invokeMedia(deletedRuntime, "delete");
+  assert.ok(deleted.redirectPath);
+  assert.ok(deletedRuntime.calls.some((call) => call.name === "media_delete"));
+  assert.ok(deletedRuntime.paths.includes("/en/local-businesses"));
+  assert.ok(
+    deletedRuntime.paths.includes("/en/local-businesses/usaha-karang-bajo"),
+  );
+
+  const failedRuntime = createMediaActionRuntime({ entityType: "umkm" });
+  const failed = await invokeMedia(failedRuntime, "update", {
+    rpcResponses: new Map([
+      ["media_update", { data: null, error: { code: "mutation-failed" } }],
+    ]),
+  });
+  assert.equal(failed.result.kind, "database-error");
+  assert.equal(failedRuntime.paths.includes("/en/local-businesses"), false);
+  assert.equal(
+    failedRuntime.paths.some((path) => path.includes("usaha-karang-bajo")),
+    false,
+  );
 });
 
 test("failed media mutations do not revalidate English routes", async () => {

@@ -28,6 +28,7 @@ const UMKM_EDIT_COLUMNS = [
   "thumbnail_path",
   "thumbnail_bucket",
   "status",
+  "source_revision",
   "published_at",
   "is_featured",
   "display_order",
