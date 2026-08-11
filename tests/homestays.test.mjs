@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -327,4 +328,38 @@ test("unknown, capacity, audit, and malformed fields are rejected", () => {
     validationContext(),
   );
   assert.equal(malformedBoolean.success, false);
+});
+
+test("source mutations invalidate trusted English Homestay collection and detail paths", () => {
+  const actions = readFileSync("features/homestays/actions.ts", "utf8");
+  const createStart = actions.indexOf("export async function createHomestay");
+  const updateStart = actions.indexOf("export async function updateHomestay");
+  assert.ok(createStart >= 0);
+  assert.ok(updateStart > createStart);
+  const createSource = actions.slice(createStart, updateStart);
+  const updateSource = actions.slice(updateStart);
+
+  assert.match(actions, /getPublicEnglishHomestayPath/);
+  assert.match(actions, /PUBLIC_ENGLISH_HOMESTAYS_PATH/);
+  assert.match(createSource, /\.select\("id,slug"\)/);
+  assert.match(
+    createSource,
+    /revalidateEnglishHomestayPaths\(\[createdHomestay\.slug\]\)/,
+  );
+  assert.match(
+    updateSource,
+    /revalidateEnglishHomestayPaths\(\[\s*existingHomestay\.slug,[\s\S]*?data\[0\]\.slug/,
+  );
+  assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
+
+  const createMutation = createSource.indexOf('from("homestays")');
+  const createRevalidation = createSource.indexOf(
+    "revalidateEnglishHomestayPaths",
+  );
+  const updateMutation = updateSource.indexOf('from("homestays")');
+  const updateRevalidation = updateSource.indexOf(
+    "revalidateEnglishHomestayPaths",
+  );
+  assert.ok(createMutation >= 0 && createRevalidation > createMutation);
+  assert.ok(updateMutation >= 0 && updateRevalidation > updateMutation);
 });

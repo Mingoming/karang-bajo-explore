@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 
 import { getHomestayEditorData } from "@/features/homestays/data";
 import { HomestayForm } from "@/features/homestays/homestay-form";
+import { getHomestayTranslationAdminData } from "@/features/homestay-translation/data";
+import { HomestayTranslationForm } from "@/features/homestay-translation/homestay-translation-form";
+import { createHomestayTranslationActionState } from "@/features/homestay-translation/model";
+import { getHomestayImageTranslationAdminData } from "@/features/homestay-image-translation/data";
+import { HomestayImageTranslationForm } from "@/features/homestay-image-translation/homestay-image-translation-form";
+import { createHomestayImageTranslationActionState } from "@/features/homestay-image-translation/model";
 import {
   createHomestayInitialState,
   getHomestayStatusLabel,
@@ -24,8 +30,15 @@ export default async function EditHomestayPage({
     notFound();
   }
 
-  const [result, resolvedSearchParams] = await Promise.all([
+  const [
+    result,
+    translationResult,
+    imageTranslationResult,
+    resolvedSearchParams,
+  ] = await Promise.all([
     getHomestayEditorData(id),
+    getHomestayTranslationAdminData(id),
+    getHomestayImageTranslationAdminData(id),
     searchParams,
   ]);
 
@@ -107,6 +120,92 @@ export default async function EditHomestayPage({
         initialState={createHomestayInitialState(result.homestay)}
         mode="update"
       />
+
+      {translationResult.success ? (
+        <HomestayTranslationForm
+          key={`${translationResult.source.updated_at}:${translationResult.translation?.edit_revision ?? "none"}:${translationResult.translation?.lifecycle_state ?? "draft"}`}
+          initialState={createHomestayTranslationActionState(
+            translationResult.source,
+            translationResult.translation,
+            translationResult.history,
+          )}
+          sourceReference={translationResult.source}
+        />
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English translation
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Homestay English translation
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Translation data is not available. No translation mutation is
+            offered until the administrator read succeeds.
+          </div>
+        </section>
+      )}
+
+      {imageTranslationResult.success ? (
+        <>
+          <section className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+              English image translations
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+              Homestay image translations
+            </h2>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+              Source media remains read-only. English alt text and captions are
+              written explicitly through the translation RPC workflow; Storage
+              and generic media operations are not part of this form.
+            </p>
+          </section>
+          {imageTranslationResult.images.length > 0 ? (
+            imageTranslationResult.images.map((image) => (
+              <HomestayImageTranslationForm
+                key={`${image.source.id}:${image.translation?.edit_revision ?? "none"}:${image.translation?.lifecycle_state ?? "draft"}`}
+                homestayId={imageTranslationResult.homestayId}
+                initialState={createHomestayImageTranslationActionState(
+                  image.source,
+                  image.translation,
+                  image.history,
+                  { sourceStatus: image.sourceStatus },
+                )}
+                sourceReference={image.source}
+              />
+            ))
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
+              <p className="font-semibold text-slate-900">
+                No source images are available.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Add source media before managing English image translations.
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
+            English image translations
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+            Homestay image translations
+          </h2>
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+          >
+            Image translation data is not available. No image translation
+            mutation is offered until the administrator read succeeds.
+          </div>
+        </section>
+      )}
     </section>
   );
 }

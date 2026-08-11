@@ -14,6 +14,7 @@ const HOMESTAY_EDIT_COLUMNS = [
   "id",
   "name",
   "slug",
+  "source_revision",
   "owner_name",
   "phone",
   "contact_consent_confirmed",

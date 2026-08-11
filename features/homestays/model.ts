@@ -26,6 +26,7 @@ export type HomestayRecord = {
   id: string;
   name: string;
   slug: string;
+  source_revision: number;
   owner_name: string | null;
   phone: string | null;
   contact_consent_confirmed: boolean;

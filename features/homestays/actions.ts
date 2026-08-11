@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  getPublicEnglishHomestayPath,
+  PUBLIC_ENGLISH_HOMESTAYS_PATH,
+} from "@/config/public-routes";
+
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +25,16 @@ import {
 } from "./model";
 
 const HOMESTAY_LIST_PATH = "/admin/homestay";
+
+function revalidateEnglishHomestayDetailPath(slug: string) {
+  if (!isValidHomestaySlug(slug)) return;
+  revalidatePath(getPublicEnglishHomestayPath(slug));
+}
+
+function revalidateEnglishHomestayPaths(slugs: readonly string[]) {
+  revalidatePath(PUBLIC_ENGLISH_HOMESTAYS_PATH);
+  for (const slug of new Set(slugs)) revalidateEnglishHomestayDetailPath(slug);
+}
 
 function nextState(
   previousState: HomestayActionState,
@@ -129,11 +144,12 @@ export async function createHomestay(
   const { data, error } = await supabase
     .from("homestays")
     .insert(payload)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
 
-  const homestayId = data?.length === 1 ? data[0].id : null;
-  if (error || !homestayId) {
+  const createdHomestay = data?.length === 1 ? data[0] : null;
+  const homestayId = createdHomestay?.id ?? null;
+  if (error || !createdHomestay) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembuatan homestay gagal.", { code });
     return mutationFailureState(
@@ -146,6 +162,7 @@ export async function createHomestay(
 
   revalidatePath(HOMESTAY_LIST_PATH);
   revalidatePath(`${HOMESTAY_LIST_PATH}/${homestayId}/edit`);
+  revalidateEnglishHomestayPaths([createdHomestay.slug]);
   redirect(`${HOMESTAY_LIST_PATH}/${homestayId}/edit?success=created`);
 }
 
@@ -228,8 +245,8 @@ export async function updateHomestay(
     .from("homestays")
     .update(payload)
     .eq("id", existingHomestay.id)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
 
   if (error || data?.length !== 1) {
     const code = error?.code ?? "unexpected-row-count";
@@ -244,5 +261,9 @@ export async function updateHomestay(
 
   revalidatePath(HOMESTAY_LIST_PATH);
   revalidatePath(`${HOMESTAY_LIST_PATH}/${existingHomestay.id}/edit`);
+  revalidateEnglishHomestayPaths([
+    existingHomestay.slug,
+    ...(data?.length === 1 ? [data[0].slug] : []),
+  ]);
   redirect(`${HOMESTAY_LIST_PATH}/${existingHomestay.id}/edit?success=updated`);
 }

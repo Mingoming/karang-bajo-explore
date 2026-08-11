@@ -1,0 +1,639 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { requireAdministrator } from "@/lib/auth/admin";
+import { createClient } from "@/lib/supabase/server";
+
+import { isValidHomestayId } from "../homestays/model";
+import {
+  queryHomestayTranslationAdminData,
+  type HomestayTranslationAdminReadResult,
+} from "./data";
+import {
+  createHomestayTranslationActionState,
+  validateHomestayTranslationForEligibility,
+  validateHomestayTranslationForSource,
+  validateHomestayTranslationFormData,
+  type HomestayTranslationActionState,
+  type HomestayTranslationMutationValues,
+  type HomestayTranslationRpcRow,
+} from "./model";
+
+const HOMESTAY_ADMIN_PATH = "/admin/homestay";
+const ENGLISH_HOMESTAYS_PATH = "/en/homestays";
+
+const TRANSLATION_INTENTS = [
+  "save-draft",
+  "review",
+  "reject",
+  "publish",
+  "republish",
+  "archive",
+  "unpublish",
+  "restore",
+] as const;
+
+type TranslationIntent = (typeof TRANSLATION_INTENTS)[number];
+type SuccessfulRead = Extract<
+  HomestayTranslationAdminReadResult,
+  { success: true }
+>;
+type ParsedRevision = number | null | "invalid";
+type ParsedTranslationId = string | null | "invalid";
+type StateOverrides = {
+  kind?: HomestayTranslationActionState["kind"];
+  values?: HomestayTranslationActionState["values"];
+  fieldErrors?: HomestayTranslationActionState["fieldErrors"];
+  formErrors?: string[];
+  message?: string | null;
+  rejectionReason?: string;
+};
+
+function readIntent(formData: FormData): TranslationIntent | null {
+  const values = formData.getAll("intent");
+  if (values.length !== 1 || typeof values[0] !== "string") return null;
+  return TRANSLATION_INTENTS.some((intent) => intent === values[0])
+    ? (values[0] as TranslationIntent)
+    : null;
+}
+
+function readTranslationId(formData: FormData): ParsedTranslationId {
+  const values = formData.getAll("translation_id");
+  if (values.length !== 1 || typeof values[0] !== "string") return "invalid";
+  const value = values[0].trim();
+  if (value === "") return null;
+  return isValidHomestayId(value) ? value : "invalid";
+}
+
+function readExpectedEditRevision(formData: FormData): ParsedRevision {
+  const values = formData.getAll("edit_revision");
+  if (values.length !== 1 || typeof values[0] !== "string") return "invalid";
+  const value = values[0].trim();
+  if (value === "") return null;
+  if (!/^\d+$/.test(value)) return "invalid";
+  const revision = Number(value);
+  return Number.isSafeInteger(revision) && revision > 0 ? revision : "invalid";
+}
+
+function readRejectionReason(formData: FormData) {
+  const values = formData.getAll("rejection_reason");
+  if (values.length !== 1 || typeof values[0] !== "string") return null;
+  const reason = values[0].trim();
+  return reason === "" ? null : reason;
+}
+
+function terminologyReviewConfirmed(formData: FormData) {
+  const values = formData.getAll("terminology_review_confirmed");
+  return values.length === 1 && (values[0] === "on" || values[0] === "true");
+}
+
+function stateFromRead(
+  current: SuccessfulRead,
+  previousState: HomestayTranslationActionState,
+  overrides: StateOverrides = {},
+) {
+  return createHomestayTranslationActionState(
+    current.source,
+    current.translation,
+    current.history,
+    { ...overrides, revision: previousState.revision + 1 },
+  );
+}
+
+function databaseFailureState(
+  previousState: HomestayTranslationActionState,
+  message = "Terjemahan homestay belum dapat diproses. Silakan coba lagi.",
+  kind: HomestayTranslationActionState["kind"] = "database-error",
+) {
+  return {
+    ...previousState,
+    kind,
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies HomestayTranslationActionState;
+}
+
+function validationFailureState(
+  current: SuccessfulRead,
+  previousState: HomestayTranslationActionState,
+  values: HomestayTranslationActionState["values"],
+  fieldErrors: HomestayTranslationActionState["fieldErrors"] = {},
+  formErrors: string[] = [],
+  message = "Periksa kembali data yang ditandai.",
+  rejectionReason = previousState.rejectionReason,
+) {
+  return stateFromRead(current, previousState, {
+    kind: "validation-error",
+    values,
+    fieldErrors,
+    formErrors,
+    message,
+    rejectionReason,
+  });
+}
+
+function rpcFailureState(
+  current: SuccessfulRead,
+  previousState: HomestayTranslationActionState,
+  code: string,
+  values = previousState.values,
+  rejectionReason = previousState.rejectionReason,
+) {
+  let message = "Terjemahan homestay belum dapat diproses. Silakan coba lagi.";
+  let kind: HomestayTranslationActionState["kind"] = "database-error";
+  if (code === "55000") {
+    kind = "conflict";
+    message =
+      "Status terjemahan atau sumber telah berubah. Muat ulang halaman dan ikuti alur review terbaru.";
+  } else if (code === "42501") {
+    message = "Administrator tidak berwenang menjalankan tindakan ini.";
+  } else if (code === "23514" || code === "23502") {
+    kind = "validation-error";
+    message = "Data terjemahan belum memenuhi persyaratan database.";
+  }
+  return stateFromRead(current, previousState, {
+    kind,
+    values,
+    formErrors: [message],
+    message,
+    rejectionReason,
+  });
+}
+
+function revalidateHomestayTranslationPaths(
+  homestayId: string,
+  sourceSlug: string,
+) {
+  revalidatePath(HOMESTAY_ADMIN_PATH);
+  revalidatePath(`${HOMESTAY_ADMIN_PATH}/${homestayId}/edit`);
+  revalidatePath(ENGLISH_HOMESTAYS_PATH);
+  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+}
+
+function revalidateHomestayTranslationDetailPath(sourceSlug: string) {
+  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+}
+
+async function refreshAfterMutation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  homestayId: string,
+  trustedPreMutationSlug: string,
+  previousState: HomestayTranslationActionState,
+  message: string,
+  resultKind: "success" | "database-error" = "success",
+) {
+  revalidateHomestayTranslationPaths(homestayId, trustedPreMutationSlug);
+  const refreshed = await queryHomestayTranslationAdminData(
+    supabase,
+    homestayId,
+  );
+  if (!refreshed.success) {
+    return databaseFailureState(
+      previousState,
+      "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+    );
+  }
+  if (refreshed.slug !== trustedPreMutationSlug) {
+    revalidateHomestayTranslationDetailPath(refreshed.slug);
+  }
+  return stateFromRead(refreshed, previousState, {
+    kind: resultKind,
+    formErrors: resultKind === "success" ? [] : [message],
+    message,
+  });
+}
+
+function checkpointMatches(
+  current: SuccessfulRead,
+  postedTranslationId: string | null,
+  postedRevision: number | null,
+) {
+  return (
+    postedTranslationId === (current.translation?.id ?? null) &&
+    postedRevision === (current.translation?.edit_revision ?? null)
+  );
+}
+
+function rpcRowFailureCode(
+  error: { code?: string } | null,
+  row: HomestayTranslationRpcRow | null,
+) {
+  return error?.code ?? (row === null ? "unexpected-row-count" : null);
+}
+
+async function saveDraft(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  homestayId: string,
+  expectedEditRevision: number | null,
+  values: HomestayTranslationMutationValues,
+) {
+  return supabase
+    .rpc("homestay_translation_save_draft", {
+      p_homestay_id: homestayId,
+      p_expected_edit_revision: expectedEditRevision,
+      p_name: values.name,
+      p_description: values.description,
+      p_address: values.address,
+      p_price_note: values.price_note,
+      p_facilities: values.facilities,
+    })
+    .single()
+    .overrideTypes<HomestayTranslationRpcRow, { merge: false }>();
+}
+
+async function runSimpleTransition(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  intent: "archive" | "unpublish" | "restore",
+  translationId: string,
+  expectedEditRevision: number | null,
+) {
+  const args = {
+    p_translation_id: translationId,
+    p_expected_edit_revision: expectedEditRevision,
+  };
+  const rpc =
+    intent === "archive"
+      ? "homestay_translation_archive"
+      : intent === "unpublish"
+        ? "homestay_translation_unpublish"
+        : "homestay_translation_restore";
+  return supabase
+    .rpc(rpc, args)
+    .single()
+    .overrideTypes<HomestayTranslationRpcRow, { merge: false }>();
+}
+
+export async function manageHomestayTranslation(
+  homestayId: string,
+  previousState: HomestayTranslationActionState,
+  formData: FormData,
+): Promise<HomestayTranslationActionState> {
+  // The database derives every actor from auth.uid(). No actor, fingerprint,
+  // source revision, or slug is accepted from FormData.
+  await requireAdministrator();
+
+  const intent = readIntent(formData);
+  if (!intent) {
+    return databaseFailureState(
+      previousState,
+      "Tindakan formulir tidak valid.",
+      "validation-error",
+    );
+  }
+  if (!isValidHomestayId(homestayId)) {
+    return databaseFailureState(
+      previousState,
+      "Homestay tidak ditemukan. Muat ulang halaman daftar homestay.",
+      "not-found",
+    );
+  }
+
+  const postedTranslationId = readTranslationId(formData);
+  const postedRevision = readExpectedEditRevision(formData);
+  if (postedTranslationId === "invalid" || postedRevision === "invalid") {
+    return databaseFailureState(
+      previousState,
+      "Checkpoint terjemahan tidak valid. Muat ulang halaman sebelum mencoba kembali.",
+      "conflict",
+    );
+  }
+
+  const supabase = await createClient();
+  const current = await queryHomestayTranslationAdminData(supabase, homestayId);
+  if (!current.success) {
+    return databaseFailureState(
+      previousState,
+      current.kind === "not-found"
+        ? "Homestay tidak ditemukan."
+        : "Terjemahan homestay belum dapat dimuat. Silakan coba lagi.",
+      current.kind === "not-found" ? "not-found" : "database-error",
+    );
+  }
+  if (!checkpointMatches(current, postedTranslationId, postedRevision)) {
+    return stateFromRead(current, previousState, {
+      kind: "conflict",
+      formErrors: [
+        "Status terjemahan telah berubah. Muat ulang halaman sebelum mencoba kembali.",
+      ],
+      message: "Checkpoint terjemahan sudah tidak berlaku.",
+    });
+  }
+
+  if (intent === "save-draft" || intent === "review") {
+    const validation = validateHomestayTranslationFormData(formData);
+    if (!validation.success) {
+      return validationFailureState(
+        current,
+        previousState,
+        validation.values,
+        validation.fieldErrors,
+        validation.formErrors,
+      );
+    }
+
+    const sourceRule = validateHomestayTranslationForSource(
+      current.source,
+      validation.data,
+    );
+    if (!sourceRule.success) {
+      return validationFailureState(
+        current,
+        previousState,
+        validation.values,
+        sourceRule.fieldErrors,
+        sourceRule.formErrors,
+        "Periksa kesesuaian sumber dan terjemahan.",
+      );
+    }
+
+    if (
+      current.translation &&
+      current.translation.translation_status !== "draft"
+    ) {
+      return validationFailureState(
+        current,
+        previousState,
+        validation.values,
+        {},
+        [
+          "Terjemahan harus berstatus draf sebelum dapat diedit. Batalkan publikasi atau pulihkan arsip terlebih dahulu.",
+        ],
+        "Status terjemahan tidak mengizinkan penyuntingan.",
+      );
+    }
+
+    if (intent === "review") {
+      if (!terminologyReviewConfirmed(formData)) {
+        return validationFailureState(
+          current,
+          previousState,
+          validation.values,
+          {},
+          ["Konfirmasi review terminologi budaya wajib dipilih."],
+          "Konfirmasi review manusia diperlukan.",
+        );
+      }
+      const eligibility = validateHomestayTranslationForEligibility(
+        current.source,
+        validation.data,
+      );
+      if (!eligibility.success) {
+        return validationFailureState(
+          current,
+          previousState,
+          validation.values,
+          eligibility.fieldErrors,
+          eligibility.formErrors,
+          "Lengkapi terjemahan sebelum mengirim review.",
+        );
+      }
+    }
+
+    const saved = await saveDraft(
+      supabase,
+      homestayId,
+      postedRevision,
+      validation.data,
+    );
+    const saveFailureCode = rpcRowFailureCode(saved.error, saved.data);
+    if (saveFailureCode || saved.data === null) {
+      console.error("Penyimpanan draf terjemahan homestay gagal.", {
+        code: saveFailureCode,
+      });
+      return rpcFailureState(
+        current,
+        previousState,
+        saveFailureCode ?? "unexpected-row-count",
+        validation.values,
+      );
+    }
+
+    if (intent === "save-draft") {
+      return refreshAfterMutation(
+        supabase,
+        homestayId,
+        current.slug,
+        previousState,
+        "Draf terjemahan homestay berhasil disimpan.",
+      );
+    }
+
+    const reviewed = await supabase
+      .rpc("homestay_translation_review", {
+        p_translation_id: saved.data.id,
+        p_expected_edit_revision: saved.data.edit_revision,
+        p_terminology_review_confirmed: true,
+      })
+      .single()
+      .overrideTypes<HomestayTranslationRpcRow, { merge: false }>();
+    const reviewFailureCode = rpcRowFailureCode(reviewed.error, reviewed.data);
+    if (reviewFailureCode || reviewed.data === null) {
+      console.error("Review terjemahan homestay gagal.", {
+        code: reviewFailureCode,
+      });
+      return refreshAfterMutation(
+        supabase,
+        homestayId,
+        current.slug,
+        previousState,
+        reviewFailureCode === "55000"
+          ? "Draf tersimpan, tetapi review gagal karena sumber atau media berubah. Muat ulang lalu periksa kembali kelayakan review."
+          : "Draf tersimpan, tetapi terjemahan belum dapat dikirim untuk review.",
+        "database-error",
+      );
+    }
+
+    return refreshAfterMutation(
+      supabase,
+      homestayId,
+      current.slug,
+      previousState,
+      "Terjemahan homestay berhasil dikirim untuk review.",
+    );
+  }
+
+  const translation = current.translation;
+  if (!translation) {
+    return validationFailureState(
+      current,
+      previousState,
+      previousState.values,
+      {},
+      ["Terjemahan homestay belum tersedia untuk tindakan lifecycle ini."],
+      "Tindakan lifecycle tidak dapat dijalankan.",
+    );
+  }
+
+  if (intent === "reject") {
+    const reason = readRejectionReason(formData);
+    if (!reason) {
+      return validationFailureState(
+        current,
+        previousState,
+        previousState.values,
+        {},
+        ["Alasan penolakan wajib diisi."],
+        "Masukkan alasan penolakan sebelum mengembalikan draf.",
+        "",
+      );
+    }
+    if (
+      translation.translation_status !== "draft" ||
+      !["pending", "reviewed"].includes(translation.review_state)
+    ) {
+      return validationFailureState(
+        current,
+        previousState,
+        previousState.values,
+        {},
+        [
+          "Hanya draf yang menunggu review atau sudah direview yang dapat ditolak.",
+        ],
+        "Status terjemahan tidak sesuai.",
+      );
+    }
+    const rejected = await supabase
+      .rpc("homestay_translation_reject", {
+        p_translation_id: translation.id,
+        p_expected_edit_revision: postedRevision,
+        p_reason: reason,
+      })
+      .single()
+      .overrideTypes<HomestayTranslationRpcRow, { merge: false }>();
+    const failureCode = rpcRowFailureCode(rejected.error, rejected.data);
+    if (failureCode || rejected.data === null) {
+      return rpcFailureState(
+        current,
+        previousState,
+        failureCode ?? "unexpected-row-count",
+        previousState.values,
+        reason,
+      );
+    }
+    return refreshAfterMutation(
+      supabase,
+      homestayId,
+      current.slug,
+      previousState,
+      "Terjemahan homestay dikembalikan menjadi draf dengan alasan penolakan.",
+    );
+  }
+
+  if (intent === "publish" || intent === "republish") {
+    const validStatus =
+      intent === "publish"
+        ? translation.translation_status === "draft" &&
+          translation.published_at === null
+        : (translation.translation_status === "draft" ||
+            translation.translation_status === "published") &&
+          translation.published_at !== null;
+    if (!validStatus || translation.review_state !== "reviewed") {
+      return validationFailureState(
+        current,
+        previousState,
+        previousState.values,
+        {},
+        [
+          intent === "publish"
+            ? "Terjemahan harus reviewed dan belum pernah diterbitkan sebelum publikasi pertama."
+            : "Republish memerlukan checkpoint review terbaru dan riwayat publikasi.",
+        ],
+        "Status publikasi tidak sesuai.",
+      );
+    }
+    if (!translation.publication_eligibility) {
+      return validationFailureState(
+        current,
+        previousState,
+        previousState.values,
+        {},
+        [
+          translation.eligibility_reason ||
+            "Database melaporkan kelayakan publikasi belum terpenuhi.",
+        ],
+        "Kelayakan publikasi belum terpenuhi.",
+      );
+    }
+    const publication = await supabase
+      .rpc(
+        intent === "publish"
+          ? "homestay_translation_publish"
+          : "homestay_translation_republish",
+        {
+          p_translation_id: translation.id,
+          p_expected_edit_revision: postedRevision,
+        },
+      )
+      .single()
+      .overrideTypes<HomestayTranslationRpcRow, { merge: false }>();
+    const failureCode = rpcRowFailureCode(publication.error, publication.data);
+    if (failureCode || publication.data === null) {
+      return rpcFailureState(
+        current,
+        previousState,
+        failureCode ?? "unexpected-row-count",
+      );
+    }
+    return refreshAfterMutation(
+      supabase,
+      homestayId,
+      current.slug,
+      previousState,
+      intent === "publish"
+        ? "Terjemahan homestay berhasil diterbitkan."
+        : "Terjemahan homestay berhasil diterbitkan kembali.",
+    );
+  }
+
+  if (intent === "archive" || intent === "unpublish" || intent === "restore") {
+    const expectedStatus = intent === "restore" ? "archived" : "published";
+    if (translation.translation_status !== expectedStatus) {
+      return validationFailureState(
+        current,
+        previousState,
+        previousState.values,
+        {},
+        [
+          intent === "restore"
+            ? "Hanya terjemahan yang diarsipkan yang dapat dipulihkan menjadi draf."
+            : "Hanya terjemahan yang sedang diterbitkan yang dapat diarsipkan atau dibatalkan publikasinya.",
+        ],
+        "Status lifecycle tidak sesuai.",
+      );
+    }
+    const transition = await runSimpleTransition(
+      supabase,
+      intent,
+      translation.id,
+      postedRevision,
+    );
+    const failureCode = rpcRowFailureCode(transition.error, transition.data);
+    if (failureCode || transition.data === null) {
+      return rpcFailureState(
+        current,
+        previousState,
+        failureCode ?? "unexpected-row-count",
+      );
+    }
+    return refreshAfterMutation(
+      supabase,
+      homestayId,
+      current.slug,
+      previousState,
+      intent === "archive"
+        ? "Terjemahan homestay berhasil diarsipkan."
+        : intent === "unpublish"
+          ? "Publikasi terjemahan homestay dibatalkan dan kembali menjadi draf."
+          : "Terjemahan homestay dipulihkan menjadi draf.",
+    );
+  }
+
+  return databaseFailureState(
+    previousState,
+    "Tindakan lifecycle tidak valid.",
+    "validation-error",
+  );
+}

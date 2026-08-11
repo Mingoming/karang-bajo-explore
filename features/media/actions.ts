@@ -6,9 +6,11 @@ import { normalizeMediaImage } from "./image-normalization";
 import {
   getPublicEnglishCulturalEventPath,
   getPublicEnglishDestinationPath,
+  getPublicEnglishHomestayPath,
   getPublicEnglishTraditionalHousePath,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
+  PUBLIC_ENGLISH_HOMESTAYS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
 } from "@/config/public-routes";
 import { queryCulturalEventById } from "@/features/cultural-events/data";
@@ -16,6 +18,8 @@ import { isValidCulturalEventSlug } from "@/features/cultural-events/model";
 import { queryDestinationById } from "@/features/destinations/data";
 import { queryTraditionalHouseById } from "@/features/traditional-houses/data";
 import { isValidTraditionalHouseSlug } from "@/features/traditional-houses/model";
+import { queryHomestayById } from "@/features/homestays/data";
+import { isValidHomestaySlug } from "@/features/homestays/model";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -65,6 +69,12 @@ function revalidateEnglishTraditionalHousePaths(
   revalidatePath(
     getPublicEnglishTraditionalHousePath(trustedTraditionalHouseSlug),
   );
+}
+
+function revalidateEnglishHomestayPaths(trustedHomestaySlug: string | null) {
+  if (!trustedHomestaySlug || !isValidHomestaySlug(trustedHomestaySlug)) return;
+  revalidatePath(PUBLIC_ENGLISH_HOMESTAYS_PATH);
+  revalidatePath(getPublicEnglishHomestayPath(trustedHomestaySlug));
 }
 
 function revalidateEnglishCulturalEventPaths(
@@ -162,6 +172,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
   if (!images) return { kind: "database-error" as const };
 
   let destinationSlug: string | null = null;
+  let homestaySlug: string | null = null;
   let traditionalHouseSlug: string | null = null;
   let culturalEventSlug: string | null = null;
   if (entityType === "destination") {
@@ -169,6 +180,11 @@ async function readTrustedContext(entityType: string, parentId: string) {
     if (!destinationResult.success) return { kind: "database-error" as const };
     if (!destinationResult.destination) return { kind: "not-found" as const };
     destinationSlug = destinationResult.destination.slug;
+  } else if (entityType === "homestay") {
+    const homestayResult = await queryHomestayById(supabase, parent.id);
+    if (!homestayResult.success) return { kind: "database-error" as const };
+    if (!homestayResult.homestay) return { kind: "not-found" as const };
+    homestaySlug = homestayResult.homestay.slug;
   } else if (entityType === "traditional-house") {
     const traditionalHouseResult = await queryTraditionalHouseById(
       supabase,
@@ -195,6 +211,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
     parent,
     images,
     destinationSlug,
+    homestaySlug,
     traditionalHouseSlug,
     culturalEventSlug,
   };
@@ -361,6 +378,7 @@ export async function createMedia(
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/kelola`);
   revalidateEnglishDestinationPaths(context.destinationSlug);
+  revalidateEnglishHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   redirect(
@@ -461,6 +479,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
+    revalidateEnglishHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   } else {
@@ -539,6 +558,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
+    revalidateEnglishHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
@@ -628,6 +648,7 @@ export async function deleteMedia(
     );
   }
   revalidateEnglishDestinationPaths(context.destinationSlug);
+  revalidateEnglishHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   const cleanup = await removeMediaObject(context.supabase, oldPath);
