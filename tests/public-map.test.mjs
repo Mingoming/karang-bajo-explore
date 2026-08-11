@@ -10,6 +10,7 @@ const leaflet = readFileSync(
   "features/public-map/public-map-leaflet.tsx",
   "utf8",
 );
+const copy = readFileSync("features/public-map/copy.ts", "utf8");
 const {
   PUBLIC_MAP_ENTITY_TYPES,
   buildPublicMapMarkers,
@@ -45,6 +46,7 @@ test("public map entity allowlist contains only approved mappable domains", () =
     "traditional-house",
     "homestay",
     "umkm",
+    "cultural-event",
   ]);
 });
 
@@ -381,15 +383,15 @@ test("interactive map supports OSM attribution, bounds, marker popups, and tile 
   assert.match(leaflet, /invalidateSize\(/);
   assert.match(leaflet, /ResizeObserver/);
   assert.match(leaflet, /tileerror/);
-  assert.match(leaflet, /Peta dasar tidak dapat dimuat/);
+  assert.match(copy, /Peta dasar tidak dapat dimuat/);
 });
 
 test("map shell provides category controls and a textual alternative", () => {
   assert.match(shell, /filterPublicMapMarkersByDestinationCategory/);
   assert.match(shell, /aria-pressed=/);
-  assert.match(shell, /Filter kategori pada peta wisata/);
-  assert.match(shell, /Daftar lokasi/);
-  assert.match(shell, /Buka Google Maps/);
-  assert.match(shell, /Lihat detail/);
+  assert.match(copy, /Filter kategori pada peta wisata/);
+  assert.match(copy, /Daftar lokasi/);
+  assert.match(copy, /Buka Google Maps/);
+  assert.match(copy, /Lihat detail/);
   assert.match(shell, /visibleItems\.length/);
 });

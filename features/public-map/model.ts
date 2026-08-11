@@ -3,6 +3,7 @@ export const PUBLIC_MAP_ENTITY_TYPES = [
   "traditional-house",
   "homestay",
   "umkm",
+  "cultural-event",
 ] as const;
 
 export type PublicMapEntityType = (typeof PUBLIC_MAP_ENTITY_TYPES)[number];
@@ -41,6 +42,7 @@ const ENTITY_ORDER: Record<PublicMapEntityType, number> = {
   "traditional-house": 1,
   homestay: 2,
   umkm: 3,
+  "cultural-event": 4,
 };
 
 export function isValidPublicMapCoordinate(

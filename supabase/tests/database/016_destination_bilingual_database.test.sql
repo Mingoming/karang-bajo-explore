@@ -164,6 +164,49 @@ select ok(
   'public access is limited to the safe English destination projection'
 );
 select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_class
+    where oid = 'private.published_english_destination_rows_data'::regclass
+      and relkind = 'v'
+      and reloptions @> array['security_barrier=true']
+      and reloptions @> array['security_invoker=false']
+  )
+  and exists (
+    select 1
+    from pg_catalog.pg_class
+    where oid = 'private.published_english_destination_image_rows_data'::regclass
+      and relkind = 'v'
+      and reloptions @> array['security_barrier=true']
+      and reloptions @> array['security_invoker=false']
+  )
+  and pg_get_viewdef('public.published_english_destinations'::regclass, true)
+    like '%private.published_english_destination_rows_data%'
+  and pg_get_viewdef('public.published_english_destination_images'::regclass, true)
+    like '%private.published_english_destination_image_rows_data%',
+  'English Destination projections use owner-controlled private data views'
+);
+select ok(
+  not has_table_privilege('anon', 'private.published_english_destination_rows_data', 'SELECT')
+  and not has_table_privilege('authenticated', 'private.published_english_destination_rows_data', 'SELECT')
+  and not has_table_privilege('anon', 'private.published_english_destination_image_rows_data', 'SELECT')
+  and not has_table_privilege('authenticated', 'private.published_english_destination_image_rows_data', 'SELECT')
+  and not has_function_privilege('anon', 'private.destination_translation_is_eligible(public.destinations,public.destination_translations)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'private.destination_translation_is_eligible(public.destinations,public.destination_translations)', 'EXECUTE')
+  and not has_function_privilege('anon', 'private.destination_image_translation_is_eligible(public.destinations,public.destination_translations,public.destination_images,public.destination_image_translations)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'private.destination_image_translation_is_eligible(public.destinations,public.destination_translations,public.destination_images,public.destination_image_translations)', 'EXECUTE'),
+  'private Destination projection helpers remain unavailable to application roles'
+);
+select lives_ok(
+  $$with role_set as (select set_config('role', 'anon', true))
+    select
+      (select count(*) from public.published_english_destinations),
+      (select count(*) from public.published_english_destination_images)
+    from role_set$$,
+  'anonymous callers can read both approved Destination projections without helper EXECUTE access'
+);
+select set_config('role', 'postgres', true);
+select ok(
   not exists (select 1 from pg_catalog.pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'tourism_media_admin_update'),
   'tourism media direct Storage UPDATE has no administrator policy'
 );

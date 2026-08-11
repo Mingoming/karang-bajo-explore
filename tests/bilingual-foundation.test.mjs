@@ -73,7 +73,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
       en: "/en/traditional-houses",
     },
     culturalEvents: { id: "/acara-budaya", en: "/en/cultural-events" },
-    tourismMap: { id: "/peta-wisata", en: null },
+    tourismMap: { id: "/peta-wisata", en: "/en/tourism-map" },
     contact: { id: "/kontak", en: null },
   });
 });
@@ -124,7 +124,13 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/acara-budaya",
   );
 
-  for (const key of ["tourismPackages", "umkm", "tourismMap", "contact"]) {
+  assert.equal(getPublicRoute("tourismMap", "en"), "/en/tourism-map");
+  assert.equal(
+    getEquivalentPublicRoute("/en/tourism-map", "en"),
+    "/peta-wisata",
+  );
+
+  for (const key of ["tourismPackages", "umkm", "contact"]) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
 
@@ -171,6 +177,7 @@ test("localized navigation preserves Indonesian routes and limits English to app
       label: "Cultural Events",
       href: "/en/cultural-events",
     },
+    { key: "tourismMap", label: "Tourism Map", href: "/en/tourism-map" },
   ]);
 });
 
@@ -271,7 +278,6 @@ test("only approved English routes are created and Proxy excludes actual assets"
     "app/en/profile/page.tsx",
     "app/en/tourism-packages/page.tsx",
     "app/en/local-businesses/page.tsx",
-    "app/en/tourism-map/page.tsx",
     "app/en/contact/page.tsx",
   ]) {
     assert.equal(existsSync(path), false, path);
