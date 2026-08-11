@@ -33,6 +33,7 @@ export const PUBLIC_ENGLISH_CULTURAL_EVENT_DETAIL_PATH =
 export const PUBLIC_ENGLISH_HOMESTAYS_PATH = "/en/homestays" as const;
 export const PUBLIC_ENGLISH_HOMESTAY_DETAIL_PATH =
   "/en/homestays/[slug]" as const;
+export const PUBLIC_ENGLISH_TOURISM_MAP_PATH = "/en/tourism-map" as const;
 
 export function getPublicEnglishDestinationPath(slug: string): PublicRoutePath {
   return `${PUBLIC_ENGLISH_DESTINATIONS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
@@ -71,7 +72,7 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
     id: "/acara-budaya",
     en: PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   },
-  tourismMap: { id: "/peta-wisata", en: null },
+  tourismMap: { id: "/peta-wisata", en: PUBLIC_ENGLISH_TOURISM_MAP_PATH },
   contact: { id: "/kontak", en: null },
 };
 

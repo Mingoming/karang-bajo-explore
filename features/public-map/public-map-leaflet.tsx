@@ -13,6 +13,7 @@ import {
   useMap,
 } from "react-leaflet";
 
+import type { PublicMapCopy } from "./copy";
 import {
   getPublicMapNavigationUrl,
   type PublicMapItem,
@@ -21,6 +22,7 @@ import {
 
 type PublicMapLeafletProps = {
   markers: PublicMapMarker[];
+  copy: PublicMapCopy;
 };
 
 type MarkerStyle = {
@@ -67,6 +69,12 @@ const MARKER_STYLES = {
     fillOpacity: 0.85,
     weight: 2,
   },
+  "cultural-event": {
+    color: "#701a75",
+    fillColor: "#e879f9",
+    fillOpacity: 0.85,
+    weight: 2,
+  },
   default: {
     color: "#064e3b",
     fillColor: "#10b981",
@@ -92,20 +100,22 @@ function getMarkerStyle(marker: PublicMapMarker): MarkerStyle {
   return MARKER_STYLES[primaryItem.entityType] ?? MARKER_STYLES.default;
 }
 
-function getEntityLabel(item: PublicMapItem) {
+function getEntityLabel(item: PublicMapItem, copy: PublicMapCopy) {
   switch (item.entityType) {
     case "destination":
-      return item.categoryName ?? "Destinasi";
+      return item.categoryName ?? copy.entityLabels.destination;
     case "traditional-house":
-      return "Rumah Adat";
+      return copy.entityLabels.traditionalHouse;
     case "homestay":
-      return "Homestay";
+      return copy.entityLabels.homestay;
     case "umkm":
-      return item.categoryName ?? "UMKM";
+      return item.categoryName ?? copy.entityLabels.umkm;
+    case "cultural-event":
+      return copy.entityLabels.culturalEvent;
   }
 }
 
-function MapViewport({ markers }: PublicMapLeafletProps) {
+function MapViewport({ markers }: Pick<PublicMapLeafletProps, "markers">) {
   const map = useMap();
 
   useEffect(() => {
@@ -147,7 +157,10 @@ function MapViewport({ markers }: PublicMapLeafletProps) {
   return null;
 }
 
-export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
+export default function PublicMapLeaflet({
+  markers,
+  copy,
+}: PublicMapLeafletProps) {
   const [tileFailed, setTileFailed] = useState(false);
   const initialMarker = markers[0];
 
@@ -158,7 +171,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
         zoom={15}
         scrollWheelZoom={false}
         className="h-[28rem] w-full sm:h-[36rem]"
-        aria-label="Peta wisata interaktif Desa Karang Bajo"
+        aria-label={copy.mapAriaLabel}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -183,7 +196,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
               <div className="space-y-4">
                 {marker.items.length > 1 ? (
                   <p className="font-bold text-slate-900">
-                    {marker.items.length} lokasi pada titik ini
+                    {copy.multipleLocationsLabel(marker.items.length)}
                   </p>
                 ) : null}
 
@@ -205,7 +218,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
                       ) : null}
 
                       <p className="text-xs font-bold tracking-[0.12em] text-emerald-800 uppercase">
-                        {getEntityLabel(item)}
+                        {getEntityLabel(item, copy)}
                       </p>
 
                       <h2 className="text-base font-bold text-slate-950">
@@ -223,7 +236,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
                           href={item.href}
                           className="inline-flex min-h-10 items-center rounded-full bg-emerald-900 px-4 py-2 text-sm font-bold text-white"
                         >
-                          Lihat detail
+                          {copy.detailsAction}
                         </Link>
 
                         <a
@@ -232,7 +245,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
                           rel="noreferrer"
                           className="inline-flex min-h-10 items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700"
                         >
-                          Buka Google Maps
+                          {copy.mapsAction}
                         </a>
                       </div>
                     </article>
@@ -249,8 +262,7 @@ export default function PublicMapLeaflet({ markers }: PublicMapLeafletProps) {
           role="alert"
           className="absolute inset-x-4 top-4 z-[1000] rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-950 shadow-lg"
         >
-          Peta dasar tidak dapat dimuat. Gunakan daftar lokasi di bawah untuk
-          membuka detail atau navigasi.
+          {copy.baseMapFailure} {copy.baseMapFallback}
         </div>
       ) : null}
     </div>
