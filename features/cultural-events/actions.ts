@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  getPublicEnglishCulturalEventPath,
+  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
+} from "@/config/public-routes";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +24,18 @@ import {
 } from "./model";
 
 const LIST_PATH = "/admin/acara-budaya";
+
+function revalidateEnglishCulturalEventDetailPath(trustedSlug: string) {
+  if (!isValidCulturalEventSlug(trustedSlug)) return;
+  revalidatePath(getPublicEnglishCulturalEventPath(trustedSlug));
+}
+
+function revalidateEnglishCulturalEventPaths(trustedSlugs: readonly string[]) {
+  revalidatePath(PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH);
+  for (const slug of new Set(trustedSlugs)) {
+    revalidateEnglishCulturalEventDetailPath(slug);
+  }
+}
 
 function nextState(
   previous: CulturalEventActionState,
@@ -127,10 +143,10 @@ export async function createCulturalEvent(
   )
     .from("cultural_events")
     .insert(payload)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
-  const id = data?.length === 1 ? data[0].id : null;
-  if (error || !id) {
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
+  const createdEvent = data?.length === 1 ? data[0] : null;
+  if (error || !createdEvent) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembuatan acara budaya gagal.", { code });
     return mutationFailure(
@@ -141,8 +157,10 @@ export async function createCulturalEvent(
     );
   }
 
+  const id = createdEvent.id;
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${id}/edit`);
+  revalidateEnglishCulturalEventPaths([createdEvent.slug]);
   redirect(`${LIST_PATH}/${id}/edit?success=created`);
 }
 
@@ -219,8 +237,8 @@ export async function updateCulturalEvent(
     .from("cultural_events")
     .update(payload)
     .eq("id", existing.id)
-    .select("id")
-    .overrideTypes<{ id: string }[], { merge: false }>();
+    .select("id,slug")
+    .overrideTypes<{ id: string; slug: string }[], { merge: false }>();
   if (error || data?.length !== 1) {
     const code = error?.code ?? "unexpected-row-count";
     console.error("Pembaruan acara budaya gagal.", { code });
@@ -234,5 +252,16 @@ export async function updateCulturalEvent(
 
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${existing.id}/edit`);
+  revalidateEnglishCulturalEventPaths([existing.slug]);
+
+  const refreshedResult = await queryCulturalEventById(supabase, existing.id);
+  if (!refreshedResult.success || !refreshedResult.event) {
+    console.error(
+      "Pembaruan acara budaya berhasil tetapi hasilnya belum dapat dibaca.",
+    );
+  } else if (refreshedResult.event.slug !== existing.slug) {
+    revalidateEnglishCulturalEventDetailPath(refreshedResult.event.slug);
+  }
+
   redirect(`${LIST_PATH}/${existing.id}/edit?success=updated`);
 }

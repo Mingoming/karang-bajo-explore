@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizeMediaImage } from "./image-normalization";
 import {
+  getPublicEnglishCulturalEventPath,
   getPublicEnglishDestinationPath,
   getPublicEnglishTraditionalHousePath,
+  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
 } from "@/config/public-routes";
+import { queryCulturalEventById } from "@/features/cultural-events/data";
+import { isValidCulturalEventSlug } from "@/features/cultural-events/model";
 import { queryDestinationById } from "@/features/destinations/data";
 import { queryTraditionalHouseById } from "@/features/traditional-houses/data";
 import { isValidTraditionalHouseSlug } from "@/features/traditional-houses/model";
@@ -61,6 +65,20 @@ function revalidateEnglishTraditionalHousePaths(
   revalidatePath(
     getPublicEnglishTraditionalHousePath(trustedTraditionalHouseSlug),
   );
+}
+
+function revalidateEnglishCulturalEventPaths(
+  trustedCulturalEventSlug: string | null,
+) {
+  if (
+    !trustedCulturalEventSlug ||
+    !isValidCulturalEventSlug(trustedCulturalEventSlug)
+  ) {
+    return;
+  }
+
+  revalidatePath(PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH);
+  revalidatePath(getPublicEnglishCulturalEventPath(trustedCulturalEventSlug));
 }
 
 function nextState(
@@ -145,6 +163,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
 
   let destinationSlug: string | null = null;
   let traditionalHouseSlug: string | null = null;
+  let culturalEventSlug: string | null = null;
   if (entityType === "destination") {
     const destinationResult = await queryDestinationById(supabase, parent.id);
     if (!destinationResult.success) return { kind: "database-error" as const };
@@ -159,6 +178,15 @@ async function readTrustedContext(entityType: string, parentId: string) {
       return { kind: "database-error" as const };
     if (!traditionalHouseResult.house) return { kind: "not-found" as const };
     traditionalHouseSlug = traditionalHouseResult.house.slug;
+  } else if (entityType === "cultural-event") {
+    const culturalEventResult = await queryCulturalEventById(
+      supabase,
+      parent.id,
+    );
+    if (!culturalEventResult.success)
+      return { kind: "database-error" as const };
+    if (!culturalEventResult.event) return { kind: "not-found" as const };
+    culturalEventSlug = culturalEventResult.event.slug;
   }
 
   return {
@@ -168,6 +196,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
     images,
     destinationSlug,
     traditionalHouseSlug,
+    culturalEventSlug,
   };
 }
 
@@ -333,6 +362,7 @@ export async function createMedia(
   revalidatePath(`${LIST_PATH}/kelola`);
   revalidateEnglishDestinationPaths(context.destinationSlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
+  revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   redirect(
     mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
@@ -432,6 +462,7 @@ export async function updateMedia(
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
+    revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   } else {
     const normalized = await normalizeMediaImage(fileValidation.file);
 
@@ -509,6 +540,7 @@ export async function updateMedia(
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
+    revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
       logMediaStorageFailure(
@@ -597,6 +629,7 @@ export async function deleteMedia(
   }
   revalidateEnglishDestinationPaths(context.destinationSlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
+  revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
     logMediaStorageFailure(

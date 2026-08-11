@@ -530,6 +530,63 @@ test("Traditional House media mutations revalidate trusted English paths only", 
   );
 });
 
+test("Cultural Event media mutations revalidate only the trusted English event paths", async () => {
+  for (const [actionName, options] of [
+    ["create", { fileMode: "create", formOverrides: { fileMode: "create" } }],
+    ["update", {}],
+    [
+      "update",
+      { fileMode: "replacement", formOverrides: { fileMode: "replacement" } },
+    ],
+    ["delete", {}],
+  ]) {
+    const runtime = createMediaActionRuntime({
+      entityType: "cultural-event",
+      images: actionName === "create" ? [] : undefined,
+    });
+    const result = await invokeMedia(runtime, actionName, options);
+    assert.ok(result.redirectPath);
+    assert.deepEqual(
+      runtime.paths.filter((path) => path.startsWith("/en/cultural-events")),
+      [
+        "/en/cultural-events",
+        `/en/cultural-events/${TRUSTED_CULTURAL_EVENT_SLUG}`,
+      ],
+    );
+    const mutationEvent = runtime.events.findIndex((event) =>
+      event.startsWith("mutation:media_"),
+    );
+    const revalidationEvent = runtime.events.findIndex(
+      (event) => event === "revalidate:/en/cultural-events",
+    );
+    assert.ok(mutationEvent >= 0);
+    assert.ok(revalidationEvent > mutationEvent);
+  }
+
+  const failedRuntime = createMediaActionRuntime({
+    entityType: "cultural-event",
+  });
+  const failed = await invokeMedia(failedRuntime, "update", {
+    rpcResponses: new Map([
+      ["media_update", { data: null, error: { code: "mutation-failed" } }],
+    ]),
+  });
+  assert.equal(failed.result.kind, "database-error");
+  assert.equal(failedRuntime.paths.includes("/en/cultural-events"), false);
+  assert.equal(
+    failedRuntime.paths.some((path) =>
+      path.includes(TRUSTED_CULTURAL_EVENT_SLUG),
+    ),
+    false,
+  );
+
+  const destinationRuntime = createMediaActionRuntime({
+    entityType: "destination",
+  });
+  await invokeMedia(destinationRuntime, "update");
+  assert.equal(destinationRuntime.paths.includes("/en/cultural-events"), false);
+});
+
 test("media normalization converts uploads into bounded WebP images", async () => {
   const input = await sharp({
     create: {
@@ -589,6 +646,7 @@ test("media actions normalize create and replacement uploads before storage", ()
 
 const TRUSTED_TRADITIONAL_HOUSE_SLUG = "rumah-adat-terpercaya";
 const TRUSTED_DESTINATION_SLUG = "destinasi-terpercaya";
+const TRUSTED_CULTURAL_EVENT_SLUG = "acara-budaya-terpercaya";
 
 function mediaActionForm(overrides = {}) {
   const { fileMode, ...fieldOverrides } = overrides;
@@ -656,6 +714,10 @@ function createMediaActionRuntime({
       success: true,
       house: { slug: ownerSlug },
     },
+    culturalEventResponse: {
+      success: true,
+      event: { slug: TRUSTED_CULTURAL_EVENT_SLUG },
+    },
     rpcResponses: new Map(),
     fileMode: "metadata",
     client: null,
@@ -705,8 +767,11 @@ async function loadMediaActions(runtime) {
       `/en/destinations/${encodeURIComponent(slug)}`,
     getPublicEnglishTraditionalHousePath: (slug) =>
       `/en/traditional-houses/${encodeURIComponent(slug)}`,
+    getPublicEnglishCulturalEventPath: (slug) =>
+      `/en/cultural-events/${encodeURIComponent(slug)}`,
     PUBLIC_ENGLISH_DESTINATIONS_PATH: "/en/destinations",
     PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
+    PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH: "/en/cultural-events",
     queryDestinationById: async () => {
       runtime.events.push("owner-slug-read");
       return runtime.destinationResponse;
@@ -715,6 +780,11 @@ async function loadMediaActions(runtime) {
       runtime.events.push("owner-slug-read");
       return runtime.traditionalHouseResponse;
     },
+    queryCulturalEventById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.culturalEventResponse;
+    },
+    isValidCulturalEventSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidTraditionalHouseSlug,
     requireAdministrator: async () => {
       runtime.authCalls += 1;
@@ -772,20 +842,24 @@ const {
   createClient,
   getPublicEnglishDestinationPath,
   getPublicEnglishTraditionalHousePath,
+  getPublicEnglishCulturalEventPath,
   isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidMediaUuid,
   isValidTraditionalHouseSlug,
+  isValidCulturalEventSlug,
   logMediaStorageFailure,
   moveMediaImageToOrder,
   normalizeMediaImage,
   parseMediaRouteIdentity,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
+  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   queryDestinationById,
   queryMediaImages,
   queryMediaParentById,
   queryTraditionalHouseById,
+  queryCulturalEventById,
   redirect,
   removeMediaObject,
   revalidatePath,
