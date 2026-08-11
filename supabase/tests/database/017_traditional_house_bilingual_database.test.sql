@@ -150,17 +150,17 @@ select ok(
 -- true multi-session lock race.  It proves the deterministic lock contract
 -- structurally and exercises the observable stale-review race outcomes below.
 select ok(
-  (select position(E'where source.id = l_translation.traditional_house_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where image.traditional_house_id = l_translation.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where translation.id = p_translation_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where translation.id = p_translation_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)) > 0)
-  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure))
-       < position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)))
-  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure))
-       < position(E'where translation.id = p_translation_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)))
-  and (select position(E'where image.id = l_translation.traditional_house_image_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure)) = 0),
+  (select position(E'where source.id = l_translation.traditional_house_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where image.traditional_house_id = l_translation.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where translation.id = p_translation_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where translation.id = p_translation_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), ''))
+       < position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')))
+  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), ''))
+       < position(E'where translation.id = p_translation_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')))
+  and (select position(E'where image.id = l_translation.traditional_house_image_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image_translation(uuid)'::regprocedure), chr(13), '')) = 0),
   'parent and image translation helpers lock source, ordered images, then translation without an early target-image lock'
 );
 select ok(
@@ -222,17 +222,17 @@ select ok(
      ))
   and position('private.lock_traditional_house_image_translation' in pg_get_functiondef('private.traditional_house_image_translation_publish_transition(uuid,bigint,boolean)'::regprocedure)) > 0
   and position('private.lock_traditional_house_image_translation' in pg_get_functiondef('private.traditional_house_image_translation_simple_transition(uuid,bigint,text)'::regprocedure)) > 0
-  and position(E'where source.id = p_traditional_house_id\n  for update;' in pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure)) > 0
-  and position(E'where image.traditional_house_id = p_traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure)) > 0
-  and position(E'where translation.traditional_house_id = p_traditional_house_id\n    and translation.locale = ''en''\n  for update;' in pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure)) > 0
+  and position(E'where source.id = p_traditional_house_id\n  for update;' in replace(pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure), chr(13), '')) > 0
+  and position(E'where image.traditional_house_id = p_traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure), chr(13), '')) > 0
+  and position(E'where translation.traditional_house_id = p_traditional_house_id\n    and translation.locale = ''en''\n  for update;' in replace(pg_get_functiondef('public.traditional_house_translation_save_draft(uuid,bigint,text,text,text,text,text,text,text)'::regprocedure), chr(13), '')) > 0
   and position('private.lock_traditional_house_image' in pg_get_functiondef('public.traditional_house_image_translation_save_draft(uuid,bigint,text,text)'::regprocedure)) > 0
-  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure)) > 0)
-  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure)) > 0)
-  and (select position(E'where image.id = p_image_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure)) > 0)
-  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure))
-       < position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure)))
-  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure))
-       < position(E'where image.id = p_image_id\n  for update;' in pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure))),
+  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where image.id = p_image_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), '')) > 0)
+  and (select position(E'where source.id = l_image.traditional_house_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), ''))
+       < position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), '')))
+  and (select position(E'where image.traditional_house_id = l_image.traditional_house_id\n  order by image.id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), ''))
+       < position(E'where image.id = p_image_id\n  for update;' in replace(pg_get_functiondef('private.lock_traditional_house_image(uuid)'::regprocedure), chr(13), ''))),
   'all parent and image lifecycle RPCs use their ordered lock helper'
 );
 select ok(
