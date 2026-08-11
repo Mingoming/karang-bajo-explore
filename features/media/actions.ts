@@ -7,10 +7,12 @@ import {
   getPublicEnglishCulturalEventPath,
   getPublicEnglishDestinationPath,
   getPublicEnglishHomestayPath,
+  getPublicEnglishUmkmPath,
   getPublicEnglishTraditionalHousePath,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_HOMESTAYS_PATH,
+  PUBLIC_ENGLISH_UMKMS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
 } from "@/config/public-routes";
 import { queryCulturalEventById } from "@/features/cultural-events/data";
@@ -20,6 +22,8 @@ import { queryTraditionalHouseById } from "@/features/traditional-houses/data";
 import { isValidTraditionalHouseSlug } from "@/features/traditional-houses/model";
 import { queryHomestayById } from "@/features/homestays/data";
 import { isValidHomestaySlug } from "@/features/homestays/model";
+import { queryUmkmById } from "@/features/umkm/data";
+import { isValidUmkmSlug } from "@/features/umkm/model";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -75,6 +79,12 @@ function revalidateEnglishHomestayPaths(trustedHomestaySlug: string | null) {
   if (!trustedHomestaySlug || !isValidHomestaySlug(trustedHomestaySlug)) return;
   revalidatePath(PUBLIC_ENGLISH_HOMESTAYS_PATH);
   revalidatePath(getPublicEnglishHomestayPath(trustedHomestaySlug));
+}
+
+function revalidateEnglishUmkmPaths(trustedUmkmSlug: string | null) {
+  if (!trustedUmkmSlug || !isValidUmkmSlug(trustedUmkmSlug)) return;
+  revalidatePath(PUBLIC_ENGLISH_UMKMS_PATH);
+  revalidatePath(getPublicEnglishUmkmPath(trustedUmkmSlug));
 }
 
 function revalidateEnglishCulturalEventPaths(
@@ -173,6 +183,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
 
   let destinationSlug: string | null = null;
   let homestaySlug: string | null = null;
+  let umkmSlug: string | null = null;
   let traditionalHouseSlug: string | null = null;
   let culturalEventSlug: string | null = null;
   if (entityType === "destination") {
@@ -203,6 +214,11 @@ async function readTrustedContext(entityType: string, parentId: string) {
       return { kind: "database-error" as const };
     if (!culturalEventResult.event) return { kind: "not-found" as const };
     culturalEventSlug = culturalEventResult.event.slug;
+  } else if (entityType === "umkm") {
+    const umkmResult = await queryUmkmById(supabase, parent.id);
+    if (!umkmResult.success) return { kind: "database-error" as const };
+    if (!umkmResult.umkm) return { kind: "not-found" as const };
+    umkmSlug = umkmResult.umkm.slug;
   }
 
   return {
@@ -214,6 +230,7 @@ async function readTrustedContext(entityType: string, parentId: string) {
     homestaySlug,
     traditionalHouseSlug,
     culturalEventSlug,
+    umkmSlug,
   };
 }
 
@@ -381,6 +398,7 @@ export async function createMedia(
   revalidateEnglishHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
+  revalidateEnglishUmkmPaths(context.umkmSlug);
   redirect(
     mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
@@ -482,6 +500,7 @@ export async function updateMedia(
     revalidateEnglishHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
+    revalidateEnglishUmkmPaths(context.umkmSlug);
   } else {
     const normalized = await normalizeMediaImage(fileValidation.file);
 
@@ -561,6 +580,7 @@ export async function updateMedia(
     revalidateEnglishHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
+    revalidateEnglishUmkmPaths(context.umkmSlug);
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
       logMediaStorageFailure(
@@ -651,6 +671,7 @@ export async function deleteMedia(
   revalidateEnglishHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
+  revalidateEnglishUmkmPaths(context.umkmSlug);
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
     logMediaStorageFailure(

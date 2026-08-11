@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  getPublicEnglishUmkmPath,
+  PUBLIC_ENGLISH_UMKMS_PATH,
+} from "@/config/public-routes";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +24,15 @@ import {
 } from "./model";
 
 const LIST_PATH = "/admin/umkm";
+
+function revalidateEnglishUmkmCollection() {
+  revalidatePath(PUBLIC_ENGLISH_UMKMS_PATH);
+}
+
+function revalidateEnglishUmkmDetail(trustedSlug: string) {
+  if (!isValidUmkmSlug(trustedSlug)) return;
+  revalidatePath(getPublicEnglishUmkmPath(trustedSlug));
+}
 
 function nextState(
   previous: UmkmActionState,
@@ -119,9 +132,8 @@ export async function createUmkm(
     created_by: administrator.id,
     updated_by: administrator.id,
   };
-  const { data, error } = await (
-    await createClient()
-  )
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("umkms")
     .insert(payload)
     .select("id")
@@ -141,6 +153,11 @@ export async function createUmkm(
 
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${id}/edit`);
+  revalidateEnglishUmkmCollection();
+  const createdResult = await queryUmkmById(supabase, id);
+  if (createdResult.success && createdResult.umkm) {
+    revalidateEnglishUmkmDetail(createdResult.umkm.slug);
+  }
   redirect(`${LIST_PATH}/${id}/edit?success=created`);
 }
 
@@ -228,5 +245,16 @@ export async function updateUmkm(
 
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${existing.id}/edit`);
+  revalidateEnglishUmkmCollection();
+  revalidateEnglishUmkmDetail(existing.slug);
+
+  const refreshedResult = await queryUmkmById(supabase, existing.id);
+  if (
+    refreshedResult.success &&
+    refreshedResult.umkm &&
+    refreshedResult.umkm.slug !== existing.slug
+  ) {
+    revalidateEnglishUmkmDetail(refreshedResult.umkm.slug);
+  }
   redirect(`${LIST_PATH}/${existing.id}/edit?success=updated`);
 }

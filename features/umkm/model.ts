@@ -40,6 +40,7 @@ export type UmkmRecord = {
   thumbnail_path: string | null;
   thumbnail_bucket: string | null;
   status: UmkmStatus;
+  source_revision: number;
   published_at: string | null;
   is_featured: boolean;
   display_order: number;

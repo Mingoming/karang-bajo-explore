@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -284,4 +285,22 @@ test("unknown, commerce, price, audit, slug, and malformed fields are rejected",
     validateUmkmInput(validInput({ is_featured: "ya" }), context()).success,
     false,
   );
+});
+
+test("UMKM source mutations invalidate trusted English collection and detail paths", () => {
+  const actions = readFileSync("features/umkm/actions.ts", "utf8");
+  assert.match(actions, /PUBLIC_ENGLISH_UMKMS_PATH/);
+  assert.match(actions, /getPublicEnglishUmkmPath/);
+  assert.match(actions, /revalidateEnglishUmkmCollection\(\)/);
+  assert.match(actions, /revalidateEnglishUmkmDetail\(existing\.slug\)/);
+  assert.match(
+    actions,
+    /const refreshedResult = await queryUmkmById\(supabase, existing\.id\)/,
+  );
+  assert.match(actions, /refreshedResult\.umkm\.slug !== existing\.slug/);
+  assert.match(
+    actions,
+    /const createdResult = await queryUmkmById\(supabase, id\)/,
+  );
+  assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
 });

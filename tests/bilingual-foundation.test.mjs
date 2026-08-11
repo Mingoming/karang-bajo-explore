@@ -67,7 +67,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
     destinations: { id: "/destinasi", en: "/en/destinations" },
     tourismPackages: { id: "/paket-wisata", en: null },
     homestays: { id: "/homestay", en: "/en/homestays" },
-    umkm: { id: "/umkm", en: null },
+    umkm: { id: "/umkm", en: "/en/local-businesses" },
     traditionalHouses: {
       id: "/rumah-adat",
       en: "/en/traditional-houses",
@@ -109,6 +109,9 @@ test("home and Village Profile have reciprocal English routes", () => {
   assert.equal(getPublicRoute("homestays", "en"), "/en/homestays");
   assert.equal(getEquivalentPublicRoute("/en/homestays", "en"), "/homestay");
 
+  assert.equal(getPublicRoute("umkm", "en"), "/en/local-businesses");
+  assert.equal(getEquivalentPublicRoute("/en/local-businesses", "en"), "/umkm");
+
   assert.equal(
     getPublicRoute("traditionalHouses", "en"),
     "/en/traditional-houses",
@@ -130,7 +133,7 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/peta-wisata",
   );
 
-  for (const key of ["tourismPackages", "umkm", "contact"]) {
+  for (const key of ["tourismPackages", "contact"]) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
 
@@ -167,6 +170,11 @@ test("localized navigation preserves Indonesian routes and limits English to app
     },
     { key: "destinations", label: "Destinations", href: "/en/destinations" },
     { key: "homestays", label: "Homestays", href: "/en/homestays" },
+    {
+      key: "umkm",
+      label: "Local Businesses",
+      href: "/en/local-businesses",
+    },
     {
       key: "traditionalHouses",
       label: "Traditional Houses",
@@ -272,12 +280,12 @@ test("only approved English routes are created and Proxy excludes actual assets"
   assert.equal(existsSync("app/en/traditional-houses/page.tsx"), true);
   assert.equal(existsSync("app/en/cultural-events/page.tsx"), true);
   assert.equal(existsSync("app/en/homestays/page.tsx"), true);
+  assert.equal(existsSync("app/en/local-businesses/page.tsx"), true);
   for (const path of [
     "app/id/page.tsx",
     "app/en/admin/page.tsx",
     "app/en/profile/page.tsx",
     "app/en/tourism-packages/page.tsx",
-    "app/en/local-businesses/page.tsx",
     "app/en/contact/page.tsx",
   ]) {
     assert.equal(existsSync(path), false, path);
