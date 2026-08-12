@@ -16,6 +16,8 @@ export const PUBLIC_ROUTE_KEYS = [
 export type PublicRouteKey = (typeof PUBLIC_ROUTE_KEYS)[number];
 export type PublicRoutePath = `/${string}` | "/";
 
+export const PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH =
+  "/en/village-profile" as const;
 export const PUBLIC_ENGLISH_DESTINATIONS_PATH = "/en/destinations" as const;
 export const PUBLIC_ENGLISH_DESTINATION_DETAIL_PATH =
   "/en/destinations/[slug]" as const;
@@ -66,7 +68,7 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
   Record<PublicRouteKey, Readonly<Record<PublicLocale, PublicRoutePath | null>>>
 > = {
   home: { id: "/", en: "/en" },
-  profile: { id: "/profil-desa", en: "/en/village-profile" },
+  profile: { id: "/profil-desa", en: PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH },
   destinations: { id: "/destinasi", en: PUBLIC_ENGLISH_DESTINATIONS_PATH },
   tourismPackages: { id: "/paket-wisata", en: null },
   homestays: { id: "/homestay", en: PUBLIC_ENGLISH_HOMESTAYS_PATH },

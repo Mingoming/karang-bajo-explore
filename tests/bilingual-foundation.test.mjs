@@ -200,16 +200,26 @@ test("language switcher uses real reciprocal links and semantic current state", 
   assert.doesNotMatch(source, /next\/link|disabled|preventDefault/);
 });
 
-test("English homepage uses only static copy and narrow language-neutral data", () => {
+test("English homepage uses approved English projections and localized static copy", () => {
   const page = read("app/en/page.tsx");
   assert.match(page, /getEnglishPublicShellData/);
   assert.match(page, /PUBLIC_DICTIONARIES\.en/);
   assert.match(page, /<PublicShell[\s\S]*?locale="en"/);
+  for (const loader of [
+    "getPublishedEnglishVillageProfile",
+    "getPublishedEnglishDestinations",
+    "getPublishedEnglishTraditionalHouses",
+    "getPublishedEnglishCulturalEvents",
+    "getPublishedEnglishHomestays",
+    "getPublishedEnglishUmkms",
+  ]) {
+    assert.match(page, new RegExp(loader));
+  }
   assert.doesNotMatch(
     page,
-    /public-village-profile|public-destinations|public-domains|public-map|public-media|getPublicOfficialContacts/,
+    /getPublished(?:VillageProfile|Destinations|Packages|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
   );
-  assert.doesNotMatch(page, /Profil Desa|Destinasi|Paket Wisata|Rumah Adat/);
+  assert.doesNotMatch(page, /\/kontak|\/paket-wisata|Paket Wisata/);
 });
 
 test("English contact data returns no labels, descriptions, IDs, or phone display values", () => {

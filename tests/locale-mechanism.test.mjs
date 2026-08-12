@@ -105,14 +105,24 @@ test("the foundation creates only the approved English routes", () => {
   }
 });
 
-test("the English homepage has no Indonesian descriptive-content dependency", () => {
+test("the English homepage uses only approved English descriptive-content loaders", () => {
   const source = readFileSync(ENGLISH_HOME_PAGE, "utf8");
 
+  for (const loader of [
+    "getPublishedEnglishVillageProfile",
+    "getPublishedEnglishDestinations",
+    "getPublishedEnglishTraditionalHouses",
+    "getPublishedEnglishCulturalEvents",
+    "getPublishedEnglishHomestays",
+    "getPublishedEnglishUmkms",
+  ]) {
+    assert.match(source, new RegExp(loader));
+  }
   assert.doesNotMatch(
     source,
-    /public-village-profile|public-destinations|public-domains|public-map|public-media|getPublicOfficialContacts/,
+    /getPublished(?:VillageProfile|Destinations|Packages|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
   );
-  assert.doesNotMatch(source, /createClient|supabase|published_/i);
+  assert.doesNotMatch(source, /createClient|supabase/i);
   assert.doesNotMatch(source, /locale mechanism spike|English locale spike/i);
 });
 

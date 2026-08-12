@@ -2,16 +2,30 @@ import Link from "next/link";
 
 import type { PublicDictionary } from "@/lib/i18n/dictionaries";
 import type { PublicLocale } from "@/lib/i18n/locale";
+import {
+  PUBLIC_ENGLISH_DESTINATIONS_PATH,
+  PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH,
+} from "@/config/public-routes";
 
 import { PublicContainer } from "./public-container";
 
 export function PublicHero({
   locale,
   dictionary,
-}: Readonly<{ locale: PublicLocale; dictionary: PublicDictionary }>) {
-  const primaryHref = locale === "id" ? "/#destinasi" : "/en#contact";
+  primaryHref: primaryHrefOverride,
+  secondaryHref: secondaryHrefOverride,
+}: Readonly<{
+  locale: PublicLocale;
+  dictionary: PublicDictionary;
+  primaryHref?: string;
+  secondaryHref?: string;
+}>) {
+  const primaryHref =
+    primaryHrefOverride ??
+    (locale === "id" ? "/#destinasi" : PUBLIC_ENGLISH_DESTINATIONS_PATH);
   const secondaryHref =
-    locale === "id" ? "/#profil-desa" : "/en#english-information";
+    secondaryHrefOverride ??
+    (locale === "id" ? "/#profil-desa" : PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH);
 
   return (
     <section className="relative isolate overflow-hidden bg-emerald-950 py-20 text-white sm:py-28 lg:py-32">
