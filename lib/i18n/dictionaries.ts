@@ -153,20 +153,20 @@ const enDictionary = {
   home: {
     metadataTitle: "Home",
     metadataDescription:
-      "Discover the English public-information foundation for Karang Bajo Village.",
+      "Explore approved English information about Karang Bajo Village, its destinations, cultural places, stays, local businesses, and tourism map.",
     hero: {
       eyebrow: "Karang Bajo Village",
       title: "Explore Nature, Culture, and Tradition",
       description:
-        "A carefully prepared English starting point for discovering Karang Bajo Village.",
-      primaryAction: "Contact the village",
-      secondaryAction: "English information status",
+        "Discover approved English information about the village, its places, culture, stays, local businesses, and mapped locations.",
+      primaryAction: "Explore destinations",
+      secondaryAction: "View the Village Profile",
     },
     availability: {
-      eyebrow: "English information",
-      title: "Verified English tourism information is being prepared",
+      eyebrow: "Published English information",
+      title: "Explore Karang Bajo",
       description:
-        "Detailed village and tourism content is not shown here until an approved English translation is available.",
+        "Browse approved English information about the village and supported tourism areas.",
     },
     contact: {
       eyebrow: "Karang Bajo Explore",
