@@ -115,17 +115,17 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
       ) : (
         <section className="mt-10 border-t border-slate-200 pt-8">
           <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
-            English translation
+            Terjemahan Inggris
           </p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-            UMKM English translation
+            Terjemahan Inggris UMKM
           </h2>
           <div
             role="alert"
             className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
           >
-            Translation data is not available. No translation mutation is
-            offered until the administrator read succeeds.
+            Data terjemahan belum tersedia. Perubahan terjemahan tidak dapat
+            dilakukan sampai pembacaan data administrator berhasil.
           </div>
         </section>
       )}
@@ -134,15 +134,15 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
         <>
           <section className="mt-10 border-t border-slate-200 pt-8">
             <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
-              English image translations
+              Terjemahan gambar Inggris
             </p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-              UMKM image translations
+              Terjemahan gambar UMKM
             </h2>
             <p className="mt-3 max-w-3xl leading-7 text-slate-600">
-              Source media remains read-only. English alt text and captions are
-              written through the translation RPC workflow; Storage and generic
-              media operations are not part of this form.
+              Media sumber tetap hanya-baca. Alt text dan caption Inggris
+              ditulis melalui alur RPC terjemahan; operasi Storage dan media
+              umum tidak termasuk dalam formulir ini.
             </p>
           </section>
           {imageTranslationResult.images.length > 0 ? (
@@ -162,10 +162,11 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
           ) : (
             <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center">
               <p className="font-semibold text-slate-900">
-                No source images are available.
+                Belum ada gambar sumber.
               </p>
               <p className="mt-2 text-sm text-slate-600">
-                Add source media before managing English image translations.
+                Tambahkan media sumber sebelum mengelola terjemahan gambar
+                Inggris.
               </p>
             </div>
           )}
@@ -173,17 +174,17 @@ export default async function EditUmkmPage({ params, searchParams }: Props) {
       ) : (
         <section className="mt-10 border-t border-slate-200 pt-8">
           <p className="text-sm font-semibold tracking-wide text-blue-800 uppercase">
-            English image translations
+            Terjemahan gambar Inggris
           </p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-            UMKM image translations
+            Terjemahan gambar UMKM
           </h2>
           <div
             role="alert"
             className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
           >
-            Image translation data is not available. No image translation
-            mutation is offered until the administrator read succeeds.
+            Data terjemahan gambar belum tersedia. Perubahan terjemahan gambar
+            tidak dapat dilakukan sampai pembacaan data administrator berhasil.
           </div>
         </section>
       )}

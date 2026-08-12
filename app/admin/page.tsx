@@ -18,8 +18,8 @@ export default async function AdminPage() {
         {administrator.email ?? "Email administrator tidak tersedia"}
       </p>
       <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-        Modul operasional dan pengelolaan konten belum diimplementasikan.
-        Gunakan navigasi untuk melihat struktur modul yang akan tersedia.
+        Gunakan navigasi untuk mengelola konten publik, terjemahan Inggris,
+        media, dan pengaturan yang tersedia.
       </p>
     </section>
   );
