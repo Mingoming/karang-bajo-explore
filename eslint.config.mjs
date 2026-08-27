@@ -9,6 +9,7 @@ export default defineConfig([
     "build/**",
     "next-env.d.ts",
     "supabase/.temp/**",
+    ".ponytail/**",
   ]),
 
   ...nextVitals,
