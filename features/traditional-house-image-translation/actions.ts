@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidTraditionalHouseId } from "../traditional-houses/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const TRADITIONAL_HOUSE_ADMIN_PATH = "/admin/rumah-adat";
-const ENGLISH_TRADITIONAL_HOUSES_PATH = "/en/traditional-houses";
 const IMAGE_TRANSLATION_INTENTS = [
   "save-draft",
   "review",
@@ -121,6 +124,20 @@ function databaseFailureState(
   } satisfies TraditionalHouseImageTranslationActionState;
 }
 
+function successfulMutationRefreshState(
+  previousState: TraditionalHouseImageTranslationActionState,
+  message: string,
+) {
+  return {
+    ...previousState,
+    kind: "success",
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies TraditionalHouseImageTranslationActionState;
+}
+
 function validationFailureState(
   image: CurrentImage,
   previousState: TraditionalHouseImageTranslationActionState,
@@ -176,18 +193,13 @@ function revalidateTraditionalHouseImageTranslationPaths(
 ) {
   revalidatePath(TRADITIONAL_HOUSE_ADMIN_PATH);
   revalidatePath(`${TRADITIONAL_HOUSE_ADMIN_PATH}/${traditionalHouseId}/edit`);
-  revalidatePath(ENGLISH_TRADITIONAL_HOUSES_PATH);
-  revalidatePath(
-    `${ENGLISH_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainPaths("traditionalHouse", [sourceSlug]);
 }
 
 function revalidateTraditionalHouseImageTranslationDetailPath(
   sourceSlug: string,
 ) {
-  revalidatePath(
-    `${ENGLISH_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainDetailPaths("traditionalHouse", [sourceSlug]);
 }
 
 async function refreshAfterMutation(
@@ -208,6 +220,12 @@ async function refreshAfterMutation(
     traditionalHouseId,
   );
   if (!refreshed.success) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
@@ -218,6 +236,12 @@ async function refreshAfterMutation(
   }
   const image = refreshed.images.find((item) => item.source.id === imageId);
   if (!image) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi gambar tidak lagi tersedia. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi gambar tidak lagi tersedia.",

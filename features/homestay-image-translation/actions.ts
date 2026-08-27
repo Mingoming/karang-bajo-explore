@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidHomestayId } from "../homestays/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const HOMESTAY_ADMIN_PATH = "/admin/homestay";
-const ENGLISH_HOMESTAYS_PATH = "/en/homestays";
 const IMAGE_TRANSLATION_INTENTS = [
   "save-draft",
   "review",
@@ -121,6 +124,20 @@ function databaseFailureState(
   } satisfies HomestayImageTranslationActionState;
 }
 
+function successfulMutationRefreshState(
+  previousState: HomestayImageTranslationActionState,
+  message: string,
+) {
+  return {
+    ...previousState,
+    kind: "success",
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies HomestayImageTranslationActionState;
+}
+
 function validationFailureState(
   image: CurrentImage,
   previousState: HomestayImageTranslationActionState,
@@ -175,12 +192,11 @@ function revalidateHomestayImageTranslationPaths(
 ) {
   revalidatePath(HOMESTAY_ADMIN_PATH);
   revalidatePath(`${HOMESTAY_ADMIN_PATH}/${homestayId}/edit`);
-  revalidatePath(ENGLISH_HOMESTAYS_PATH);
-  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainPaths("homestay", [sourceSlug]);
 }
 
 function revalidateHomestayImageTranslationDetailPath(sourceSlug: string) {
-  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainDetailPaths("homestay", [sourceSlug]);
 }
 
 async function refreshAfterMutation(
@@ -198,6 +214,12 @@ async function refreshAfterMutation(
     homestayId,
   );
   if (!refreshed.success) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
@@ -208,6 +230,12 @@ async function refreshAfterMutation(
   }
   const image = refreshed.images.find((item) => item.source.id === imageId);
   if (!image) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi gambar tidak lagi tersedia. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi gambar tidak lagi tersedia.",

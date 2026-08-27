@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   getAllowedDestinationStatuses,
@@ -314,8 +317,10 @@ test("successful source mutations revalidate trusted English destination paths",
 
   assert.notEqual(helperStart, -1);
   assert.notEqual(helperEnd, -1);
-  assert.match(helperSource, /PUBLIC_ENGLISH_DESTINATIONS_PATH/);
-  assert.match(helperSource, /getPublicEnglishDestinationPath\(slug\)/);
+  assert.match(
+    helperSource,
+    /revalidatePublicDomainPaths\("destination", trustedSlugs\)/,
+  );
 
   assert.match(createSource, /\.select\("id,slug"\)/);
   assert.match(
@@ -364,4 +369,255 @@ test("unknown fields and malformed values are rejected", () => {
   if (!malformedBoolean.success) {
     assert.match(malformedBoolean.fieldErrors.is_featured ?? "", /tidak valid/);
   }
+});
+
+const DESTINATION_ACTION_ID = "b1100000-0000-4000-8000-000000000001";
+const DESTINATION_OLD_SLUG = "destinasi-lama";
+const DESTINATION_NEW_SLUG = "destinasi-baru";
+
+function destinationActionForm(overrides = {}) {
+  const formData = new FormData();
+  for (const [field, value] of Object.entries(
+    validInput({ ...overrides, status: overrides.status ?? "draft" }),
+  )) {
+    formData.set(field, String(value));
+  }
+  return formData;
+}
+
+function trustedDestination(overrides = {}) {
+  return {
+    id: DESTINATION_ACTION_ID,
+    name: "Destinasi Karang Bajo",
+    slug: DESTINATION_OLD_SLUG,
+    status: "draft",
+    thumbnail_bucket: null,
+    thumbnail_path: null,
+    ...overrides,
+  };
+}
+
+function createDestinationActionRuntime() {
+  const runtime = {
+    client: null,
+    events: [],
+    paths: [],
+    writes: [],
+    authCalls: 0,
+    categoryResult: {
+      success: true,
+      categories: [{ id: CATEGORY_ID, name: "Alam", slug: "alam" }],
+    },
+    existingResult: { success: true, destination: trustedDestination() },
+    writeResponse: {
+      data: [{ id: DESTINATION_ACTION_ID, slug: DESTINATION_OLD_SLUG }],
+      error: null,
+    },
+    authorizationError: null,
+  };
+
+  runtime.client = {
+    from(table) {
+      assert.equal(table, "destinations");
+      return {
+        insert(payload) {
+          runtime.events.push("mutation:insert");
+          runtime.writes.push({ operation: "insert", payload });
+          return {
+            select(columns) {
+              runtime.events.push(`post-write-read:${columns}`);
+              return {
+                overrideTypes: () => Promise.resolve(runtime.writeResponse),
+              };
+            },
+          };
+        },
+        update(payload) {
+          runtime.events.push("mutation:update");
+          runtime.writes.push({ operation: "update", payload });
+          return {
+            eq(field, value) {
+              runtime.events.push(`update-filter:${field}:${value}`);
+              return {
+                select(columns) {
+                  runtime.events.push(`post-write-read:${columns}`);
+                  return {
+                    overrideTypes: () => Promise.resolve(runtime.writeResponse),
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  return runtime;
+}
+
+async function loadDestinationActions(runtime) {
+  const actionSource = readFileSync("features/destinations/actions.ts", "utf8")
+    .replace(/^"use server";\s*/m, "")
+    .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
+  const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
+  const key = `__destinationActionDeps_${Math.random().toString(36).slice(2)}`;
+  globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
+    revalidatePath: (path) => {
+      runtime.paths.push(path);
+      runtime.events.push(`revalidate:${path}`);
+    },
+    redirect: (path) => {
+      runtime.events.push(`redirect:${path}`);
+      const error = new Error("REDIRECT");
+      error.path = path;
+      throw error;
+    },
+    requireAdministrator: async () => {
+      runtime.authCalls += 1;
+      runtime.events.push("authorization");
+      if (runtime.authorizationError) throw runtime.authorizationError;
+      return { id: "administrator-id" };
+    },
+    createClient: async () => runtime.client,
+    queryDestinationById: async (supabase, id) => {
+      assert.equal(supabase, runtime.client);
+      assert.equal(id, DESTINATION_ACTION_ID);
+      return runtime.existingResult;
+    },
+    queryDestinationCategories: async () => runtime.categoryResult,
+    isValidDestinationId,
+    isValidDestinationSlug,
+    isDestinationDuplicateConstraintError,
+    normalizeDestinationSlug,
+    validateDestinationFormData,
+  };
+
+  try {
+    return await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+const deps = globalThis.${key};
+const { revalidatePublicDomainPaths, revalidatePath, redirect,
+  requireAdministrator, createClient, queryDestinationById,
+  queryDestinationCategories, isValidDestinationId, isValidDestinationSlug,
+  isDestinationDuplicateConstraintError, normalizeDestinationSlug,
+  validateDestinationFormData } = deps;
+${stripped}`)}`
+    );
+  } finally {
+    delete globalThis[key];
+  }
+}
+
+async function invokeDestinationAction(runtime, mode, options = {}) {
+  runtime.events = [];
+  runtime.paths = [];
+  runtime.writes = [];
+  runtime.authCalls = 0;
+  runtime.authorizationError = null;
+  runtime.writeResponse = options.writeResponse ?? {
+    data: [{ id: DESTINATION_ACTION_ID, slug: DESTINATION_OLD_SLUG }],
+    error: null,
+  };
+  runtime.existingResult = options.existingResult ?? {
+    success: true,
+    destination: trustedDestination(),
+  };
+
+  const actionModule = await loadDestinationActions(runtime);
+  const previous = { revision: 0 };
+  const formData = destinationActionForm(options.formOverrides);
+  if (options.clientSlug) formData.set("slug", options.clientSlug);
+
+  try {
+    const result =
+      mode === "create"
+        ? await actionModule.createDestination(previous, formData)
+        : await actionModule.updateDestination(
+            DESTINATION_ACTION_ID,
+            previous,
+            formData,
+          );
+    return { result, redirectPath: null };
+  } catch (error) {
+    if (error?.message === "REDIRECT") {
+      return { result: null, redirectPath: error.path };
+    }
+    throw error;
+  }
+}
+
+test("Destination source actions revalidate trusted old and new slugs at runtime", async () => {
+  const createdRuntime = createDestinationActionRuntime();
+  const created = await invokeDestinationAction(createdRuntime, "create", {
+    writeResponse: {
+      data: [{ id: DESTINATION_ACTION_ID, slug: DESTINATION_NEW_SLUG }],
+      error: null,
+    },
+  });
+  assert.equal(
+    created.redirectPath,
+    `/admin/destinasi/${DESTINATION_ACTION_ID}/edit?success=created`,
+  );
+  assert.deepEqual(createdRuntime.paths, [
+    "/admin/destinasi",
+    `/admin/destinasi/${DESTINATION_ACTION_ID}/edit`,
+    "/destinasi",
+    "/en/destinations",
+    "/en",
+    "/en/tourism-map",
+    `/destinasi/${DESTINATION_NEW_SLUG}`,
+    `/en/destinations/${DESTINATION_NEW_SLUG}`,
+  ]);
+
+  const updatedRuntime = createDestinationActionRuntime();
+  const updated = await invokeDestinationAction(updatedRuntime, "update", {
+    writeResponse: {
+      data: [{ id: DESTINATION_ACTION_ID, slug: DESTINATION_NEW_SLUG }],
+      error: null,
+    },
+  });
+  assert.equal(
+    updated.redirectPath,
+    `/admin/destinasi/${DESTINATION_ACTION_ID}/edit?success=updated`,
+  );
+  assert.deepEqual(updatedRuntime.paths, [
+    "/admin/destinasi",
+    `/admin/destinasi/${DESTINATION_ACTION_ID}/edit`,
+    "/destinasi",
+    "/en/destinations",
+    "/en",
+    "/en/tourism-map",
+    `/destinasi/${DESTINATION_OLD_SLUG}`,
+    `/en/destinations/${DESTINATION_OLD_SLUG}`,
+    `/destinasi/${DESTINATION_NEW_SLUG}`,
+    `/en/destinations/${DESTINATION_NEW_SLUG}`,
+  ]);
+  assert.ok(
+    updatedRuntime.events.indexOf("mutation:update") <
+      updatedRuntime.events.indexOf("revalidate:/en/destinations"),
+  );
+
+  const failedRuntime = createDestinationActionRuntime();
+  const failed = await invokeDestinationAction(failedRuntime, "update", {
+    writeResponse: {
+      data: null,
+      error: {
+        code: "23505",
+        message: 'unique constraint "destinations_slug_key"',
+      },
+    },
+  });
+  assert.equal(failed.result.kind, "duplicate-error");
+  assert.deepEqual(failedRuntime.paths, []);
+
+  const clientSlugRuntime = createDestinationActionRuntime();
+  const clientSlug = await invokeDestinationAction(
+    clientSlugRuntime,
+    "update",
+    { clientSlug: "attacker-controlled-slug" },
+  );
+  assert.equal(clientSlug.result.kind, "validation-error");
+  assert.deepEqual(clientSlugRuntime.paths, []);
 });

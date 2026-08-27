@@ -46,7 +46,7 @@ test("English Homestay routes and manifest entries exist", () => {
   assert.match(config, /\/en\/homestays/);
   assert.match(
     config,
-    /homestays: \{ id: "\/homestay", en: PUBLIC_ENGLISH_HOMESTAYS_PATH \}/,
+    /homestays: \{ id: PUBLIC_HOMESTAYS_PATH, en: PUBLIC_ENGLISH_HOMESTAYS_PATH \}/,
   );
 });
 
@@ -56,12 +56,12 @@ test("English Homestay mapping preserves translated fields and source numeric va
     entityType: "homestay",
     parentId: PARENT_ID,
     bucket: "tourism-media",
-    storagePath: `homestay/${PARENT_ID}/image.webp`,
+    storagePath: `homestay/${PARENT_ID}/00000000-0000-4000-8000-000000000002.webp`,
     altText: "Approved English alt text",
     caption: "Approved English caption",
     displayOrder: 0,
     isPrimary: true,
-    signedUrl: "signed:image",
+    signedUrl: "https://signed.invalid/image",
   };
   const homestay = mapPublishedEnglishHomestay(row, [image]);
   assert.equal(homestay.name, "English Homestay");
@@ -69,6 +69,78 @@ test("English Homestay mapping preserves translated fields and source numeric va
   assert.equal(homestay.pricePerNight, 250000);
   assert.deepEqual(homestay.facilities, ["Wi-Fi", "Kitchen"]);
   assert.equal(homestay.primaryImage?.altText, "Approved English alt text");
+});
+
+test("English Homestay mapping fails closed for malformed translated content and media", () => {
+  const image = {
+    id: "00000000-0000-4000-8000-000000000002",
+    entityType: "homestay",
+    parentId: PARENT_ID,
+    bucket: "tourism-media",
+    storagePath: `homestay/${PARENT_ID}/00000000-0000-4000-8000-000000000002.webp`,
+    altText: "Approved English alt text",
+    caption: null,
+    displayOrder: 0,
+    isPrimary: true,
+    signedUrl: "https://signed.invalid/image",
+  };
+
+  for (const name of [null, undefined, "", " \t"]) {
+    assert.equal(mapPublishedEnglishHomestay({ ...row, name }, [image]), null);
+  }
+  for (const description of [null, undefined, "", " \n"]) {
+    assert.equal(
+      mapPublishedEnglishHomestay({ ...row, description }, [image]),
+      null,
+    );
+  }
+  for (const slug of ["", " ", "../attacker", "bad slug", "Upper-case"]) {
+    assert.equal(mapPublishedEnglishHomestay({ ...row, slug }, [image]), null);
+  }
+  for (const pricePerNight of [
+    undefined,
+    "NaN",
+    "not-a-number",
+    Infinity,
+    -1,
+  ]) {
+    assert.equal(
+      mapPublishedEnglishHomestay({ ...row, price_per_night: pricePerNight }, [
+        image,
+      ]),
+      null,
+    );
+  }
+  assert.equal(
+    mapPublishedEnglishHomestay(
+      { ...row, latitude: "not-a-number", longitude: "116.4" },
+      [image],
+    ),
+    null,
+  );
+  assert.equal(
+    mapPublishedEnglishHomestay(
+      { ...row, latitude: "-91", longitude: "116.4" },
+      [image],
+    ),
+    null,
+  );
+
+  const unsafeUrl = mapPublishedEnglishHomestay(
+    { ...row, google_maps_url: "javascript:alert(1)" },
+    [image],
+  );
+  assert.equal(unsafeUrl?.googleMapsUrl, null);
+
+  const malformedMedia = mapPublishedEnglishHomestay({ ...row }, [
+    { ...image, storagePath: `homestay/${PARENT_ID}/../attacker.webp` },
+  ]);
+  assert.equal(malformedMedia?.primaryImage, null);
+
+  const malformedMediaOrder = mapPublishedEnglishHomestay({ ...row }, [
+    { ...image, displayOrder: -1 },
+  ]);
+  assert.equal(malformedMediaOrder?.primaryImage, null);
 });
 
 test("English Homestay loader reads only fail-closed English projections", async () => {
@@ -152,6 +224,28 @@ test("empty eligible list is distinct from projection failure and missing primar
   );
   assert.deepEqual(await failedLoaders.getPublishedEnglishHomestays(), {
     kind: "error",
+  });
+
+  const imageFailedLoaders = await loadEnglishHomestayLoaders(
+    createEnglishHomestayLoaderRuntime({
+      parentRows: [row],
+      imageError: { code: "media-projection-failed" },
+    }),
+  );
+  assert.deepEqual(await imageFailedLoaders.getPublishedEnglishHomestays(), {
+    kind: "error",
+  });
+
+  const signingFailedLoaders = await loadEnglishHomestayLoaders(
+    createEnglishHomestayLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedHomestayImageRow(PARENT_ID)],
+      signingFailure: true,
+    }),
+  );
+  assert.deepEqual(await signingFailedLoaders.getPublishedEnglishHomestays(), {
+    kind: "ready",
+    homestays: [],
   });
 });
 

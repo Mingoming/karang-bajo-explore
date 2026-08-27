@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 
 import {
   getAllowedHomestayStatuses,
   getHomestayMutationMode,
+  emptyHomestayFormValues,
   isHomestayDuplicateConstraintError,
   isValidHomestayId,
   isValidHomestaySlug,
@@ -12,6 +14,7 @@ import {
   validateHomestayFormData,
   validateHomestayInput,
 } from "../features/homestays/model.ts";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 function validInput(overrides = {}) {
   return {
@@ -330,7 +333,7 @@ test("unknown, capacity, audit, and malformed fields are rejected", () => {
   assert.equal(malformedBoolean.success, false);
 });
 
-test("source mutations invalidate trusted English Homestay collection and detail paths", () => {
+test("source mutations invalidate trusted Indonesian and English Homestay paths", () => {
   const actions = readFileSync("features/homestays/actions.ts", "utf8");
   const createStart = actions.indexOf("export async function createHomestay");
   const updateStart = actions.indexOf("export async function updateHomestay");
@@ -339,27 +342,247 @@ test("source mutations invalidate trusted English Homestay collection and detail
   const createSource = actions.slice(createStart, updateStart);
   const updateSource = actions.slice(updateStart);
 
-  assert.match(actions, /getPublicEnglishHomestayPath/);
-  assert.match(actions, /PUBLIC_ENGLISH_HOMESTAYS_PATH/);
+  assert.match(actions, /revalidatePublicDomainPaths\("homestay", slugs\)/);
+  assert.match(createSource, /revalidateHomestayPaths/);
+  assert.match(updateSource, /revalidateHomestayPaths/);
   assert.match(createSource, /\.select\("id,slug"\)/);
   assert.match(
     createSource,
-    /revalidateEnglishHomestayPaths\(\[createdHomestay\.slug\]\)/,
+    /revalidateHomestayPaths\(\[createdHomestay\.slug\]\)/,
   );
   assert.match(
     updateSource,
-    /revalidateEnglishHomestayPaths\(\[\s*existingHomestay\.slug,[\s\S]*?data\[0\]\.slug/,
+    /revalidateHomestayPaths\(\[\s*existingHomestay\.slug,[\s\S]*?data\[0\]\.slug/,
   );
   assert.doesNotMatch(actions, /formData\.get\(["']slug["']\)/);
 
   const createMutation = createSource.indexOf('from("homestays")');
-  const createRevalidation = createSource.indexOf(
-    "revalidateEnglishHomestayPaths",
-  );
+  const createRevalidation = createSource.indexOf("revalidateHomestayPaths");
   const updateMutation = updateSource.indexOf('from("homestays")');
-  const updateRevalidation = updateSource.indexOf(
-    "revalidateEnglishHomestayPaths",
-  );
+  const updateRevalidation = updateSource.indexOf("revalidateHomestayPaths");
   assert.ok(createMutation >= 0 && createRevalidation > createMutation);
   assert.ok(updateMutation >= 0 && updateRevalidation > updateMutation);
+});
+
+const HOMESTAY_ID = "10000000-0000-4000-8000-000000000001";
+const OLD_HOMESTAY_SLUG = "homestay-lama";
+const NEW_HOMESTAY_SLUG = "homestay-baru";
+
+function trustedHomestay(overrides = {}) {
+  return {
+    id: HOMESTAY_ID,
+    name: "Homestay Karang Bajo",
+    slug: OLD_HOMESTAY_SLUG,
+    status: "draft",
+    thumbnail_bucket: null,
+    thumbnail_path: null,
+    ...overrides,
+  };
+}
+
+function homestayActionForm(overrides = {}) {
+  const formData = new FormData();
+  for (const [field, value] of Object.entries({
+    name: "Homestay Karang Bajo",
+    description: "Informasi homestay yang sudah diverifikasi",
+    display_order: "0",
+    status: "draft",
+    ...overrides,
+  })) {
+    formData.set(field, String(value));
+  }
+  return formData;
+}
+
+function previousHomestayActionState() {
+  return {
+    kind: "idle",
+    values: emptyHomestayFormValues(),
+    fieldErrors: {},
+    formErrors: [],
+    message: null,
+    revision: 0,
+  };
+}
+
+function createHomestayActionRuntime() {
+  const runtime = {
+    client: null,
+    events: [],
+    paths: [],
+    existingResult: { success: true, homestay: trustedHomestay() },
+    writeResponse: {
+      data: [{ id: HOMESTAY_ID, slug: OLD_HOMESTAY_SLUG }],
+      error: null,
+    },
+    authorizationError: null,
+  };
+
+  runtime.client = {
+    from(table) {
+      assert.equal(table, "homestays");
+      return {
+        insert() {
+          runtime.events.push("mutation:insert");
+          return {
+            select() {
+              return {
+                overrideTypes: () => Promise.resolve(runtime.writeResponse),
+              };
+            },
+          };
+        },
+        update() {
+          runtime.events.push("mutation:update");
+          return {
+            eq() {
+              return {
+                select() {
+                  return {
+                    overrideTypes: () => Promise.resolve(runtime.writeResponse),
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  return runtime;
+}
+
+async function loadHomestayActions(runtime) {
+  const source = readFileSync("features/homestays/actions.ts", "utf8")
+    .replace(/^"use server";\s*/m, "")
+    .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
+  const stripped = stripTypeScriptTypes(source, { mode: "strip" });
+  const key = `__homestayActionDeps_${Math.random().toString(36).slice(2)}`;
+  globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
+    revalidatePath: (path) => {
+      runtime.paths.push(path);
+      runtime.events.push(`revalidate:${path}`);
+    },
+    getPublicHomestayPath: (slug) => `/homestay/${encodeURIComponent(slug)}`,
+    getPublicEnglishHomestayPath: (slug) =>
+      `/en/homestays/${encodeURIComponent(slug)}`,
+    PUBLIC_HOMESTAYS_PATH: "/homestay",
+    PUBLIC_ENGLISH_HOMESTAYS_PATH: "/en/homestays",
+    redirect: (path) => {
+      const error = new Error("REDIRECT");
+      error.path = path;
+      throw error;
+    },
+    requireAdministrator: async () => {
+      if (runtime.authorizationError) throw runtime.authorizationError;
+      return { id: "administrator-id" };
+    },
+    createClient: async () => runtime.client,
+    queryHomestayById: async (_supabase, id) => {
+      assert.equal(id, HOMESTAY_ID);
+      return runtime.existingResult;
+    },
+    isHomestayDuplicateConstraintError,
+    isValidHomestayId,
+    isValidHomestaySlug,
+    normalizeHomestaySlug,
+    validateHomestayFormData,
+  };
+
+  try {
+    return await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(
+        `const deps = globalThis.${key};
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, getPublicHomestayPath,
+  getPublicEnglishHomestayPath, PUBLIC_HOMESTAYS_PATH,
+  PUBLIC_ENGLISH_HOMESTAYS_PATH, redirect, requireAdministrator, createClient,
+  queryHomestayById, isHomestayDuplicateConstraintError, isValidHomestayId,
+  isValidHomestaySlug, normalizeHomestaySlug, validateHomestayFormData } = deps;
+${stripped}`,
+      )}`
+    );
+  } finally {
+    delete globalThis[key];
+  }
+}
+
+async function invokeHomestayAction(runtime, mode) {
+  runtime.events = [];
+  runtime.paths = [];
+  const actions = await loadHomestayActions(runtime);
+  const previous = previousHomestayActionState();
+  const formData = homestayActionForm();
+
+  try {
+    const result =
+      mode === "create"
+        ? await actions.createHomestay(previous, formData)
+        : await actions.updateHomestay(HOMESTAY_ID, previous, formData);
+    return { result, redirectPath: null };
+  } catch (error) {
+    if (error?.message === "REDIRECT") {
+      return { result: null, redirectPath: error.path };
+    }
+    throw error;
+  }
+}
+
+test("source Homestay actions revalidate old and new Indonesian and English slugs after successful writes", async () => {
+  const createdRuntime = createHomestayActionRuntime();
+  const created = await invokeHomestayAction(createdRuntime, "create");
+  assert.ok(created.redirectPath);
+  assert.deepEqual(createdRuntime.paths, [
+    "/admin/homestay",
+    `/admin/homestay/${HOMESTAY_ID}/edit`,
+    "/homestay",
+    "/en/homestays",
+    "/en",
+    "/en/tourism-map",
+    "/homestay/homestay-lama",
+    "/en/homestays/homestay-lama",
+  ]);
+  assert.ok(
+    createdRuntime.events.indexOf("mutation:insert") <
+      createdRuntime.events.indexOf("revalidate:/homestay"),
+  );
+
+  const updatedRuntime = createHomestayActionRuntime();
+  updatedRuntime.existingResult = {
+    success: true,
+    homestay: trustedHomestay({ slug: OLD_HOMESTAY_SLUG }),
+  };
+  updatedRuntime.writeResponse = {
+    data: [{ id: HOMESTAY_ID, slug: NEW_HOMESTAY_SLUG }],
+    error: null,
+  };
+  const updated = await invokeHomestayAction(updatedRuntime, "update");
+  assert.ok(updated.redirectPath);
+  assert.deepEqual(updatedRuntime.paths, [
+    "/admin/homestay",
+    `/admin/homestay/${HOMESTAY_ID}/edit`,
+    "/homestay",
+    "/en/homestays",
+    "/en",
+    "/en/tourism-map",
+    "/homestay/homestay-lama",
+    "/en/homestays/homestay-lama",
+    "/homestay/homestay-baru",
+    "/en/homestays/homestay-baru",
+  ]);
+  assert.ok(
+    updatedRuntime.events.indexOf("mutation:update") <
+      updatedRuntime.events.indexOf("revalidate:/homestay"),
+  );
+
+  const failedRuntime = createHomestayActionRuntime();
+  failedRuntime.writeResponse = {
+    data: null,
+    error: { code: "mutation-failed" },
+  };
+  const failed = await invokeHomestayAction(failedRuntime, "create");
+  assert.equal(failed.result.kind, "database-error");
+  assert.deepEqual(failedRuntime.paths, []);
 });

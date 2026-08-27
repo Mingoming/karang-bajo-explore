@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   createCulturalEventImageTranslationActionState,
@@ -138,6 +139,7 @@ async function loadActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__culturalEventImageDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -164,7 +166,8 @@ async function loadActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(
         `const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, requireAdministrator, createClient,
   isValidCulturalEventId, queryCulturalEventImageTranslationAdminData,
   createCulturalEventImageTranslationActionState,
   validateCulturalEventImageTranslationForEligibility,
@@ -467,7 +470,7 @@ test("real image action rejects blank primary English alt before mutation", asyn
   assert.deepEqual(runtime.paths, []);
 });
 
-test("successful image mutation invalidates old and refreshed trusted slugs before missing-image return", async () => {
+test("successful image mutation remains successful after a missing-image refresh", async () => {
   const { result } = await invoke({
     intent: "save-draft",
     currentTranslation: null,
@@ -479,7 +482,8 @@ test("successful image mutation invalidates old and refreshed trusted slugs befo
       images: [],
     },
   });
-  assert.equal(result.kind, "not-found");
+  assert.equal(result.kind, "success");
+  assert.match(result.message ?? "", /Perubahan tersimpan/);
   assert.ok(runtime.paths.includes(`/en/cultural-events/${OLD_SLUG}`));
   assert.ok(runtime.paths.includes(`/en/cultural-events/${NEW_SLUG}`));
   assert.ok(!runtime.paths.some((path) => path.includes("attacker-slug")));
@@ -528,21 +532,24 @@ test("crafted image authority fields cannot change mutation or revalidation auth
 });
 
 test("refresh failure cannot remove cache invalidation after successful image RPC", async () => {
-  await invoke({
+  const outcome = await invoke({
     intent: "save-draft",
     currentTranslation: null,
     refreshed: { success: false, kind: "read-error" },
   });
+  assert.equal(outcome.result.kind, "success");
+  assert.match(outcome.result.message ?? "", /status terbaru/);
   assert.ok(runtime.paths.includes("/en/cultural-events"));
   assert.ok(runtime.paths.includes(`/en/cultural-events/${OLD_SLUG}`));
 });
 
 test("failed image mutation performs no success revalidation", async () => {
-  await invoke({
+  const outcome = await invoke({
     intent: "save-draft",
     currentTranslation: null,
     responses: [{ data: null, error: { code: "55000" } }],
   });
+  assert.equal(outcome.result.kind, "conflict");
   assert.deepEqual(runtime.paths, []);
 });
 

@@ -61,7 +61,7 @@ export type PublicMediaReference = {
 };
 
 export type SignedPublicMedia = PublicMediaReference & {
-  signedUrl: string | null;
+  signedUrl: string;
 };
 
 export type PublicMediaSigningResult = {
@@ -80,12 +80,37 @@ export function isPublicMediaEntityType(
   return Object.hasOwn(PUBLIC_MEDIA_ENTITY_CONFIG, value);
 }
 
-export function isTrustedPublicMediaReference(reference: PublicMediaReference) {
+export function isTrustedPublicMediaReference(
+  value: unknown,
+): value is PublicMediaReference {
+  if (typeof value !== "object" || value === null) return false;
+  const reference = value as PublicMediaReference;
+
   if (
+    typeof reference.entityType !== "string" ||
+    typeof reference.bucket !== "string" ||
+    typeof reference.parentId !== "string" ||
+    typeof reference.id !== "string" ||
+    typeof reference.storagePath !== "string" ||
+    typeof reference.altText !== "string" ||
+    (reference.caption !== null && typeof reference.caption !== "string") ||
+    typeof reference.displayOrder !== "number" ||
+    typeof reference.isPrimary !== "boolean" ||
     !isPublicMediaEntityType(reference.entityType) ||
     reference.bucket !== PUBLIC_MEDIA_BUCKET ||
     !UUID_PATTERN.test(reference.parentId) ||
     !UUID_PATTERN.test(reference.id)
+  ) {
+    return false;
+  }
+
+  if (
+    reference.altText.trim().length === 0 ||
+    (reference.caption !== null &&
+      (typeof reference.caption !== "string" ||
+        reference.caption.trim().length === 0)) ||
+    !Number.isSafeInteger(reference.displayOrder) ||
+    reference.displayOrder < 0
   ) {
     return false;
   }
@@ -106,6 +131,27 @@ export function isTrustedPublicMediaReference(reference: PublicMediaReference) {
   );
 }
 
+export function isValidPublicSignedUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.trim() === "") return false;
+
+  try {
+    const parsed = new URL(value.trim());
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      parsed.hostname.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function isUsableSignedPublicMedia(
+  value: unknown,
+): value is SignedPublicMedia {
+  if (!isTrustedPublicMediaReference(value)) return false;
+  return isValidPublicSignedUrl((value as SignedPublicMedia).signedUrl);
+}
+
 export function mapPublicMediaSigningResults(
   references: readonly PublicMediaReference[],
   results: readonly PublicMediaSigningResult[],
@@ -120,14 +166,15 @@ export function mapPublicMediaSigningResults(
           signedUrl: string;
         } =>
           typeof result.path === "string" &&
-          typeof result.signedUrl === "string" &&
+          isValidPublicSignedUrl(result.signedUrl) &&
           !result.error,
       )
       .map((result) => [result.path, result.signedUrl]),
   );
 
-  return references.map((reference) => ({
-    ...reference,
-    signedUrl: signedUrls.get(reference.storagePath) ?? null,
-  }));
+  return references.flatMap((reference) => {
+    if (!isTrustedPublicMediaReference(reference)) return [];
+    const signedUrl = signedUrls.get(reference.storagePath);
+    return signedUrl ? [{ ...reference, signedUrl }] : [];
+  });
 }

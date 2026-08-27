@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidDestinationId } from "../destinations/model";
 import {
@@ -19,7 +23,6 @@ import {
 } from "./model";
 
 const DESTINATION_ADMIN_PATH = "/admin/destinasi";
-const ENGLISH_DESTINATIONS_PATH = "/en/destinations";
 
 const IMAGE_TRANSLATION_INTENTS = [
   "save-draft",
@@ -134,6 +137,20 @@ function databaseFailureState(
   } satisfies DestinationImageTranslationActionState;
 }
 
+function successfulMutationRefreshState(
+  previousState: DestinationImageTranslationActionState,
+  message: string,
+) {
+  return {
+    ...previousState,
+    kind: "success",
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies DestinationImageTranslationActionState;
+}
+
 function validationFailureState(
   current: SuccessfulRead,
   image: CurrentImage,
@@ -188,37 +205,53 @@ function rpcFailureState(
 
 function revalidateDestinationImageTranslationPaths(
   destinationId: string,
-  sourceSlug: string,
+  trustedSlugs: readonly unknown[],
 ) {
   revalidatePath(`${DESTINATION_ADMIN_PATH}/${destinationId}/edit`);
-  revalidatePath(ENGLISH_DESTINATIONS_PATH);
-  revalidatePath(
-    `${ENGLISH_DESTINATIONS_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainPaths("destination", trustedSlugs);
 }
 
 async function refreshAfterMutation(
   supabase: Awaited<ReturnType<typeof createClient>>,
   destinationId: string,
   imageId: string,
+  trustedPreMutationSlug: string,
   previousState: DestinationImageTranslationActionState,
   message: string,
   resultKind: "success" | "database-error" = "success",
 ) {
+  revalidateDestinationImageTranslationPaths(destinationId, [
+    trustedPreMutationSlug,
+  ]);
   const current = await queryDestinationImageTranslationAdminData(
     supabase,
     destinationId,
   );
 
   if (!current.success) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
     );
   }
 
+  if (current.slug !== trustedPreMutationSlug) {
+    revalidatePublicDomainDetailPaths("destination", [current.slug]);
+  }
   const image = current.images.find((item) => item.source.id === imageId);
   if (!image) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi gambar tidak lagi tersedia. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi gambar tidak lagi tersedia.",
@@ -226,7 +259,6 @@ async function refreshAfterMutation(
     );
   }
 
-  revalidateDestinationImageTranslationPaths(destinationId, current.slug);
   return stateFromRead(image, previousState, {
     kind: resultKind,
     formErrors: resultKind === "success" ? [] : [message],
@@ -238,6 +270,7 @@ async function refreshAfterPartialMutation(
   supabase: Awaited<ReturnType<typeof createClient>>,
   destinationId: string,
   imageId: string,
+  trustedPreMutationSlug: string,
   previousState: DestinationImageTranslationActionState,
   message: string,
 ) {
@@ -245,6 +278,7 @@ async function refreshAfterPartialMutation(
     supabase,
     destinationId,
     imageId,
+    trustedPreMutationSlug,
     previousState,
     message,
     "database-error",
@@ -455,6 +489,7 @@ export async function manageDestinationImageTranslation(
         supabase,
         destinationId,
         imageId,
+        current.slug,
         previousState,
         "Draf terjemahan gambar Inggris berhasil disimpan.",
       );
@@ -477,6 +512,7 @@ export async function manageDestinationImageTranslation(
         supabase,
         destinationId,
         imageId,
+        current.slug,
         previousState,
         reviewFailureCode === "55000"
           ? "Draf tersimpan, tetapi review gagal karena sumber, media, atau terjemahan induk belum memenuhi kelayakan database."
@@ -488,6 +524,7 @@ export async function manageDestinationImageTranslation(
       supabase,
       destinationId,
       imageId,
+      current.slug,
       previousState,
       "Terjemahan gambar Inggris berhasil dikirim untuk review.",
     );
@@ -561,6 +598,7 @@ export async function manageDestinationImageTranslation(
       supabase,
       destinationId,
       imageId,
+      current.slug,
       previousState,
       "Terjemahan gambar Inggris dikembalikan menjadi draf dengan alasan penolakan.",
     );
@@ -625,6 +663,7 @@ export async function manageDestinationImageTranslation(
       supabase,
       destinationId,
       imageId,
+      current.slug,
       previousState,
       intent === "publish"
         ? "Terjemahan gambar Inggris berhasil diterbitkan."
@@ -680,6 +719,7 @@ export async function manageDestinationImageTranslation(
       supabase,
       destinationId,
       imageId,
+      current.slug,
       previousState,
       successMessage,
     );

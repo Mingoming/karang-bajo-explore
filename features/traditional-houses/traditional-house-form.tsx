@@ -109,8 +109,12 @@ export function TraditionalHouseForm({
         <div
           ref={feedbackRef}
           tabIndex={-1}
-          role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900 outline-none focus:ring-3 focus:ring-red-200"
+          role={state.kind === "success" ? "status" : "alert"}
+          className={`rounded-xl border px-4 py-3 text-sm leading-6 outline-none focus:ring-3 ${
+            state.kind === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900 focus:ring-emerald-200"
+              : "border-red-200 bg-red-50 text-red-900 focus:ring-red-200"
+          }`}
         >
           <p className="font-semibold">{state.message}</p>
           {errors.length || state.formErrors.length ? (

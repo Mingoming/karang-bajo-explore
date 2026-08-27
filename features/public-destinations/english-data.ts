@@ -16,10 +16,8 @@ import {
   type PublicEnglishDestinationDetailResult,
   type PublicEnglishDestinationListResult,
 } from "./english-model";
-import {
-  orderPublishedDestinationImages,
-  PUBLIC_DESTINATION_SLUG_PATTERN,
-} from "./model";
+import { isPublicUuid } from "../public-content/validation.ts";
+import { PUBLIC_DESTINATION_SLUG_PATTERN } from "./model";
 
 export const PUBLISHED_ENGLISH_DESTINATIONS_VIEW =
   "published_english_destinations";
@@ -65,6 +63,10 @@ const PUBLIC_ENGLISH_DESTINATION_IMAGE_COLUMNS = [
 async function queryEnglishDestinationCategories(
   supabase: SupabaseClient,
 ): Promise<EnglishDestinationCategoryRow[] | null> {
+  // Architectural exception: destination_categories is a fixed public
+  // taxonomy (alam, budaya, religi), not translated narrative content.
+  // Its public SELECT grant is intentional; no source or translation fields
+  // are read here.
   const { data, error } = await supabase
     .from("destination_categories")
     .select("id,slug,display_order")
@@ -72,7 +74,7 @@ async function queryEnglishDestinationCategories(
     .order("id", { ascending: true })
     .overrideTypes<EnglishDestinationCategoryRow[], { merge: false }>();
 
-  return error ? null : data;
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function queryEnglishDestinationImages(
@@ -89,7 +91,7 @@ async function queryEnglishDestinationImages(
     .order("id", { ascending: true })
     .overrideTypes<PublishedEnglishDestinationImageRow[], { merge: false }>();
 
-  return error ? null : orderPublishedDestinationImages(data);
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function enrichEnglishDestinations(
@@ -97,36 +99,60 @@ async function enrichEnglishDestinations(
   rows: PublishedEnglishDestinationRow[],
   categories: EnglishDestinationCategoryRow[],
 ) {
+  if (!Array.isArray(rows)) return null;
+  const validRows = rows.filter(
+    (row): row is PublishedEnglishDestinationRow =>
+      typeof row === "object" && row !== null && typeof row.id === "string",
+  );
   const imageRows = await queryEnglishDestinationImages(
     supabase,
-    rows.map((destination) => destination.id),
+    validRows.map((destination) => destination.id),
   );
 
   if (imageRows === null) return null;
 
-  const mediaReferences: PublicMediaReference[] = imageRows.map((image) => ({
-    id: image.id,
-    entityType: "destination",
-    parentId: image.destination_id,
-    bucket: image.storage_bucket as "tourism-media",
-    storagePath: image.storage_path,
-    caption: image.caption,
-    altText: image.alt_text,
-    displayOrder: image.display_order,
-    isPrimary: image.is_primary,
-  }));
+  const mediaReferences: PublicMediaReference[] = imageRows.flatMap((image) => {
+    if (
+      !image ||
+      typeof image !== "object" ||
+      !isPublicUuid(image.id) ||
+      !isPublicUuid(image.destination_id)
+    ) {
+      return [];
+    }
+    return [
+      {
+        id: image.id,
+        entityType: "destination" as const,
+        parentId: image.destination_id,
+        bucket: image.storage_bucket as "tourism-media",
+        storagePath: image.storage_path,
+        caption: image.caption,
+        altText: image.alt_text,
+        displayOrder: image.display_order,
+        isPrimary: image.is_primary,
+      },
+    ];
+  });
   const signedImages = await signPublishedMedia(supabase, mediaReferences);
   const categorySlugs = new Map(
-    categories.map((category) => [category.id, category.slug]),
+    categories
+      .filter((category) => category && typeof category === "object")
+      .map((category) => [category.id, category.slug]),
   );
 
-  return rows.map((row) =>
-    mapPublishedEnglishDestination(
-      row,
-      categorySlugs.get(row.category_id) ?? null,
-      signedImages.filter((image) => image.parentId === row.id),
-    ),
-  );
+  return validRows
+    .map((row) =>
+      mapPublishedEnglishDestination(
+        row,
+        categorySlugs.get(row.category_id) ?? null,
+        signedImages.filter((image) => image.parentId === row.id),
+      ),
+    )
+    .filter(
+      (destination): destination is NonNullable<typeof destination> =>
+        destination !== null && destination.primaryImage !== null,
+    );
 }
 
 async function loadPublishedEnglishDestinations(
@@ -197,6 +223,7 @@ async function loadPublishedEnglishDestinationBySlug(
   }
 
   if (!destinationResult.data) return { kind: "not-found" };
+  if (typeof destinationResult.data !== "object") return { kind: "error" };
 
   const destinations = await enrichEnglishDestinations(
     supabase,
@@ -213,35 +240,12 @@ export const getPublishedEnglishDestinationBySlug = cache(
 );
 
 async function loadPublishedEnglishDestinationMetadata(slug: string) {
-  if (!PUBLIC_DESTINATION_SLUG_PATTERN.test(slug)) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from(PUBLISHED_ENGLISH_DESTINATIONS_VIEW)
-    .select("id,name,summary")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<
-      { id: string; name: string; summary: string } | null,
-      { merge: false }
-    >();
-
-  if (error || !data) return null;
-
-  const { data: primaryImage, error: imageError } = await supabase
-    .from(PUBLISHED_ENGLISH_DESTINATION_IMAGES_VIEW)
-    .select("id")
-    .eq("destination_id", data.id)
-    .eq("is_primary", true)
-    .limit(1)
-    .maybeSingle()
-    .overrideTypes<{ id: string } | null, { merge: false }>();
-
-  if (imageError || !primaryImage) return null;
+  const result = await loadPublishedEnglishDestinationBySlug(slug);
+  if (result.kind !== "ready") return null;
 
   return {
-    name: data.name.trim(),
-    summary: data.summary.trim(),
+    name: result.destination.name,
+    summary: result.destination.summary,
   };
 }
 

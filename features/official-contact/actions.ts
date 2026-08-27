@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateEnglishAggregatePaths } from "@/features/public-content/revalidation";
 
 import { queryOfficialContactById, queryPrimaryWhatsappSetting } from "./data";
 import {
@@ -24,6 +25,7 @@ function revalidateContactRoutes() {
   revalidatePath("/(public)", "layout");
   revalidatePath("/kontak");
   revalidatePath("/");
+  revalidateEnglishAggregatePaths(false);
 }
 
 function nextContactState(

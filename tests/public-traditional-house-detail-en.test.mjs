@@ -109,7 +109,7 @@ test("English Traditional House detail loader returns translated parent and medi
   ]);
   assert.equal(
     runtime.signedReferences[0].storagePath,
-    `${detailRow.id}/image.webp`,
+    `traditional-house/${detailRow.id}/00000000-0000-4000-8000-000000000002.webp`,
   );
 });
 
@@ -143,11 +143,59 @@ test("English Traditional House detail and metadata loaders fail closed for miss
     ),
     { kind: "not-found" },
   );
+  assert.equal(
+    await missingPrimaryLoaders.getPublishedEnglishTraditionalHouseMetadata(
+      detailRow.slug,
+    ),
+    null,
+  );
+
+  const parentErrorRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentError: { code: "detail-projection-failed" },
+  });
+  const parentErrorLoaders =
+    await loadEnglishTraditionalHouseLoaders(parentErrorRuntime);
+  assert.deepEqual(
+    await parentErrorLoaders.getPublishedEnglishTraditionalHouseBySlug(
+      detailRow.slug,
+    ),
+    { kind: "error" },
+  );
+
+  const imageErrorRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [detailRow],
+    imageError: { code: "image-projection-failed" },
+  });
+  const imageErrorLoaders =
+    await loadEnglishTraditionalHouseLoaders(imageErrorRuntime);
+  assert.deepEqual(
+    await imageErrorLoaders.getPublishedEnglishTraditionalHouseBySlug(
+      detailRow.slug,
+    ),
+    { kind: "error" },
+  );
+});
+
+test("English Traditional House detail loader rejects malformed slugs before querying", async () => {
+  for (const slug of ["bad slug", "../x", "x/y", "", " ", "%2F"]) {
+    const runtime = createEnglishTraditionalHouseLoaderRuntime({
+      parentRows: [detailRow],
+      imageRows: [publishedTraditionalHouseImageRow(detailRow.id)],
+    });
+    const loaders = await loadEnglishTraditionalHouseLoaders(runtime);
+    assert.deepEqual(
+      await loaders.getPublishedEnglishTraditionalHouseBySlug(slug),
+      { kind: "not-found" },
+      slug,
+    );
+    assert.deepEqual(runtime.tables, [], slug);
+  }
 });
 
 test("English Traditional House metadata reads the published English projection only", async () => {
   const runtime = createEnglishTraditionalHouseLoaderRuntime({
     parentRows: [detailRow],
+    imageRows: [publishedTraditionalHouseImageRow(detailRow.id)],
   });
   const loaders = await loadEnglishTraditionalHouseLoaders(runtime);
 
@@ -158,5 +206,55 @@ test("English Traditional House metadata reads the published English projection 
       summary: "Approved English summary",
     },
   );
-  assert.deepEqual(runtime.tables, ["published_english_traditional_houses"]);
+  assert.deepEqual(runtime.tables, [
+    "published_english_traditional_houses",
+    "published_english_traditional_house_images",
+  ]);
+
+  const noSummaryRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [{ ...detailRow, summary: null }],
+    imageRows: [publishedTraditionalHouseImageRow(detailRow.id)],
+  });
+  const noSummaryLoaders =
+    await loadEnglishTraditionalHouseLoaders(noSummaryRuntime);
+  assert.deepEqual(
+    await noSummaryLoaders.getPublishedEnglishTraditionalHouseMetadata(
+      detailRow.slug,
+    ),
+    {
+      name: detailRow.name,
+      summary: detailRow.description,
+    },
+  );
+
+  const malformedRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [{ ...detailRow, name: "   " }],
+    imageRows: [publishedTraditionalHouseImageRow(detailRow.id)],
+  });
+  const malformedLoaders =
+    await loadEnglishTraditionalHouseLoaders(malformedRuntime);
+  assert.equal(
+    await malformedLoaders.getPublishedEnglishTraditionalHouseMetadata(
+      detailRow.slug,
+    ),
+    null,
+  );
+
+  const malformedPrimaryRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [detailRow],
+    imageRows: [
+      publishedTraditionalHouseImageRow(detailRow.id, {
+        storage_path: `traditional-house/${detailRow.id}/../malformed.webp`,
+      }),
+    ],
+  });
+  const malformedPrimaryLoaders = await loadEnglishTraditionalHouseLoaders(
+    malformedPrimaryRuntime,
+  );
+  assert.equal(
+    await malformedPrimaryLoaders.getPublishedEnglishTraditionalHouseMetadata(
+      detailRow.slug,
+    ),
+    null,
+  );
 });

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidUmkmId } from "../umkm/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const UMKM_ADMIN_PATH = "/admin/umkm";
-const ENGLISH_UMKMS_PATH = "/en/local-businesses";
 
 const TRANSLATION_INTENTS = [
   "save-draft",
@@ -166,12 +169,11 @@ function rpcFailureState(
 function revalidateUmkmTranslationPaths(umkmId: string, sourceSlug: string) {
   revalidatePath(UMKM_ADMIN_PATH);
   revalidatePath(`${UMKM_ADMIN_PATH}/${umkmId}/edit`);
-  revalidatePath(ENGLISH_UMKMS_PATH);
-  revalidatePath(`${ENGLISH_UMKMS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainPaths("umkm", [sourceSlug]);
 }
 
 function revalidateUmkmTranslationDetailPath(sourceSlug: string) {
-  revalidatePath(`${ENGLISH_UMKMS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainDetailPaths("umkm", [sourceSlug]);
 }
 
 async function refreshAfterMutation(

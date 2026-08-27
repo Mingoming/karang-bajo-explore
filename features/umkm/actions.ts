@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
-  getPublicEnglishUmkmPath,
-  PUBLIC_ENGLISH_UMKMS_PATH,
-} from "@/config/public-routes";
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,12 +26,11 @@ import {
 const LIST_PATH = "/admin/umkm";
 
 function revalidateEnglishUmkmCollection() {
-  revalidatePath(PUBLIC_ENGLISH_UMKMS_PATH);
+  revalidatePublicDomainPaths("umkm", []);
 }
 
 function revalidateEnglishUmkmDetail(trustedSlug: string) {
-  if (!isValidUmkmSlug(trustedSlug)) return;
-  revalidatePath(getPublicEnglishUmkmPath(trustedSlug));
+  revalidatePublicDomainDetailPaths("umkm", [trustedSlug]);
 }
 
 function nextState(

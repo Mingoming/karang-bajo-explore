@@ -66,7 +66,13 @@ test("English Homestay detail loader returns translated parent and signed transl
     result.homestay.primaryImage?.altText,
     "Approved English alt text",
   );
+  assert.deepEqual(
+    await loaders.getPublishedEnglishHomestayMetadata(row.slug),
+    { name: "English Homestay", description: "Approved English description" },
+  );
   assert.deepEqual(runtime.tables, [
+    "published_english_homestays",
+    "published_english_homestay_images",
     "published_english_homestays",
     "published_english_homestay_images",
   ]);
@@ -90,5 +96,49 @@ test("missing, stale, or source-blocked English detail is not rendered", async (
   assert.deepEqual(
     await noPrimary.getPublishedEnglishHomestayBySlug(row.slug),
     { kind: "not-found" },
+  );
+  assert.equal(
+    await noPrimary.getPublishedEnglishHomestayMetadata(row.slug),
+    null,
+  );
+
+  const malformedPrimary = await loadEnglishHomestayLoaders(
+    createEnglishHomestayLoaderRuntime({
+      parentRows: [row],
+      imageRows: [
+        publishedHomestayImageRow(row.id, {
+          storage_path: `homestay/${row.id}/../malformed.webp`,
+        }),
+      ],
+    }),
+  );
+  assert.equal(
+    await malformedPrimary.getPublishedEnglishHomestayMetadata(row.slug),
+    null,
+  );
+
+  const malformed = await loadEnglishHomestayLoaders(
+    createEnglishHomestayLoaderRuntime({
+      parentRows: [{ ...row, name: null }],
+      imageRows: [publishedHomestayImageRow(row.id)],
+    }),
+  );
+  assert.deepEqual(
+    await malformed.getPublishedEnglishHomestayBySlug(row.slug),
+    { kind: "not-found" },
+  );
+  assert.equal(
+    await malformed.getPublishedEnglishHomestayMetadata(row.slug),
+    null,
+  );
+
+  const queryFailed = await loadEnglishHomestayLoaders(
+    createEnglishHomestayLoaderRuntime({
+      parentError: { code: "projection-failed" },
+    }),
+  );
+  assert.deepEqual(
+    await queryFailed.getPublishedEnglishHomestayBySlug(row.slug),
+    { kind: "error" },
   );
 });

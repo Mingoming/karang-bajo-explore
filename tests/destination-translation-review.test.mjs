@@ -111,8 +111,10 @@ test("review actions remain RPC-backed and expose the required intents", () => {
   }
 
   assert.match(actionSource, /p_expected_edit_revision/);
-  assert.match(actionSource, /ENGLISH_DESTINATIONS_PATH/);
-  assert.match(actionSource, /encodeURIComponent\(sourceSlug\)/);
+  assert.match(
+    actionSource,
+    /revalidatePublicDomainPaths\("destination", \[sourceSlug\]\)/,
+  );
 });
 
 test("source comparison has no Indonesian fallback and preserves the Indonesian editor", () => {

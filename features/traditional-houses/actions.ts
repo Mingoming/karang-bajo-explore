@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
-  getPublicEnglishTraditionalHousePath,
-  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
-} from "@/config/public-routes";
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,19 +25,12 @@ import {
 
 const LIST_PATH = "/admin/rumah-adat";
 
-function revalidateEnglishTraditionalHousePaths(
-  trustedSlugs: readonly string[],
-) {
-  revalidatePath(PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH);
-
-  for (const slug of new Set(trustedSlugs)) {
-    revalidateEnglishTraditionalHouseDetailPath(slug);
-  }
+function revalidateTraditionalHousePaths(trustedSlugs: readonly string[]) {
+  revalidatePublicDomainPaths("traditionalHouse", trustedSlugs);
 }
 
-function revalidateEnglishTraditionalHouseDetailPath(trustedSlug: string) {
-  if (!isValidTraditionalHouseSlug(trustedSlug)) return;
-  revalidatePath(getPublicEnglishTraditionalHousePath(trustedSlug));
+function revalidateTraditionalHouseDetailPath(trustedSlug: string) {
+  revalidatePublicDomainDetailPaths("traditionalHouse", [trustedSlug]);
 }
 
 function nextState(
@@ -57,6 +50,20 @@ function databaseFailure(
     fieldErrors: {},
     formErrors: [],
     message: "Rumah adat belum dapat disimpan. Silakan coba lagi.",
+  });
+}
+
+function successfulMutationRefresh(
+  previous: TraditionalHouseActionState,
+  values: TraditionalHouseFormValues,
+  message: string,
+) {
+  return nextState(previous, {
+    kind: "success",
+    values,
+    fieldErrors: {},
+    formErrors: [],
+    message,
   });
 }
 
@@ -153,24 +160,43 @@ export async function createTraditionalHouse(
   }
 
   revalidatePath(LIST_PATH);
-  revalidateEnglishTraditionalHousePaths([]);
+  revalidateTraditionalHousePaths([]);
 
-  const { data: createdHouse, error: createdHouseReadError } = await supabase
-    .from("traditional_houses")
-    .select("id,slug")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<{ id: string; slug: string } | null, { merge: false }>();
+  let createdHouse: { id: string; slug: string } | null = null;
+  let createdHouseReadError: { code?: string } | null = null;
+  try {
+    const createdHouseReadResult = await supabase
+      .from("traditional_houses")
+      .select("id,slug")
+      .eq("slug", slug)
+      .maybeSingle()
+      .overrideTypes<{ id: string; slug: string } | null, { merge: false }>();
+    createdHouse = createdHouseReadResult.data;
+    createdHouseReadError = createdHouseReadResult.error;
+  } catch {
+    console.error("Rumah adat berhasil disimpan tetapi belum dapat dibaca.", {
+      code: "post-write-read-threw",
+    });
+    return successfulMutationRefresh(
+      previous,
+      validation.values,
+      "Rumah adat berhasil disimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+    );
+  }
   if (createdHouseReadError || !createdHouse) {
     console.error("Rumah adat berhasil disimpan tetapi belum dapat dibaca.", {
       code: createdHouseReadError?.code ?? "missing-created-row",
     });
-    return databaseFailure(previous, validation.values);
+    return successfulMutationRefresh(
+      previous,
+      validation.values,
+      "Rumah adat berhasil disimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+    );
   }
 
   const id = createdHouse.id;
   revalidatePath(`${LIST_PATH}/${id}/edit`);
-  revalidateEnglishTraditionalHouseDetailPath(createdHouse.slug);
+  revalidateTraditionalHouseDetailPath(createdHouse.slug);
   redirect(`${LIST_PATH}/${id}/edit?success=created`);
 }
 
@@ -256,23 +282,36 @@ export async function updateTraditionalHouse(
     );
   }
 
-  revalidateEnglishTraditionalHousePaths([existing.slug]);
+  revalidateTraditionalHousePaths([existing.slug]);
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${existing.id}/edit`);
 
-  const refreshedResult = await queryTraditionalHouseById(
-    supabase,
-    existing.id,
-  );
+  let refreshedResult: Awaited<ReturnType<typeof queryTraditionalHouseById>>;
+  try {
+    refreshedResult = await queryTraditionalHouseById(supabase, existing.id);
+  } catch {
+    console.error(
+      "Pembaruan rumah adat berhasil tetapi hasilnya belum dapat dibaca.",
+    );
+    return successfulMutationRefresh(
+      previous,
+      validation.values,
+      "Perubahan rumah adat berhasil disimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+    );
+  }
   if (!refreshedResult.success || !refreshedResult.house) {
     console.error(
       "Pembaruan rumah adat berhasil tetapi hasilnya belum dapat dibaca.",
     );
-    return databaseFailure(previous, validation.values);
+    return successfulMutationRefresh(
+      previous,
+      validation.values,
+      "Perubahan rumah adat berhasil disimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+    );
   }
 
   if (refreshedResult.house.slug !== existing.slug) {
-    revalidateEnglishTraditionalHouseDetailPath(refreshedResult.house.slug);
+    revalidateTraditionalHouseDetailPath(refreshedResult.house.slug);
   }
 
   redirect(`${LIST_PATH}/${existing.id}/edit?success=updated`);

@@ -4,6 +4,8 @@ import test from "node:test";
 
 import {
   isPublicMediaEntityType,
+  isUsableSignedPublicMedia,
+  isValidPublicSignedUrl,
   isTrustedPublicMediaReference,
   mapPublicMediaSigningResults,
   PUBLIC_MEDIA_BUCKET,
@@ -102,6 +104,19 @@ test("bucket, parent path, row identity, object UUID, and extension are enforced
   );
 });
 
+test("malformed media references fail closed without throwing", () => {
+  const valid = reference("destination");
+  for (const malformed of [
+    null,
+    { ...valid, id: undefined },
+    { ...valid, parentId: undefined },
+    { ...valid, storagePath: undefined },
+  ]) {
+    assert.doesNotThrow(() => isTrustedPublicMediaReference(malformed));
+    assert.equal(isTrustedPublicMediaReference(malformed), false);
+  }
+});
+
 test("slashes, traversal, encoded separators, and extra segments are rejected", () => {
   const valid = reference("destination");
   for (const storagePath of [
@@ -133,18 +148,53 @@ test("reordered and partial results map by exact path in input order", () => {
     [{ path: second.storagePath, signedUrl: "https://signed.invalid/second" }],
   );
   assert.deepEqual(
-    mapped.map(({ signedUrl }) => signedUrl),
-    [null, "https://signed.invalid/second"],
+    mapped.map(({ id, signedUrl }) => ({ id, signedUrl })),
+    [{ id: second.id, signedUrl: "https://signed.invalid/second" }],
   );
 });
 
-test("duplicate paths remain deterministic and signing failures remain null", () => {
+test("duplicate paths remain deterministic and signing failures are suppressed", () => {
   const media = reference("destination");
   const mapped = mapPublicMediaSigningResults([media, media], []);
-  assert.equal(mapped.length, 2);
+  assert.deepEqual(mapped, []);
+});
+
+test("metadata, signed URL, and media-model validity fail closed", () => {
+  const valid = reference("destination");
+  assert.equal(
+    isUsableSignedPublicMedia({
+      ...valid,
+      signedUrl: "https://signed.invalid/image",
+    }),
+    true,
+  );
+  for (const malformed of [
+    { ...valid, altText: null },
+    { ...valid, altText: "   " },
+    { ...valid, caption: "" },
+    { ...valid, caption: 42 },
+    { ...valid, displayOrder: 1.5 },
+    { ...valid, displayOrder: -1 },
+    { ...valid, isPrimary: "true" },
+  ]) {
+    assert.equal(isTrustedPublicMediaReference(malformed), false);
+  }
+  for (const signedUrl of [
+    null,
+    "",
+    "   ",
+    "not-a-url",
+    "javascript:alert(1)",
+  ]) {
+    assert.equal(isValidPublicSignedUrl(signedUrl), false);
+    assert.equal(isUsableSignedPublicMedia({ ...valid, signedUrl }), false);
+  }
   assert.deepEqual(
-    mapped.map(({ signedUrl }) => signedUrl),
-    [null, null],
+    mapPublicMediaSigningResults(
+      [{ ...valid, altText: "" }],
+      [{ path: valid.storagePath, signedUrl: "https://signed.invalid/image" }],
+    ),
+    [],
   );
 });
 

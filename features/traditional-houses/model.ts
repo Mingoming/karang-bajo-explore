@@ -112,7 +112,8 @@ export type TraditionalHouseActionState = {
     | "validation-error"
     | "duplicate-error"
     | "not-found"
-    | "database-error";
+    | "database-error"
+    | "success";
   values: TraditionalHouseFormValues;
   fieldErrors: TraditionalHouseFieldErrors;
   formErrors: string[];

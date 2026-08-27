@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidHomestayId } from "../homestays/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const HOMESTAY_ADMIN_PATH = "/admin/homestay";
-const ENGLISH_HOMESTAYS_PATH = "/en/homestays";
 
 const TRANSLATION_INTENTS = [
   "save-draft",
@@ -169,12 +172,11 @@ function revalidateHomestayTranslationPaths(
 ) {
   revalidatePath(HOMESTAY_ADMIN_PATH);
   revalidatePath(`${HOMESTAY_ADMIN_PATH}/${homestayId}/edit`);
-  revalidatePath(ENGLISH_HOMESTAYS_PATH);
-  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainPaths("homestay", [sourceSlug]);
 }
 
 function revalidateHomestayTranslationDetailPath(sourceSlug: string) {
-  revalidatePath(`${ENGLISH_HOMESTAYS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainDetailPaths("homestay", [sourceSlug]);
 }
 
 async function refreshAfterMutation(

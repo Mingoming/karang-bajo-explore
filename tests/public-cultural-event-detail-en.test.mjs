@@ -133,6 +133,12 @@ test("English detail and metadata fail closed for unavailable or ineligible rows
     await missingPrimary.getPublishedEnglishCulturalEventBySlug(detailRow.slug),
     { kind: "not-found" },
   );
+  assert.equal(
+    await missingPrimary.getPublishedEnglishCulturalEventMetadata(
+      detailRow.slug,
+    ),
+    null,
+  );
 
   for (const field of ["title", "description"]) {
     const malformed = await loadEnglishCulturalEventLoaders(
@@ -157,6 +163,7 @@ test("English detail and metadata fail closed for unavailable or ineligible rows
 test("metadata uses translated description when the projected English summary is empty", async () => {
   const runtime = createEnglishCulturalEventLoaderRuntime({
     parentRows: [detailRow],
+    imageRows: [publishedCulturalEventImageRow(detailRow.id)],
   });
   const loaders = await loadEnglishCulturalEventLoaders(runtime);
   assert.deepEqual(
@@ -166,7 +173,10 @@ test("metadata uses translated description when the projected English summary is
       description: "Approved English event description",
     },
   );
-  assert.deepEqual(runtime.tables, ["published_english_cultural_events"]);
+  assert.deepEqual(runtime.tables, [
+    "published_english_cultural_events",
+    "published_english_cultural_event_images",
+  ]);
 });
 
 test("malformed English metadata cannot fall back to Indonesian site copy", () => {

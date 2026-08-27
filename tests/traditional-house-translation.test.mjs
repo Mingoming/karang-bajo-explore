@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   createTraditionalHouseTranslationActionState,
@@ -143,6 +144,7 @@ async function loadParentActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__traditionalHouseParentActionDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -167,7 +169,8 @@ async function loadParentActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(
         `const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, requireAdministrator, createClient,
   isValidTraditionalHouseId, queryTraditionalHouseTranslationAdminData,
   createTraditionalHouseTranslationActionState,
   validateTraditionalHouseTranslationForEligibility,
@@ -486,7 +489,11 @@ test("parent actions dispatch every lifecycle intent through the exact RPC contr
     assert.deepEqual(paths, [
       "/admin/rumah-adat",
       `/admin/rumah-adat/${HOUSE_ID}/edit`,
+      "/rumah-adat",
       "/en/traditional-houses",
+      "/en",
+      "/en/tourism-map",
+      `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
       `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     ]);
   }
@@ -583,7 +590,11 @@ test("parent revalidation survives refresh failure and uses only trusted slugs",
   assert.deepEqual(failedRefresh.paths, [
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
   ]);
   assert.equal(
@@ -610,8 +621,13 @@ test("parent revalidation survives refresh failure and uses only trusted slugs",
   assert.deepEqual(changedSlug.paths, [
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
+    `/rumah-adat/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
   ]);
 });

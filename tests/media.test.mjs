@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 import sharp from "sharp";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   MEDIA_MAX_OUTPUT_EDGE,
@@ -421,16 +422,13 @@ test("destination media mutations revalidate trusted English destination paths",
     assert.notEqual(offset, -1);
   }
 
-  assert.match(helperSource, /if \(!trustedDestinationSlug\) return;/);
-  assert.match(helperSource, /PUBLIC_ENGLISH_DESTINATIONS_PATH/);
   assert.match(
     helperSource,
-    /getPublicEnglishDestinationPath\(trustedDestinationSlug\)/,
+    /if\s*\(\s*!trustedDestinationSlug\s*\|\|\s*!isValidDestinationSlug\(trustedDestinationSlug\)\s*\)/,
   );
-  assert.equal(
-    actions.match(/revalidatePath\(PUBLIC_ENGLISH_DESTINATIONS_PATH\)/g)
-      ?.length,
-    1,
+  assert.match(
+    helperSource,
+    /revalidatePublicDomainPaths\("destination", \[trustedDestinationSlug\]\)/,
   );
 
   assert.match(contextSource, /queryDestinationById/);
@@ -474,7 +472,7 @@ test("destination media mutations revalidate trusted English destination paths",
   }
 });
 
-test("Traditional House media mutations revalidate trusted English paths only", () => {
+test("Traditional House media mutations revalidate trusted Indonesian and English paths", () => {
   const actions = readFileSync("features/media/actions.ts", "utf8");
   const helperStart = actions.indexOf(
     "function revalidateEnglishTraditionalHousePaths",
@@ -501,10 +499,9 @@ test("Traditional House media mutations revalidate trusted English paths only", 
     assert.notEqual(offset, -1);
   }
 
-  assert.match(helperSource, /PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH/);
   assert.match(
     helperSource,
-    /getPublicEnglishTraditionalHousePath\(trustedTraditionalHouseSlug\)/,
+    /revalidatePublicDomainPaths\("traditionalHouse",\s*\[\s*trustedTraditionalHouseSlug\s*,?\s*\]\)/,
   );
   assert.match(contextSource, /queryTraditionalHouseById/);
   assert.match(
@@ -757,6 +754,7 @@ async function loadMediaActions(runtime) {
   const uploadFile = file([0xff, 0xd8, 0xff], "image/webp", "normalized.webp");
 
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -777,15 +775,20 @@ async function loadMediaActions(runtime) {
       `/en/traditional-houses/${encodeURIComponent(slug)}`,
     getPublicEnglishHomestayPath: (slug) =>
       `/en/homestays/${encodeURIComponent(slug)}`,
+    getPublicHomestayPath: (slug) => `/homestay/${encodeURIComponent(slug)}`,
     getPublicEnglishUmkmPath: (slug) =>
       `/en/local-businesses/${encodeURIComponent(slug)}`,
     getPublicEnglishCulturalEventPath: (slug) =>
       `/en/cultural-events/${encodeURIComponent(slug)}`,
+    getPublicTraditionalHousePath: (slug) =>
+      `/rumah-adat/${encodeURIComponent(slug)}`,
     PUBLIC_ENGLISH_DESTINATIONS_PATH: "/en/destinations",
     PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
     PUBLIC_ENGLISH_HOMESTAYS_PATH: "/en/homestays",
+    PUBLIC_HOMESTAYS_PATH: "/homestay",
     PUBLIC_ENGLISH_UMKMS_PATH: "/en/local-businesses",
     PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH: "/en/cultural-events",
+    PUBLIC_TRADITIONAL_HOUSES_PATH: "/rumah-adat",
     queryDestinationById: async () => {
       runtime.events.push("owner-slug-read");
       return runtime.destinationResponse;
@@ -806,6 +809,7 @@ async function loadMediaActions(runtime) {
       runtime.events.push("owner-slug-read");
       return runtime.culturalEventResponse;
     },
+    isValidDestinationSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidCulturalEventSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidTraditionalHouseSlug,
     isValidHomestaySlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
@@ -867,10 +871,13 @@ const {
   getPublicEnglishDestinationPath,
   getPublicEnglishTraditionalHousePath,
   getPublicEnglishHomestayPath,
+  getPublicHomestayPath,
   getPublicEnglishUmkmPath,
   getPublicEnglishCulturalEventPath,
+  getPublicTraditionalHousePath,
   isMediaRecordOwnedBy,
   isMediaEntityType,
+  isValidDestinationSlug,
   isValidMediaUuid,
   isValidTraditionalHouseSlug,
   isValidHomestaySlug,
@@ -883,8 +890,10 @@ const {
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
   PUBLIC_ENGLISH_HOMESTAYS_PATH,
+  PUBLIC_HOMESTAYS_PATH,
   PUBLIC_ENGLISH_UMKMS_PATH,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
+  PUBLIC_TRADITIONAL_HOUSES_PATH,
   queryDestinationById,
   queryMediaImages,
   queryMediaParentById,
@@ -895,6 +904,7 @@ const {
   redirect,
   removeMediaObject,
   revalidatePath,
+  revalidatePublicDomainPaths,
   requireAdministrator,
   shouldMakeMediaPrimary,
   uploadMediaObject,
@@ -969,13 +979,17 @@ test("Traditional House media actions execute create, metadata, primary, reorder
     createdRuntime.calls.map(({ name }) => name),
     ["media_insert"],
   );
-  assert.deepEqual(createdRuntime.paths.slice(-2), [
+  assert.deepEqual(createdRuntime.paths.slice(-6), [
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
     `/en/traditional-houses/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
   ]);
   assert.ok(
     createdRuntime.events.indexOf("mutation:media_insert") <
-      createdRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+      createdRuntime.events.indexOf("revalidate:/rumah-adat"),
   );
   assert.ok(
     createdRuntime.events.indexOf("authorization") <
@@ -994,6 +1008,12 @@ test("Traditional House media actions execute create, metadata, primary, reorder
     ["media_update"],
   );
   assert.ok(metadataRuntime.paths.includes("/en/traditional-houses"));
+  assert.ok(metadataRuntime.paths.includes("/rumah-adat"));
+  assert.ok(
+    metadataRuntime.paths.includes(
+      `/rumah-adat/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
+    ),
+  );
   assert.ok(
     metadataRuntime.paths.includes(
       `/en/traditional-houses/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
@@ -1001,7 +1021,7 @@ test("Traditional House media actions execute create, metadata, primary, reorder
   );
   assert.ok(
     metadataRuntime.events.indexOf("mutation:media_update") <
-      metadataRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+      metadataRuntime.events.indexOf("revalidate:/rumah-adat"),
   );
 
   const reorderRuntime = createMediaActionRuntime({
@@ -1038,7 +1058,7 @@ test("Traditional House media actions execute create, metadata, primary, reorder
   );
   assert.ok(
     replacementRuntime.events.indexOf("mutation:media_replace") <
-      replacementRuntime.events.indexOf("revalidate:/en/traditional-houses"),
+      replacementRuntime.events.indexOf("revalidate:/rumah-adat"),
   );
 
   const deleteRuntime = createMediaActionRuntime();
@@ -1049,9 +1069,15 @@ test("Traditional House media actions execute create, metadata, primary, reorder
     ["media_delete"],
   );
   assert.ok(deleteRuntime.paths.includes("/en/traditional-houses"));
+  assert.ok(deleteRuntime.paths.includes("/rumah-adat"));
+  assert.ok(
+    deleteRuntime.paths.includes(
+      `/rumah-adat/${TRUSTED_TRADITIONAL_HOUSE_SLUG}`,
+    ),
+  );
 });
 
-test("Homestay media mutations invalidate only trusted English Homestay routes", async () => {
+test("Homestay media mutations invalidate trusted Indonesian and English routes", async () => {
   const createdRuntime = createMediaActionRuntime({
     entityType: "homestay",
     images: [],
@@ -1063,8 +1089,21 @@ test("Homestay media mutations invalidate only trusted English Homestay routes",
   assert.ok(created.redirectPath);
   assert.ok(createdRuntime.calls.some((call) => call.name === "media_insert"));
   assert.deepEqual(
-    createdRuntime.paths.filter((path) => path.startsWith("/en/")),
-    ["/en/homestays", "/en/homestays/homestay-karang-bajo"],
+    createdRuntime.paths.filter(
+      (path) =>
+        path === "/homestay" ||
+        path === "/en" ||
+        path.startsWith("/en/") ||
+        path.startsWith("/homestay/"),
+    ),
+    [
+      "/homestay",
+      "/en/homestays",
+      "/en",
+      "/en/tourism-map",
+      "/homestay/homestay-karang-bajo",
+      "/en/homestays/homestay-karang-bajo",
+    ],
   );
   assert.ok(
     createdRuntime.events.indexOf("mutation:media_insert") <
@@ -1075,6 +1114,8 @@ test("Homestay media mutations invalidate only trusted English Homestay routes",
   const updated = await invokeMedia(updatedRuntime, "update");
   assert.ok(updated.redirectPath);
   assert.ok(updatedRuntime.calls.some((call) => call.name === "media_update"));
+  assert.ok(updatedRuntime.paths.includes("/homestay"));
+  assert.ok(updatedRuntime.paths.includes("/homestay/homestay-karang-bajo"));
   assert.ok(updatedRuntime.paths.includes("/en/homestays"));
   assert.ok(
     updatedRuntime.paths.includes("/en/homestays/homestay-karang-bajo"),
@@ -1084,6 +1125,8 @@ test("Homestay media mutations invalidate only trusted English Homestay routes",
   const deleted = await invokeMedia(deletedRuntime, "delete");
   assert.ok(deleted.redirectPath);
   assert.ok(deletedRuntime.calls.some((call) => call.name === "media_delete"));
+  assert.ok(deletedRuntime.paths.includes("/homestay"));
+  assert.ok(deletedRuntime.paths.includes("/homestay/homestay-karang-bajo"));
   assert.ok(deletedRuntime.paths.includes("/en/homestays"));
   assert.ok(
     deletedRuntime.paths.includes("/en/homestays/homestay-karang-bajo"),
@@ -1180,6 +1223,7 @@ test("failed media mutations do not revalidate English routes", async () => {
   assert.equal(result.redirectPath, null);
   assert.equal(result.result.kind, "database-error");
   assert.equal(runtime.paths.includes("/en/traditional-houses"), false);
+  assert.equal(runtime.paths.includes("/rumah-adat"), false);
   assert.equal(
     runtime.paths.some((path) => path.includes(TRUSTED_TRADITIONAL_HOUSE_SLUG)),
     false,
@@ -1201,7 +1245,7 @@ test("Traditional House media owner identity is trusted and read failures stop m
   );
 });
 
-test("unrelated media owners do not invalidate Traditional House English routes and Destination behavior remains intact", async () => {
+test("unrelated media owners do not invalidate Traditional House routes and Destination behavior remains intact", async () => {
   for (const entityType of [
     "homestay",
     "umkm",
@@ -1212,8 +1256,13 @@ test("unrelated media owners do not invalidate Traditional House English routes 
     const result = await invokeMedia(runtime, "update");
     assert.ok(result.redirectPath);
     assert.equal(runtime.paths.includes("/en/traditional-houses"), false);
+    assert.equal(runtime.paths.includes("/rumah-adat"), false);
     assert.equal(
       runtime.paths.some((path) => path.includes("/en/traditional-houses/")),
+      false,
+    );
+    assert.equal(
+      runtime.paths.some((path) => path.includes("/rumah-adat/")),
       false,
     );
   }

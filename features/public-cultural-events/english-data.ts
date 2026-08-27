@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   classifyPublishedEnglishCulturalEventDetail,
-  isNonBlankEnglishCulturalEventText,
   mapPublishedEnglishCulturalEvent,
   PUBLIC_CULTURAL_EVENT_SLUG_PATTERN,
   type PublishedEnglishCulturalEventImageRow,
@@ -18,6 +17,7 @@ import {
   type PublicEnglishCulturalEventDetailResult,
   type PublicEnglishCulturalEventListResult,
 } from "./english-model";
+import { isPublicUuid } from "../public-content/validation.ts";
 
 export const PUBLISHED_ENGLISH_CULTURAL_EVENTS_VIEW =
   "published_english_cultural_events";
@@ -77,34 +77,52 @@ async function queryEnglishCulturalEventImages(
     .order("id", { ascending: true })
     .overrideTypes<PublishedEnglishCulturalEventImageRow[], { merge: false }>();
 
-  return error ? null : data;
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function enrichEnglishCulturalEvents(
   supabase: SupabaseClient,
   rows: PublishedEnglishCulturalEventRow[],
 ) {
+  if (!Array.isArray(rows)) return null;
+  const validRows = rows.filter(
+    (row): row is PublishedEnglishCulturalEventRow =>
+      typeof row === "object" && row !== null && typeof row.id === "string",
+  );
   const imageRows = await queryEnglishCulturalEventImages(
     supabase,
-    rows.map((event) => event.id),
+    validRows.map((event) => event.id),
   );
 
   if (imageRows === null) return null;
 
-  const references: PublicMediaReference[] = imageRows.map((image) => ({
-    id: image.id,
-    entityType: "cultural-event",
-    parentId: image.cultural_event_id,
-    bucket: image.storage_bucket as "tourism-media",
-    storagePath: image.storage_path,
-    caption: image.caption,
-    altText: image.alt_text,
-    displayOrder: image.display_order,
-    isPrimary: image.is_primary,
-  }));
+  const references: PublicMediaReference[] = imageRows.flatMap((image) => {
+    if (
+      !image ||
+      typeof image !== "object" ||
+      !isPublicUuid(image.id) ||
+      !isPublicUuid(image.cultural_event_id) ||
+      !isPublicUuid(image.translation_id)
+    ) {
+      return [];
+    }
+    return [
+      {
+        id: image.id,
+        entityType: "cultural-event" as const,
+        parentId: image.cultural_event_id,
+        bucket: image.storage_bucket as "tourism-media",
+        storagePath: image.storage_path,
+        caption: image.caption,
+        altText: image.alt_text,
+        displayOrder: image.display_order,
+        isPrimary: image.is_primary,
+      },
+    ];
+  });
   const signedImages = await signPublishedMedia(supabase, references);
 
-  return rows
+  return validRows
     .map((row) =>
       mapPublishedEnglishCulturalEvent(
         row,
@@ -172,6 +190,7 @@ async function loadPublishedEnglishCulturalEventBySlug(
   }
 
   if (!data) return { kind: "not-found" };
+  if (typeof data !== "object") return { kind: "error" };
 
   const events = await enrichEnglishCulturalEvents(supabase, [data]);
   if (events === null) return { kind: "error" };
@@ -183,34 +202,12 @@ export const getPublishedEnglishCulturalEventBySlug = cache(
 );
 
 async function loadPublishedEnglishCulturalEventMetadata(slug: string) {
-  if (!PUBLIC_CULTURAL_EVENT_SLUG_PATTERN.test(slug)) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from(PUBLISHED_ENGLISH_CULTURAL_EVENTS_VIEW)
-    .select("title,summary,description")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<
-      { title: string; summary: string | null; description: string } | null,
-      { merge: false }
-    >();
-
-  if (
-    error ||
-    !data ||
-    !isNonBlankEnglishCulturalEventText(data.title) ||
-    !isNonBlankEnglishCulturalEventText(data.description)
-  ) {
-    return null;
-  }
-
-  const summary =
-    typeof data.summary === "string" ? data.summary.trim() || null : null;
+  const result = await loadPublishedEnglishCulturalEventBySlug(slug);
+  if (result.kind !== "ready") return null;
 
   return {
-    title: data.title.trim(),
-    description: summary || data.description.trim(),
+    title: result.event.title,
+    description: result.event.summary || result.event.description,
   };
 }
 

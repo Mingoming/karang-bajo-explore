@@ -1,11 +1,24 @@
-import type { SignedPublicMedia } from "@/features/public-media/model";
+import {
+  isUsableSignedPublicMedia,
+  type SignedPublicMedia,
+} from "../public-media/model.ts";
+import {
+  isNonBlankPublicText,
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicDisplayOrder,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
 
 export type PublishedEnglishTraditionalHouseRow = {
   id: string;
   translation_id: string;
   slug: string;
   name: string;
-  summary: string;
+  summary: string | null;
   description: string;
   history: string | null;
   cultural_significance: string | null;
@@ -39,7 +52,7 @@ export type PublicEnglishTraditionalHouse = {
   translationId: string;
   name: string;
   slug: string;
-  summary: string;
+  summary: string | null;
   description: string;
   history: string | null;
   culturalSignificance: string | null;
@@ -107,39 +120,75 @@ export const ENGLISH_TRADITIONAL_HOUSE_COPY = {
   },
 } as const;
 
-function normalizeOptionalText(value: string | null) {
-  return value?.trim() || null;
-}
-
-function normalizeOptionalNumber(value: number | string | null) {
-  if (value === null) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+export function isNonBlankEnglishTraditionalHouseText(
+  value: unknown,
+): value is string {
+  return isNonBlankPublicText(value);
 }
 
 export function mapPublishedEnglishTraditionalHouse(
   row: PublishedEnglishTraditionalHouseRow,
   images: readonly SignedPublicMedia[],
-): PublicEnglishTraditionalHouse {
-  const gallery = [...images].sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
-  );
+): PublicEnglishTraditionalHouse | null {
+  if (
+    typeof row !== "object" ||
+    row === null ||
+    !Array.isArray(images) ||
+    !isPublicUuid(row.id) ||
+    !isPublicUuid(row.translation_id) ||
+    !isNonBlankEnglishTraditionalHouseText(row.name) ||
+    !isNonBlankEnglishTraditionalHouseText(row.description) ||
+    !isNonBlankEnglishTraditionalHouseText(row.slug) ||
+    !PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN.test(row.slug) ||
+    !isOptionalPublicText(row.summary) ||
+    !isOptionalPublicText(row.history) ||
+    !isOptionalPublicText(row.cultural_significance) ||
+    !isOptionalPublicText(row.location_name) ||
+    !isOptionalPublicText(row.visitor_information) ||
+    !isOptionalPublicText(row.google_maps_url) ||
+    typeof row.is_featured !== "boolean" ||
+    !isValidPublicDisplayOrder(row.display_order) ||
+    !isValidPublicTimestamp(row.published_at) ||
+    !isValidPublicTimestamp(row.translation_published_at)
+  ) {
+    return null;
+  }
+
+  const latitude = parsePublicNumber(row.latitude, -90, 90, true);
+  const longitude = parsePublicNumber(row.longitude, -180, 180, true);
+  if (
+    !latitude.valid ||
+    !longitude.valid ||
+    (latitude.value === null) !== (longitude.value === null)
+  ) {
+    return null;
+  }
+
+  const gallery = images
+    .filter(isUsableSignedPublicMedia)
+    .sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder ||
+        left.id.localeCompare(right.id),
+    );
+  if (gallery.filter((image) => image.isPrimary).length > 1) return null;
 
   return {
     id: row.id,
     translationId: row.translation_id,
     name: row.name.trim(),
     slug: row.slug,
-    summary: row.summary.trim(),
+    summary: normalizeOptionalPublicText(row.summary),
     description: row.description.trim(),
-    history: normalizeOptionalText(row.history),
-    culturalSignificance: normalizeOptionalText(row.cultural_significance),
-    locationName: normalizeOptionalText(row.location_name),
-    visitorInformation: normalizeOptionalText(row.visitor_information),
-    latitude: normalizeOptionalNumber(row.latitude),
-    longitude: normalizeOptionalNumber(row.longitude),
-    googleMapsUrl: normalizeOptionalText(row.google_maps_url),
+    history: normalizeOptionalPublicText(row.history),
+    culturalSignificance: normalizeOptionalPublicText(
+      row.cultural_significance,
+    ),
+    locationName: normalizeOptionalPublicText(row.location_name),
+    visitorInformation: normalizeOptionalPublicText(row.visitor_information),
+    latitude: latitude.value,
+    longitude: longitude.value,
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
     isFeatured: row.is_featured,
     displayOrder: row.display_order,
     sourcePublishedAt: row.published_at,

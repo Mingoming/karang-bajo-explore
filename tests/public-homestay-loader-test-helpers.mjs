@@ -3,9 +3,11 @@ import { stripTypeScriptTypes } from "node:module";
 
 import {
   classifyPublishedEnglishHomestayDetail,
+  isNonBlankEnglishHomestayText,
   mapPublishedEnglishHomestay,
   PUBLIC_HOMESTAY_SLUG_PATTERN,
 } from "../features/public-homestays/english-model.ts";
+import { isPublicUuid } from "../features/public-content/validation.ts";
 
 const PARENT_VIEW = "published_english_homestays";
 const IMAGE_VIEW = "published_english_homestay_images";
@@ -17,7 +19,7 @@ function queryResult(runtime, query) {
       return {
         data:
           runtime.parentError ||
-          runtime.parentRows.find((row) => row.slug === slug) ||
+          runtime.parentRows.find((row) => row && row.slug === slug) ||
           null,
         error: runtime.parentError,
       };
@@ -81,12 +83,14 @@ export function createEnglishHomestayLoaderRuntime({
   imageRows = [],
   parentError = null,
   imageError = null,
+  signingFailure = false,
 } = {}) {
   const runtime = {
     parentRows,
     imageRows,
     parentError,
     imageError,
+    signingFailure,
     selects: [],
     orders: [],
     limits: [],
@@ -120,13 +124,17 @@ export async function loadEnglishHomestayLoaders(runtime) {
     cache: (loader) => loader,
     createClient: async () => runtime.client,
     classifyPublishedEnglishHomestayDetail,
+    isNonBlankEnglishHomestayText,
+    isPublicUuid,
     mapPublishedEnglishHomestay,
     PUBLIC_HOMESTAY_SLUG_PATTERN,
     signPublishedMedia: async (_supabase, references) => {
       runtime.signedReferences.push(...references);
       return references.map((reference) => ({
         ...reference,
-        signedUrl: `signed:${reference.storagePath}`,
+        signedUrl: runtime.signingFailure
+          ? null
+          : `https://signed.invalid/${reference.storagePath}`,
       }));
     },
   };
@@ -138,7 +146,9 @@ export async function loadEnglishHomestayLoaders(runtime) {
 const {
   cache,
   classifyPublishedEnglishHomestayDetail,
+  isNonBlankEnglishHomestayText,
   createClient,
+  isPublicUuid,
   mapPublishedEnglishHomestay,
   PUBLIC_HOMESTAY_SLUG_PATTERN,
   signPublishedMedia,
@@ -152,12 +162,13 @@ ${stripped}`,
 }
 
 export function publishedHomestayImageRow(parentId, overrides = {}) {
+  const imageId = "00000000-0000-4000-8000-000000000002";
   return {
-    id: "00000000-0000-4000-8000-000000000002",
+    id: imageId,
     homestay_id: parentId,
     translation_id: "20000000-0000-4000-8000-000000000001",
     storage_bucket: "tourism-media",
-    storage_path: `${parentId}/image.webp`,
+    storage_path: `homestay/${parentId}/${imageId}.webp`,
     alt_text: "Approved English alt text",
     caption: "Approved English caption",
     display_order: 0,

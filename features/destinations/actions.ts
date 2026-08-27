@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  getPublicEnglishDestinationPath,
-  PUBLIC_ENGLISH_DESTINATIONS_PATH,
-} from "@/config/public-routes";
+import { revalidatePublicDomainPaths } from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,13 +25,7 @@ const DESTINATION_LIST_PATH = "/admin/destinasi";
 function revalidateEnglishDestinationPaths(
   ...trustedSlugs: readonly (string | null | undefined)[]
 ) {
-  revalidatePath(PUBLIC_ENGLISH_DESTINATIONS_PATH);
-
-  for (const slug of new Set(
-    trustedSlugs.filter((slug): slug is string => Boolean(slug)),
-  )) {
-    revalidatePath(getPublicEnglishDestinationPath(slug));
-  }
+  revalidatePublicDomainPaths("destination", trustedSlugs);
 }
 
 function nextState(

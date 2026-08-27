@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   createUmkmImageTranslationActionState,
@@ -140,6 +141,7 @@ async function loadActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__umkmImageTranslationDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -169,7 +171,8 @@ async function loadActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient, isValidUmkmId,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, requireAdministrator, createClient, isValidUmkmId,
   queryUmkmImageTranslationAdminData, createUmkmImageTranslationActionState,
   validateUmkmImageTranslationForEligibility, validateUmkmImageTranslationForSource,
   validateUmkmImageTranslationFormData } = deps;
@@ -441,6 +444,34 @@ test("successful UMKM image translation revalidates after the RPC and ignores cl
   assert.equal(crafted.result.kind, "validation-error");
   assert.deepEqual(crafted.calls, []);
   assert.deepEqual(crafted.paths, []);
+});
+
+test("successful UMKM mutations remain successful when refresh cannot find the target", async () => {
+  const missingTarget = await invoke({
+    intent: "save-draft",
+    refreshed: {
+      success: true,
+      umkmId: UMKM_ID,
+      slug: TRUSTED_SLUG,
+      images: [],
+    },
+  });
+  assert.equal(missingTarget.result.kind, "success");
+  assert.match(missingTarget.result.message ?? "", /Perubahan tersimpan/);
+
+  const refreshError = await invoke({
+    intent: "save-draft",
+    refreshed: { success: false, kind: "read-error" },
+  });
+  assert.equal(refreshError.result.kind, "success");
+  assert.match(refreshError.result.message ?? "", /status terbaru/);
+
+  const mutationFailure = await invoke({
+    intent: "save-draft",
+    responses: [{ data: null, error: { code: "55000" } }],
+  });
+  assert.equal(mutationFailure.result.kind, "conflict");
+  assert.deepEqual(mutationFailure.paths, []);
 });
 
 test("UMKM image actions remain RPC-only and preserve database-derived eligibility state", () => {

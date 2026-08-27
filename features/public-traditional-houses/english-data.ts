@@ -16,6 +16,7 @@ import {
   type PublicEnglishTraditionalHouseDetailResult,
   type PublicEnglishTraditionalHouseListResult,
 } from "./english-model";
+import { isPublicUuid } from "../public-content/validation.ts";
 
 export const PUBLISHED_ENGLISH_TRADITIONAL_HOUSES_VIEW =
   "published_english_traditional_houses";
@@ -73,41 +74,63 @@ async function queryEnglishTraditionalHouseImages(
       { merge: false }
     >();
 
-  return error ? null : data;
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function enrichEnglishTraditionalHouses(
   supabase: SupabaseClient,
   rows: PublishedEnglishTraditionalHouseRow[],
 ) {
+  if (!Array.isArray(rows)) return null;
+  const validRows = rows.filter(
+    (row): row is PublishedEnglishTraditionalHouseRow =>
+      typeof row === "object" && row !== null && typeof row.id === "string",
+  );
   const imageRows = await queryEnglishTraditionalHouseImages(
     supabase,
-    rows.map((house) => house.id),
+    validRows.map((house) => house.id),
   );
 
   if (imageRows === null) return null;
 
-  const references: PublicMediaReference[] = imageRows.map((image) => ({
-    id: image.id,
-    entityType: "traditional-house",
-    parentId: image.traditional_house_id,
-    bucket: image.storage_bucket as "tourism-media",
-    storagePath: image.storage_path,
-    caption: image.caption,
-    altText: image.alt_text,
-    displayOrder: image.display_order,
-    isPrimary: image.is_primary,
-  }));
+  const references: PublicMediaReference[] = imageRows.flatMap((image) => {
+    if (
+      !image ||
+      typeof image !== "object" ||
+      !isPublicUuid(image.id) ||
+      !isPublicUuid(image.traditional_house_id) ||
+      !isPublicUuid(image.translation_id)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id: image.id,
+        entityType: "traditional-house" as const,
+        parentId: image.traditional_house_id,
+        bucket: image.storage_bucket as "tourism-media",
+        storagePath: image.storage_path,
+        caption: image.caption,
+        altText: image.alt_text,
+        displayOrder: image.display_order,
+        isPrimary: image.is_primary,
+      },
+    ];
+  });
   const signedImages = await signPublishedMedia(supabase, references);
 
-  return rows
+  return validRows
     .map((row) =>
       mapPublishedEnglishTraditionalHouse(
         row,
         signedImages.filter((image) => image.parentId === row.id),
       ),
     )
-    .filter((house) => house.primaryImage !== null);
+    .filter(
+      (house): house is NonNullable<typeof house> =>
+        house !== null && house.primaryImage !== null,
+    );
 }
 
 async function loadPublishedEnglishTraditionalHouses(
@@ -168,6 +191,7 @@ async function loadPublishedEnglishTraditionalHouseBySlug(
   }
 
   if (!data) return { kind: "not-found" };
+  if (typeof data !== "object") return { kind: "error" };
 
   const houses = await enrichEnglishTraditionalHouses(supabase, [data]);
   if (houses === null) return { kind: "error" };
@@ -179,24 +203,12 @@ export const getPublishedEnglishTraditionalHouseBySlug = cache(
 );
 
 async function loadPublishedEnglishTraditionalHouseMetadata(slug: string) {
-  if (!PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN.test(slug)) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from(PUBLISHED_ENGLISH_TRADITIONAL_HOUSES_VIEW)
-    .select("name,summary")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<
-      { name: string; summary: string } | null,
-      { merge: false }
-    >();
-
-  if (error || !data) return null;
+  const result = await loadPublishedEnglishTraditionalHouseBySlug(slug);
+  if (result.kind !== "ready") return null;
 
   return {
-    name: data.name.trim(),
-    summary: data.summary.trim(),
+    name: result.house.name,
+    summary: result.house.summary || result.house.description,
   };
 }
 

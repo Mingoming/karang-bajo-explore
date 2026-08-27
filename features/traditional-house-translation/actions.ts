@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidTraditionalHouseId } from "../traditional-houses/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const TRADITIONAL_HOUSE_ADMIN_PATH = "/admin/rumah-adat";
-const ENGLISH_TRADITIONAL_HOUSES_PATH = "/en/traditional-houses";
 
 const TRANSLATION_INTENTS = [
   "save-draft",
@@ -170,16 +173,11 @@ function revalidateTraditionalHouseTranslationPaths(
 ) {
   revalidatePath(TRADITIONAL_HOUSE_ADMIN_PATH);
   revalidatePath(`${TRADITIONAL_HOUSE_ADMIN_PATH}/${traditionalHouseId}/edit`);
-  revalidatePath(ENGLISH_TRADITIONAL_HOUSES_PATH);
-  revalidatePath(
-    `${ENGLISH_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainPaths("traditionalHouse", [sourceSlug]);
 }
 
 function revalidateTraditionalHouseTranslationDetailPath(sourceSlug: string) {
-  revalidatePath(
-    `${ENGLISH_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainDetailPaths("traditionalHouse", [sourceSlug]);
 }
 
 async function refreshAfterMutation(

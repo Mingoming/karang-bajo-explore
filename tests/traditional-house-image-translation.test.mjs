@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   createTraditionalHouseImageTranslationActionState,
@@ -143,6 +144,7 @@ async function loadImageActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__traditionalHouseImageActionDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -167,7 +169,8 @@ async function loadImageActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(
         `const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, requireAdministrator, createClient,
   isValidTraditionalHouseId, queryTraditionalHouseImageTranslationAdminData,
   createTraditionalHouseImageTranslationActionState,
   validateTraditionalHouseImageTranslationForEligibility,
@@ -526,7 +529,11 @@ test("image actions dispatch every lifecycle intent through the exact RPC contra
     assert.deepEqual(paths, [
       "/admin/rumah-adat",
       `/admin/rumah-adat/${HOUSE_ID}/edit`,
+      "/rumah-adat",
       "/en/traditional-houses",
+      "/en",
+      "/en/tourism-map",
+      `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
       `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     ]);
   }
@@ -626,17 +633,40 @@ test("image ownership and revalidation remain server-trusted", async () => {
     refreshed: { success: false, kind: "read-error" },
     clientSlug: "attacker-slug",
   });
-  assert.equal(failedRefresh.result.kind, "database-error");
+  assert.equal(failedRefresh.result.kind, "success");
+  assert.match(failedRefresh.result.message ?? "", /status terbaru/);
   assert.deepEqual(failedRefresh.paths, [
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
   ]);
   assert.equal(
     failedRefresh.paths.some((path) => path.includes("attacker")),
     false,
   );
+
+  const missingTarget = await invokeImage({
+    intent: "archive",
+    currentTranslation: translation({
+      translation_status: "published",
+      review_state: "reviewed",
+      published_at: "2026-08-10T10:05:00.000Z",
+      lifecycle_state: "published",
+    }),
+    refreshed: {
+      success: true,
+      traditionalHouseId: HOUSE_ID,
+      slug: TRUSTED_NEW_SLUG,
+      images: [],
+    },
+  });
+  assert.equal(missingTarget.result.kind, "success");
+  assert.match(missingTarget.result.message ?? "", /Perubahan tersimpan/);
 
   const changedSlug = await invokeImage({
     intent: "archive",
@@ -663,8 +693,13 @@ test("image ownership and revalidation remain server-trusted", async () => {
   assert.deepEqual(changedSlug.paths, [
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
+    `/rumah-adat/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
   ]);
 });
@@ -686,12 +721,18 @@ test("image revalidates the refreshed slug before a missing-image early return",
     },
     clientSlug: "attacker-slug",
   });
-  assert.equal(invocation.result.kind, "not-found");
+  assert.equal(invocation.result.kind, "success");
+  assert.match(invocation.result.message ?? "", /Perubahan tersimpan/);
   assert.deepEqual(invocation.paths, [
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_OLD_SLUG)}`,
+    `/rumah-adat/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
     `/en/traditional-houses/${encodeURIComponent(TRUSTED_NEW_SLUG)}`,
   ]);
   assert.equal(

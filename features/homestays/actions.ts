@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  getPublicEnglishHomestayPath,
-  PUBLIC_ENGLISH_HOMESTAYS_PATH,
-} from "@/config/public-routes";
+import { revalidatePublicDomainPaths } from "@/features/public-content/revalidation";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -26,14 +23,8 @@ import {
 
 const HOMESTAY_LIST_PATH = "/admin/homestay";
 
-function revalidateEnglishHomestayDetailPath(slug: string) {
-  if (!isValidHomestaySlug(slug)) return;
-  revalidatePath(getPublicEnglishHomestayPath(slug));
-}
-
-function revalidateEnglishHomestayPaths(slugs: readonly string[]) {
-  revalidatePath(PUBLIC_ENGLISH_HOMESTAYS_PATH);
-  for (const slug of new Set(slugs)) revalidateEnglishHomestayDetailPath(slug);
+function revalidateHomestayPaths(slugs: readonly string[]) {
+  revalidatePublicDomainPaths("homestay", slugs);
 }
 
 function nextState(
@@ -162,7 +153,7 @@ export async function createHomestay(
 
   revalidatePath(HOMESTAY_LIST_PATH);
   revalidatePath(`${HOMESTAY_LIST_PATH}/${homestayId}/edit`);
-  revalidateEnglishHomestayPaths([createdHomestay.slug]);
+  revalidateHomestayPaths([createdHomestay.slug]);
   redirect(`${HOMESTAY_LIST_PATH}/${homestayId}/edit?success=created`);
 }
 
@@ -261,7 +252,7 @@ export async function updateHomestay(
 
   revalidatePath(HOMESTAY_LIST_PATH);
   revalidatePath(`${HOMESTAY_LIST_PATH}/${existingHomestay.id}/edit`);
-  revalidateEnglishHomestayPaths([
+  revalidateHomestayPaths([
     existingHomestay.slug,
     ...(data?.length === 1 ? [data[0].slug] : []),
   ]);

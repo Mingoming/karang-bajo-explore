@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateEnglishAggregatePaths } from "@/features/public-content/revalidation";
 
 import { queryVillageProfile } from "./data";
 import {
@@ -128,6 +129,7 @@ export async function saveVillageProfile(
   revalidatePath("/profil-desa");
   revalidatePath("/en/village-profile");
   revalidatePath("/");
+  revalidateEnglishAggregatePaths(false);
 
   return {
     kind: "success",

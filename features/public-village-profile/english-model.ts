@@ -1,3 +1,13 @@
+import {
+  isNonBlankPublicText,
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
+
 export type PublishedEnglishVillageProfileRow = {
   id: string;
   name: string;
@@ -39,67 +49,69 @@ type EnglishVillageProfileSectionLabels = Readonly<{
   mission: string;
 }>;
 
-function normalizeOptionalText(value: string | null) {
-  return value?.trim() || null;
-}
-
-function normalizePublicMapUrl(value: string | null) {
-  const normalized = normalizeOptionalText(value);
-  if (!normalized) return null;
-
-  try {
-    const url = new URL(normalized);
-
-    return url.protocol === "http:" || url.protocol === "https:"
-      ? url.toString()
-      : null;
-  } catch {
+function normalizeCoordinatePair(
+  latitudeValue: unknown,
+  longitudeValue: unknown,
+) {
+  if (!isCoordinateValue(latitudeValue) || !isCoordinateValue(longitudeValue)) {
     return null;
   }
+
+  const latitude = parsePublicNumber(latitudeValue, -90, 90, true);
+  const longitude = parsePublicNumber(longitudeValue, -180, 180, true);
+
+  if (!latitude.valid || !longitude.valid) {
+    return { latitude: null, longitude: null };
+  }
+  if (latitude.value === null || longitude.value === null) {
+    return { latitude: null, longitude: null };
+  }
+
+  return { latitude: latitude.value, longitude: longitude.value };
 }
 
-function normalizeCoordinatePair(
-  latitudeValue: number | string | null,
-  longitudeValue: number | string | null,
-) {
-  if (latitudeValue === null || longitudeValue === null) {
-    return { latitude: null, longitude: null };
-  }
-
-  const latitude = Number(latitudeValue);
-  const longitude = Number(longitudeValue);
-
-  if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    latitude < -90 ||
-    latitude > 90 ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    return { latitude: null, longitude: null };
-  }
-
-  return { latitude, longitude };
+function isCoordinateValue(value: unknown): value is number | string | null {
+  return (
+    value === null || typeof value === "number" || typeof value === "string"
+  );
 }
 
 export function mapPublishedEnglishVillageProfile(
   row: PublishedEnglishVillageProfileRow,
-): PublicEnglishVillageProfile {
+): PublicEnglishVillageProfile | null {
+  if (
+    typeof row !== "object" ||
+    row === null ||
+    !isPublicUuid(row.id) ||
+    !isNonBlankPublicText(row.name) ||
+    !isNonBlankPublicText(row.description) ||
+    !isOptionalPublicText(row.summary) ||
+    !isOptionalPublicText(row.history) ||
+    !isOptionalPublicText(row.vision) ||
+    !isOptionalPublicText(row.mission) ||
+    !isOptionalPublicText(row.address) ||
+    !isOptionalPublicText(row.google_maps_url) ||
+    typeof row.published_at !== "string" ||
+    !isValidPublicTimestamp(row.published_at)
+  ) {
+    return null;
+  }
+
   const coordinates = normalizeCoordinatePair(row.latitude, row.longitude);
+  if (!coordinates) return null;
 
   return {
     id: row.id,
     name: row.name.trim(),
-    summary: normalizeOptionalText(row.summary),
+    summary: normalizeOptionalPublicText(row.summary),
     description: row.description.trim(),
-    history: normalizeOptionalText(row.history),
-    vision: normalizeOptionalText(row.vision),
-    mission: normalizeOptionalText(row.mission),
-    address: normalizeOptionalText(row.address),
+    history: normalizeOptionalPublicText(row.history),
+    vision: normalizeOptionalPublicText(row.vision),
+    mission: normalizeOptionalPublicText(row.mission),
+    address: normalizeOptionalPublicText(row.address),
     latitude: coordinates.latitude,
     longitude: coordinates.longitude,
-    googleMapsUrl: normalizePublicMapUrl(row.google_maps_url),
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
     publishedAt: row.published_at,
   };
 }
@@ -107,12 +119,13 @@ export function mapPublishedEnglishVillageProfile(
 export function classifyPublishedEnglishVillageProfiles(
   rows: readonly PublishedEnglishVillageProfileRow[],
 ): PublicEnglishVillageProfileResult {
+  if (!Array.isArray(rows)) return { kind: "error" };
   if (rows.length === 0) return { kind: "not-found" };
   if (rows.length > 1) return { kind: "error" };
 
   const profile = mapPublishedEnglishVillageProfile(rows[0]);
 
-  if (!profile.name || !profile.description) {
+  if (!profile || !profile.name || !profile.description) {
     return { kind: "error" };
   }
 
