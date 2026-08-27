@@ -16,6 +16,7 @@ import {
   type PublicEnglishUmkmDetailResult,
   type PublicEnglishUmkmListResult,
 } from "./english-model";
+import { isPublicUuid } from "../public-content/validation.ts";
 
 export const PUBLISHED_ENGLISH_UMKMS_VIEW = "published_english_umkms";
 export const PUBLISHED_ENGLISH_UMKM_IMAGES_VIEW =
@@ -68,31 +69,49 @@ async function queryImages(
     .order("display_order", { ascending: true })
     .order("id", { ascending: true })
     .overrideTypes<PublishedEnglishUmkmImageRow[], { merge: false }>();
-  return error ? null : data;
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function enrich(
   supabase: SupabaseClient,
   rows: PublishedEnglishUmkmRow[],
 ) {
+  if (!Array.isArray(rows)) return null;
+  const validRows = rows.filter(
+    (row): row is PublishedEnglishUmkmRow =>
+      typeof row === "object" && row !== null && typeof row.id === "string",
+  );
   const imageRows = await queryImages(
     supabase,
-    rows.map((row) => row.id),
+    validRows.map((row) => row.id),
   );
   if (imageRows === null) return null;
-  const references: PublicMediaReference[] = imageRows.map((image) => ({
-    id: image.id,
-    entityType: "umkm",
-    parentId: image.umkm_id,
-    bucket: image.storage_bucket as "tourism-media",
-    storagePath: image.storage_path,
-    caption: image.caption,
-    altText: image.alt_text,
-    displayOrder: image.display_order,
-    isPrimary: image.is_primary,
-  }));
+  const references: PublicMediaReference[] = imageRows.flatMap((image) => {
+    if (
+      !image ||
+      typeof image !== "object" ||
+      !isPublicUuid(image.id) ||
+      !isPublicUuid(image.umkm_id) ||
+      !isPublicUuid(image.translation_id)
+    ) {
+      return [];
+    }
+    return [
+      {
+        id: image.id,
+        entityType: "umkm" as const,
+        parentId: image.umkm_id,
+        bucket: image.storage_bucket as "tourism-media",
+        storagePath: image.storage_path,
+        caption: image.caption,
+        altText: image.alt_text,
+        displayOrder: image.display_order,
+        isPrimary: image.is_primary,
+      },
+    ];
+  });
   const signed = await signPublishedMedia(supabase, references);
-  return rows
+  return validRows
     .map((row) =>
       mapPublishedEnglishUmkm(
         row,
@@ -144,6 +163,7 @@ async function loadDetail(
     return { kind: "error" };
   }
   if (!data) return { kind: "not-found" };
+  if (typeof data !== "object") return { kind: "error" };
   const umkms = await enrich(supabase, [data]);
   if (umkms === null) return { kind: "error" };
   return classifyPublishedEnglishUmkmDetail(umkms);
@@ -152,22 +172,11 @@ async function loadDetail(
 export const getPublishedEnglishUmkmBySlug = cache(loadDetail);
 
 async function loadMetadata(slug: string) {
-  if (!PUBLIC_UMKM_SLUG_PATTERN.test(slug)) return null;
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from(PUBLISHED_ENGLISH_UMKMS_VIEW)
-    .select("business_name,description")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<
-      { business_name: string; description: string } | null,
-      { merge: false }
-    >();
-  if (error || !data || !data.business_name.trim() || !data.description.trim())
-    return null;
+  const result = await loadDetail(slug);
+  if (result.kind !== "ready") return null;
   return {
-    name: data.business_name.trim(),
-    description: data.description.trim(),
+    name: result.umkm.businessName,
+    description: result.umkm.description,
   };
 }
 

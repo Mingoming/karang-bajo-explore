@@ -3,9 +3,12 @@ import { stripTypeScriptTypes } from "node:module";
 
 import {
   classifyPublishedEnglishTraditionalHouseDetail,
+  isNonBlankEnglishTraditionalHouseText,
   mapPublishedEnglishTraditionalHouse,
   PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN,
 } from "../features/public-traditional-houses/english-model.ts";
+import { isPublicUuid } from "../features/public-content/validation.ts";
+import { isTrustedPublicMediaReference } from "../features/public-media/model.ts";
 
 const PARENT_VIEW = "published_english_traditional_houses";
 const IMAGE_VIEW = "published_english_traditional_house_images";
@@ -17,7 +20,7 @@ function queryResult(runtime, query) {
       return {
         data:
           runtime.parentError ||
-          runtime.parentRows.find((row) => row.slug === slug) ||
+          runtime.parentRows.find((row) => row && row.slug === slug) ||
           null,
         error: runtime.parentError,
       };
@@ -81,12 +84,14 @@ export function createEnglishTraditionalHouseLoaderRuntime({
   imageRows = [],
   parentError = null,
   imageError = null,
+  signingFailure = false,
 } = {}) {
   const runtime = {
     parentRows,
     imageRows,
     parentError,
     imageError,
+    signingFailure,
     selects: [],
     orders: [],
     limits: [],
@@ -120,13 +125,20 @@ export async function loadEnglishTraditionalHouseLoaders(runtime) {
     cache: (loader) => loader,
     createClient: async () => runtime.client,
     classifyPublishedEnglishTraditionalHouseDetail,
+    isNonBlankEnglishTraditionalHouseText,
+    isPublicUuid,
     mapPublishedEnglishTraditionalHouse,
     PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN,
     signPublishedMedia: async (_supabase, references) => {
-      runtime.signedReferences.push(...references);
-      return references.map((reference) => ({
+      const trustedReferences = references.filter((reference) =>
+        isTrustedPublicMediaReference(reference),
+      );
+      runtime.signedReferences.push(...trustedReferences);
+      return trustedReferences.map((reference) => ({
         ...reference,
-        signedUrl: `signed:${reference.storagePath}`,
+        signedUrl: runtime.signingFailure
+          ? null
+          : `https://signed.invalid/${reference.storagePath}`,
       }));
     },
   };
@@ -138,7 +150,9 @@ export async function loadEnglishTraditionalHouseLoaders(runtime) {
 const {
   cache,
   classifyPublishedEnglishTraditionalHouseDetail,
+  isNonBlankEnglishTraditionalHouseText,
   createClient,
+  isPublicUuid,
   mapPublishedEnglishTraditionalHouse,
   PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN,
   signPublishedMedia,
@@ -152,12 +166,13 @@ ${stripped}`,
 }
 
 export function publishedTraditionalHouseImageRow(parentId, overrides = {}) {
+  const id = "00000000-0000-4000-8000-000000000002";
   return {
-    id: "00000000-0000-4000-8000-000000000002",
+    id,
     traditional_house_id: parentId,
     translation_id: "20000000-0000-4000-8000-000000000001",
     storage_bucket: "tourism-media",
-    storage_path: `${parentId}/image.webp`,
+    storage_path: `traditional-house/${parentId}/${id}.webp`,
     alt_text: "Approved English alt text",
     caption: "Approved English caption",
     display_order: 0,

@@ -6,6 +6,7 @@ import { getPublicNavigation } from "../config/public-navigation.ts";
 import {
   getEquivalentPublicRoute,
   getPublicRoute,
+  PUBLIC_DETAIL_ROUTE_MANIFEST,
   PUBLIC_ROUTE_KEYS,
   PUBLIC_ROUTE_MANIFEST,
 } from "../config/public-routes.ts";
@@ -139,6 +140,67 @@ test("home and Village Profile have reciprocal English routes", () => {
 
   for (const path of ["/admin", "/en/destinations"]) {
     assert.equal(getEquivalentPublicRoute(path, "id"), null, path);
+  }
+});
+
+test("detail language switching uses paired route descriptors and trusted slugs", () => {
+  assert.deepEqual(PUBLIC_DETAIL_ROUTE_MANIFEST, {
+    destinations: {
+      id: "/destinasi/[slug]",
+      en: "/en/destinations/[slug]",
+    },
+    homestays: {
+      id: "/homestay/[slug]",
+      en: "/en/homestays/[slug]",
+    },
+    umkm: {
+      id: "/umkm/[slug]",
+      en: "/en/local-businesses/[slug]",
+    },
+    traditionalHouses: {
+      id: "/rumah-adat/[slug]",
+      en: "/en/traditional-houses/[slug]",
+    },
+    culturalEvents: {
+      id: "/acara-budaya/[slug]",
+      en: "/en/cultural-events/[slug]",
+    },
+  });
+
+  for (const [indonesianPath, englishPath] of [
+    ["/destinasi/bukit-karang", "/en/destinations/bukit-karang"],
+    ["/homestay/rumah-bajo", "/en/homestays/rumah-bajo"],
+    ["/umkm/tenun-bajo", "/en/local-businesses/tenun-bajo"],
+    [
+      "/rumah-adat/rumah-adat-karang",
+      "/en/traditional-houses/rumah-adat-karang",
+    ],
+    ["/acara-budaya/festival-bajo", "/en/cultural-events/festival-bajo"],
+  ]) {
+    assert.equal(getEquivalentPublicRoute(indonesianPath, "id"), englishPath);
+    assert.equal(getEquivalentPublicRoute(englishPath, "en"), indonesianPath);
+  }
+
+  for (const pathname of [
+    "/homestay/bad slug",
+    "/homestay/../x",
+    "/en/homestays/x%2Fy",
+    "/rumah-adat/bad slug",
+    "/rumah-adat/../x",
+    "/rumah-adat/x/y",
+    "/en/traditional-houses/x%2Fy",
+    "/en/traditional-houses/%E0%A4%A",
+    "/en/tourism-map/example",
+    "/en/unsupported/example",
+  ]) {
+    assert.equal(
+      getEquivalentPublicRoute(
+        pathname,
+        pathname.startsWith("/en") ? "en" : "id",
+      ),
+      null,
+      pathname,
+    );
   }
 });
 

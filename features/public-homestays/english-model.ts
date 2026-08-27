@@ -1,4 +1,17 @@
-import type { SignedPublicMedia } from "@/features/public-media/model";
+import {
+  isUsableSignedPublicMedia,
+  type SignedPublicMedia,
+} from "../public-media/model.ts";
+import {
+  isNonBlankPublicText,
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicDisplayOrder,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
 
 export type PublishedEnglishHomestayRow = {
   id: string;
@@ -104,44 +117,85 @@ export const ENGLISH_HOMESTAY_COPY = {
   },
 } as const;
 
-function optionalText(value: unknown) {
-  return typeof value === "string" ? value.trim() || null : null;
-}
-
-function optionalNumber(value: number | string | null) {
-  if (value === null) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+export function isNonBlankEnglishHomestayText(value: unknown): value is string {
+  return isNonBlankPublicText(value);
 }
 
 export function mapPublishedEnglishHomestay(
   row: PublishedEnglishHomestayRow,
   images: readonly SignedPublicMedia[],
 ): PublicEnglishHomestay | null {
-  if (!row.name.trim() || !row.description.trim()) return null;
-  const gallery = [...images].sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
+  if (
+    typeof row !== "object" ||
+    row === null ||
+    !Array.isArray(images) ||
+    !isPublicUuid(row.id) ||
+    !isPublicUuid(row.translation_id) ||
+    !isNonBlankEnglishHomestayText(row.id) ||
+    !isNonBlankEnglishHomestayText(row.translation_id) ||
+    !isNonBlankEnglishHomestayText(row.name) ||
+    !isNonBlankEnglishHomestayText(row.description) ||
+    !isNonBlankEnglishHomestayText(row.slug) ||
+    !PUBLIC_HOMESTAY_SLUG_PATTERN.test(row.slug) ||
+    !Array.isArray(row.facilities) ||
+    row.facilities.some((value) => !isNonBlankEnglishHomestayText(value)) ||
+    typeof row.is_featured !== "boolean" ||
+    !isValidPublicDisplayOrder(row.display_order) ||
+    !isOptionalPublicText(row.address) ||
+    !isOptionalPublicText(row.price_note) ||
+    !isOptionalPublicText(row.google_maps_url) ||
+    !isOptionalPublicText(row.owner_name) ||
+    !isOptionalPublicText(row.phone) ||
+    !isValidPublicTimestamp(row.published_at) ||
+    !isValidPublicTimestamp(row.translation_published_at)
+  ) {
+    return null;
+  }
+
+  const pricePerNight = parsePublicNumber(
+    row.price_per_night,
+    0,
+    Number.MAX_VALUE,
+    true,
   );
+  const latitude = parsePublicNumber(row.latitude, -90, 90, true);
+  const longitude = parsePublicNumber(row.longitude, -180, 180, true);
+  if (
+    !pricePerNight.valid ||
+    !latitude.valid ||
+    !longitude.valid ||
+    (latitude.value === null) !== (longitude.value === null) ||
+    !isValidPublicTimestamp(row.published_at) ||
+    !isValidPublicTimestamp(row.translation_published_at)
+  ) {
+    return null;
+  }
+
+  const gallery = images
+    .filter(isUsableSignedPublicMedia)
+    .sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder ||
+        left.id.localeCompare(right.id),
+    );
+  const primaryImages = gallery.filter((image) => image.isPrimary);
+  if (primaryImages.length > 1) return null;
+
   return {
     id: row.id,
     translationId: row.translation_id,
     slug: row.slug,
     name: row.name.trim(),
     description: row.description.trim(),
-    address: optionalText(row.address),
-    priceNote: optionalText(row.price_note),
-    facilities: Array.isArray(row.facilities)
-      ? row.facilities
-          .filter((value) => typeof value === "string")
-          .map((value) => value.trim())
-      : [],
-    pricePerNight: optionalNumber(row.price_per_night),
-    latitude: optionalNumber(row.latitude),
-    longitude: optionalNumber(row.longitude),
-    googleMapsUrl: optionalText(row.google_maps_url),
-    ownerName: optionalText(row.owner_name),
-    phone: optionalText(row.phone),
+    address: normalizeOptionalPublicText(row.address),
+    priceNote: normalizeOptionalPublicText(row.price_note),
+    facilities: row.facilities.map((value) => value.trim()),
+    pricePerNight: pricePerNight.value,
+    latitude: latitude.value,
+    longitude: longitude.value,
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
+    ownerName: normalizeOptionalPublicText(row.owner_name),
+    phone: normalizeOptionalPublicText(row.phone),
     isFeatured: row.is_featured,
     displayOrder: row.display_order,
     publishedAt: row.published_at,

@@ -63,7 +63,13 @@ test("English local-business detail returns translated content and translated me
   if (result.kind !== "ready") return;
   assert.equal(result.umkm.businessName, "English Local Business");
   assert.equal(result.umkm.primaryImage?.altText, "Approved English alt text");
+  assert.deepEqual(await loaders.getPublishedEnglishUmkmMetadata(row.slug), {
+    name: "English Local Business",
+    description: "Approved English business description",
+  });
   assert.deepEqual(runtime.tables, [
+    "published_english_umkms",
+    "published_english_umkm_images",
     "published_english_umkms",
     "published_english_umkm_images",
   ]);
@@ -88,4 +94,28 @@ test("missing, invalid, or primary-blocked English detail is not rendered", asyn
   assert.deepEqual(await noPrimary.getPublishedEnglishUmkmBySlug(row.slug), {
     kind: "not-found",
   });
+  assert.equal(await noPrimary.getPublishedEnglishUmkmMetadata(row.slug), null);
+
+  const malformed = await loadEnglishUmkmLoaders(
+    createEnglishUmkmLoaderRuntime({
+      parentRows: [{ ...row, business_name: null }],
+      imageRows: [publishedUmkmImageRow(row.id)],
+    }),
+  );
+  assert.equal(await malformed.getPublishedEnglishUmkmMetadata(row.slug), null);
+
+  const malformedPrimary = await loadEnglishUmkmLoaders(
+    createEnglishUmkmLoaderRuntime({
+      parentRows: [row],
+      imageRows: [
+        publishedUmkmImageRow(row.id, {
+          storage_path: `umkm/${row.id}/../malformed.webp`,
+        }),
+      ],
+    }),
+  );
+  assert.equal(
+    await malformedPrimary.getPublishedEnglishUmkmMetadata(row.slug),
+    null,
+  );
 });

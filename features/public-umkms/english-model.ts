@@ -1,4 +1,17 @@
-import type { SignedPublicMedia } from "@/features/public-media/model";
+import {
+  isUsableSignedPublicMedia,
+  type SignedPublicMedia,
+} from "../public-media/model.ts";
+import {
+  isNonBlankPublicText,
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicDisplayOrder,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
 
 export type PublishedEnglishUmkmRow = {
   id: string;
@@ -103,30 +116,53 @@ export const ENGLISH_UMKM_COPY = {
   },
 } as const;
 
-function optionalText(value: unknown) {
-  return typeof value === "string" ? value.trim() || null : null;
-}
-
-function optionalNumber(value: number | string | null) {
-  if (value === null) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
 export function mapPublishedEnglishUmkm(
   row: PublishedEnglishUmkmRow,
   images: readonly SignedPublicMedia[],
 ): PublicEnglishUmkm | null {
   if (
-    !row.business_name.trim() ||
-    !row.category.trim() ||
-    !row.description.trim()
-  )
+    typeof row !== "object" ||
+    row === null ||
+    !Array.isArray(images) ||
+    !isPublicUuid(row.id) ||
+    !isPublicUuid(row.translation_id) ||
+    !isNonBlankPublicText(row.business_name) ||
+    !isNonBlankPublicText(row.category) ||
+    !isNonBlankPublicText(row.description) ||
+    !isNonBlankPublicText(row.slug) ||
+    !PUBLIC_UMKM_SLUG_PATTERN.test(row.slug) ||
+    !isOptionalPublicText(row.address) ||
+    !isOptionalPublicText(row.owner_name) ||
+    !isOptionalPublicText(row.contact_name) ||
+    !isOptionalPublicText(row.contact_phone) ||
+    !isOptionalPublicText(row.contact_whatsapp) ||
+    !isOptionalPublicText(row.google_maps_url) ||
+    typeof row.is_featured !== "boolean" ||
+    !isValidPublicDisplayOrder(row.display_order) ||
+    !isValidPublicTimestamp(row.published_at) ||
+    !isValidPublicTimestamp(row.translation_published_at)
+  ) {
     return null;
-  const gallery = [...images].sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
-  );
+  }
+
+  const latitude = parsePublicNumber(row.latitude, -90, 90, true);
+  const longitude = parsePublicNumber(row.longitude, -180, 180, true);
+  if (
+    !latitude.valid ||
+    !longitude.valid ||
+    (latitude.value === null) !== (longitude.value === null)
+  ) {
+    return null;
+  }
+
+  const gallery = images
+    .filter(isUsableSignedPublicMedia)
+    .sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder ||
+        left.id.localeCompare(right.id),
+    );
+  if (gallery.filter((image) => image.isPrimary).length > 1) return null;
   return {
     id: row.id,
     translationId: row.translation_id,
@@ -134,14 +170,14 @@ export function mapPublishedEnglishUmkm(
     businessName: row.business_name.trim(),
     category: row.category.trim(),
     description: row.description.trim(),
-    address: optionalText(row.address),
-    latitude: optionalNumber(row.latitude),
-    longitude: optionalNumber(row.longitude),
-    googleMapsUrl: optionalText(row.google_maps_url),
-    ownerName: optionalText(row.owner_name),
-    contactName: optionalText(row.contact_name),
-    contactPhone: optionalText(row.contact_phone),
-    contactWhatsapp: optionalText(row.contact_whatsapp),
+    address: normalizeOptionalPublicText(row.address),
+    latitude: latitude.value,
+    longitude: longitude.value,
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
+    ownerName: normalizeOptionalPublicText(row.owner_name),
+    contactName: normalizeOptionalPublicText(row.contact_name),
+    contactPhone: normalizeOptionalPublicText(row.contact_phone),
+    contactWhatsapp: normalizeOptionalPublicText(row.contact_whatsapp),
     isFeatured: row.is_featured,
     displayOrder: row.display_order,
     publishedAt: row.published_at,

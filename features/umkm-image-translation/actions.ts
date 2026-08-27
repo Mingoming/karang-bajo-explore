@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidUmkmId } from "../umkm/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const UMKM_ADMIN_PATH = "/admin/umkm";
-const ENGLISH_UMKMS_PATH = "/en/local-businesses";
 const IMAGE_TRANSLATION_INTENTS = [
   "save-draft",
   "review",
@@ -121,6 +124,20 @@ function databaseFailureState(
   } satisfies UmkmImageTranslationActionState;
 }
 
+function successfulMutationRefreshState(
+  previousState: UmkmImageTranslationActionState,
+  message: string,
+) {
+  return {
+    ...previousState,
+    kind: "success",
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies UmkmImageTranslationActionState;
+}
+
 function validationFailureState(
   image: CurrentImage,
   previousState: UmkmImageTranslationActionState,
@@ -175,12 +192,11 @@ function revalidateUmkmImageTranslationPaths(
 ) {
   revalidatePath(UMKM_ADMIN_PATH);
   revalidatePath(`${UMKM_ADMIN_PATH}/${umkmId}/edit`);
-  revalidatePath(ENGLISH_UMKMS_PATH);
-  revalidatePath(`${ENGLISH_UMKMS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainPaths("umkm", [sourceSlug]);
 }
 
 function revalidateUmkmImageTranslationDetailPath(sourceSlug: string) {
-  revalidatePath(`${ENGLISH_UMKMS_PATH}/${encodeURIComponent(sourceSlug)}`);
+  revalidatePublicDomainDetailPaths("umkm", [sourceSlug]);
 }
 
 async function refreshAfterMutation(
@@ -195,6 +211,12 @@ async function refreshAfterMutation(
   revalidateUmkmImageTranslationPaths(umkmId, trustedPreMutationSlug);
   const refreshed = await queryUmkmImageTranslationAdminData(supabase, umkmId);
   if (!refreshed.success) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
@@ -205,6 +227,12 @@ async function refreshAfterMutation(
   }
   const image = refreshed.images.find((item) => item.source.id === imageId);
   if (!image) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi gambar tidak lagi tersedia. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi gambar tidak lagi tersedia.",

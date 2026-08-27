@@ -289,8 +289,11 @@ test("unknown, commerce, price, audit, slug, and malformed fields are rejected",
 
 test("UMKM source mutations invalidate trusted English collection and detail paths", () => {
   const actions = readFileSync("features/umkm/actions.ts", "utf8");
-  assert.match(actions, /PUBLIC_ENGLISH_UMKMS_PATH/);
-  assert.match(actions, /getPublicEnglishUmkmPath/);
+  assert.match(actions, /revalidatePublicDomainPaths\("umkm", \[\]\)/);
+  assert.match(
+    actions,
+    /revalidatePublicDomainDetailPaths\("umkm", \[trustedSlug\]\)/,
+  );
   assert.match(actions, /revalidateEnglishUmkmCollection\(\)/);
   assert.match(actions, /revalidateEnglishUmkmDetail\(existing\.slug\)/);
   assert.match(

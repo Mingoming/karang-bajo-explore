@@ -1,6 +1,22 @@
-import type { SignedPublicMedia } from "@/features/public-media/model";
+import {
+  isUsableSignedPublicMedia,
+  type SignedPublicMedia,
+} from "../public-media/model.ts";
 
-import type { PublicDestination } from "./model";
+import {
+  PUBLIC_DESTINATION_SLUG_PATTERN,
+  type PublicDestination,
+} from "./model.ts";
+import {
+  isNonBlankPublicText,
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicDisplayOrder,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
 
 export type PublishedEnglishDestinationRow = {
   id: string;
@@ -104,14 +120,10 @@ export const ENGLISH_DESTINATION_COPY = {
   },
 } as const;
 
-function normalizeOptionalText(value: string | null) {
-  return value?.trim() || null;
-}
-
 export function getEnglishDestinationCategoryName(slug: string | null) {
-  return slug
-    ? (ENGLISH_DESTINATION_CATEGORY_NAMES[slug] ?? "Destination")
-    : "Destination";
+  return slug && Object.hasOwn(ENGLISH_DESTINATION_CATEGORY_NAMES, slug)
+    ? ENGLISH_DESTINATION_CATEGORY_NAMES[slug]
+    : null;
 }
 
 export function formatEnglishDestinationPrice(price: number | null) {
@@ -129,32 +141,82 @@ export function mapPublishedEnglishDestination(
   row: PublishedEnglishDestinationRow,
   categorySlug: string | null,
   images: readonly SignedPublicMedia[],
-): PublicDestination {
-  const gallery = [...images].sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
+): PublicDestination | null {
+  if (
+    typeof row !== "object" ||
+    row === null ||
+    !Array.isArray(images) ||
+    !isPublicUuid(row.id) ||
+    !isPublicUuid(row.category_id) ||
+    !isNonBlankPublicText(row.name) ||
+    !isNonBlankPublicText(row.summary) ||
+    !isNonBlankPublicText(row.description) ||
+    !isNonBlankPublicText(row.slug) ||
+    !PUBLIC_DESTINATION_SLUG_PATTERN.test(row.slug) ||
+    typeof row.is_featured !== "boolean" ||
+    !isValidPublicDisplayOrder(row.display_order) ||
+    !Array.isArray(row.facilities) ||
+    row.facilities.some(
+      (facility) => typeof facility !== "string" || facility.trim() === "",
+    ) ||
+    !isOptionalPublicText(row.history) ||
+    !isOptionalPublicText(row.opening_hours) ||
+    !isOptionalPublicText(row.price_note) ||
+    !isOptionalPublicText(row.contact_name) ||
+    !isOptionalPublicText(row.contact_phone) ||
+    !isValidPublicTimestamp(row.source_published_at) ||
+    !isValidPublicTimestamp(row.english_published_at)
+  ) {
+    return null;
+  }
+
+  const latitude = parsePublicNumber(row.latitude, -90, 90, false);
+  const longitude = parsePublicNumber(row.longitude, -180, 180, false);
+  const entranceFee = parsePublicNumber(
+    row.entrance_fee,
+    0,
+    Number.MAX_VALUE,
+    true,
   );
+  if (
+    !latitude.valid ||
+    !longitude.valid ||
+    !entranceFee.valid ||
+    !isOptionalPublicText(row.google_maps_url)
+  ) {
+    return null;
+  }
+
+  const categoryName = getEnglishDestinationCategoryName(categorySlug);
+  if (!categoryName) return null;
+
+  const gallery = images
+    .filter(isUsableSignedPublicMedia)
+    .sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder ||
+        left.id.localeCompare(right.id),
+    );
+  if (gallery.filter((image) => image.isPrimary).length > 1) return null;
 
   return {
     id: row.id,
     categoryId: row.category_id,
-    categoryName: getEnglishDestinationCategoryName(categorySlug),
+    categoryName,
     name: row.name.trim(),
     slug: row.slug,
     summary: row.summary.trim(),
     description: row.description.trim(),
-    history: normalizeOptionalText(row.history),
-    latitude: Number(row.latitude),
-    longitude: Number(row.longitude),
-    googleMapsUrl: normalizeOptionalText(row.google_maps_url),
-    openingHours: normalizeOptionalText(row.opening_hours),
-    entranceFee: row.entrance_fee === null ? null : Number(row.entrance_fee),
-    priceNote: normalizeOptionalText(row.price_note),
-    facilities: (row.facilities ?? [])
-      .map((facility) => facility.trim())
-      .filter(Boolean),
-    contactName: normalizeOptionalText(row.contact_name),
-    contactPhone: normalizeOptionalText(row.contact_phone),
+    history: normalizeOptionalPublicText(row.history),
+    latitude: latitude.value,
+    longitude: longitude.value,
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
+    openingHours: normalizeOptionalPublicText(row.opening_hours),
+    entranceFee: entranceFee.value,
+    priceNote: normalizeOptionalPublicText(row.price_note),
+    facilities: row.facilities.map((facility) => facility.trim()),
+    contactName: normalizeOptionalPublicText(row.contact_name),
+    contactPhone: normalizeOptionalPublicText(row.contact_phone),
     isFeatured: row.is_featured,
     displayOrder: row.display_order,
     publishedAt: row.english_published_at,

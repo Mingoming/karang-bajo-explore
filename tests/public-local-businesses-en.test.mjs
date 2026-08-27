@@ -56,12 +56,12 @@ test("English UMKM mapping uses translated fields and signed translated media", 
     entityType: "umkm",
     parentId: PARENT_ID,
     bucket: "tourism-media",
-    storagePath: `umkm/${PARENT_ID}/image.webp`,
+    storagePath: `umkm/${PARENT_ID}/00000000-0000-4000-8000-000000000002.webp`,
     altText: "Approved English alt text",
     caption: "Approved English caption",
     displayOrder: 0,
     isPrimary: true,
-    signedUrl: "signed:image",
+    signedUrl: "https://signed.invalid/image",
   };
   const umkm = mapPublishedEnglishUmkm(row, [image]);
   assert.equal(umkm.businessName, "English Local Business");

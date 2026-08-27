@@ -59,7 +59,7 @@ const primaryImage = {
   altText: primaryImageRow.alt_text,
   displayOrder: primaryImageRow.display_order,
   isPrimary: primaryImageRow.is_primary,
-  signedUrl: "signed:primary",
+  signedUrl: "https://signed.invalid/primary",
 };
 
 test("English Cultural Event list and route manifest entries exist", () => {
@@ -111,6 +111,22 @@ test("malformed required English projection fields are rejected by the mapper", 
       ]),
       null,
       `${field}=${JSON.stringify(value)} must fail closed`,
+    );
+  }
+});
+
+test("English Cultural Event mapper rejects a missing public schedule", () => {
+  for (const value of [null, undefined, "", "   ", "not-a-timestamp"]) {
+    assert.doesNotThrow(
+      () => {
+        assert.equal(
+          mapPublishedEnglishCulturalEvent({ ...row, start_at: value }, [
+            primaryImage,
+          ]),
+          null,
+        );
+      },
+      `start_at=${String(value)} must fail closed`,
     );
   }
 });

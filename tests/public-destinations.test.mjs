@@ -9,6 +9,10 @@ import {
 
 const read = (path) => readFileSync(path, "utf8");
 const dataSource = read("features/public-destinations/data.ts");
+const englishDataSource = read("features/public-destinations/english-data.ts");
+const initialSchema = read(
+  "supabase/migrations/20260728113434_initial_application_schema.sql",
+);
 const listPage = read("app/(public)/destinasi/page.tsx");
 const detailPage = read("app/(public)/destinasi/[slug]/page.tsx");
 const destinationImage = read("components/public/destination-image.tsx");
@@ -57,6 +61,27 @@ test("queries use published-safe views and detail combines the view with slug", 
     read("supabase/migrations/20260728113434_initial_application_schema.sql"),
     /create view public\.published_destinations[\s\S]*?where status = 'published';/,
   );
+});
+
+test("English category access remains the documented fixed-taxonomy exception", () => {
+  assert.match(
+    englishDataSource,
+    /Architectural exception: destination_categories/,
+  );
+  assert.match(
+    englishDataSource,
+    /\.from\("destination_categories"\)\s*\.select\("id,slug,display_order"\)/,
+  );
+  assert.doesNotMatch(
+    englishDataSource,
+    /\.from\("destination_categories"\)[\s\S]*?\.select\("id,name,slug,display_order"\)/,
+  );
+  assert.match(
+    initialSchema,
+    /grant select on table public\.destination_categories to anon, authenticated;/,
+  );
+  assert.match(initialSchema, /destination_categories_fixed_name/);
+  assert.match(initialSchema, /destination_categories_fixed_slug/);
 });
 
 test("draft and archived destinations are excluded by the database projection", () => {

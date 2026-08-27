@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
-  getPublicEnglishCulturalEventPath,
-  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
-} from "@/config/public-routes";
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,15 +26,11 @@ import {
 const LIST_PATH = "/admin/acara-budaya";
 
 function revalidateEnglishCulturalEventDetailPath(trustedSlug: string) {
-  if (!isValidCulturalEventSlug(trustedSlug)) return;
-  revalidatePath(getPublicEnglishCulturalEventPath(trustedSlug));
+  revalidatePublicDomainDetailPaths("culturalEvent", [trustedSlug]);
 }
 
 function revalidateEnglishCulturalEventPaths(trustedSlugs: readonly string[]) {
-  revalidatePath(PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH);
-  for (const slug of new Set(trustedSlugs)) {
-    revalidateEnglishCulturalEventDetailPath(slug);
-  }
+  revalidatePublicDomainPaths("culturalEvent", trustedSlugs);
 }
 
 function nextState(

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidCulturalEventId } from "../cultural-events/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const CULTURAL_EVENT_ADMIN_PATH = "/admin/acara-budaya";
-const ENGLISH_CULTURAL_EVENTS_PATH = "/en/cultural-events";
 
 const TRANSLATION_INTENTS = [
   "save-draft",
@@ -170,16 +173,11 @@ function revalidateCulturalEventTranslationPaths(
 ) {
   revalidatePath(CULTURAL_EVENT_ADMIN_PATH);
   revalidatePath(`${CULTURAL_EVENT_ADMIN_PATH}/${culturalEventId}/edit`);
-  revalidatePath(ENGLISH_CULTURAL_EVENTS_PATH);
-  revalidatePath(
-    `${ENGLISH_CULTURAL_EVENTS_PATH}/${encodeURIComponent(trustedSlug)}`,
-  );
+  revalidatePublicDomainPaths("culturalEvent", [trustedSlug]);
 }
 
 function revalidateCulturalEventDetailPath(trustedSlug: string) {
-  revalidatePath(
-    `${ENGLISH_CULTURAL_EVENTS_PATH}/${encodeURIComponent(trustedSlug)}`,
-  );
+  revalidatePublicDomainDetailPaths("culturalEvent", [trustedSlug]);
 }
 
 async function refreshAfterMutation(

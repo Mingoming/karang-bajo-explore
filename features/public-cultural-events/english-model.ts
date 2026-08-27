@@ -1,4 +1,15 @@
-import type { SignedPublicMedia } from "@/features/public-media/model";
+import {
+  isUsableSignedPublicMedia,
+  type SignedPublicMedia,
+} from "../public-media/model.ts";
+import {
+  isOptionalPublicText,
+  isPublicUuid,
+  isValidPublicTimestamp,
+  normalizeOptionalPublicHttpUrl,
+  normalizeOptionalPublicText,
+  parsePublicNumber,
+} from "../public-content/validation.ts";
 
 export type PublishedEnglishCulturalEventRow = {
   id: string;
@@ -118,52 +129,79 @@ export const ENGLISH_CULTURAL_EVENT_COPY = {
   },
 } as const;
 
-function normalizeOptionalText(value: unknown) {
-  return typeof value === "string" ? value.trim() || null : null;
-}
-
-function normalizeOptionalNumber(value: number | string | null) {
-  if (value === null) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
 export function mapPublishedEnglishCulturalEvent(
   row: PublishedEnglishCulturalEventRow,
   images: readonly SignedPublicMedia[],
 ): PublicEnglishCulturalEvent | null {
   if (
+    typeof row !== "object" ||
+    row === null ||
+    !Array.isArray(images) ||
+    !isPublicUuid(row.id) ||
+    !isPublicUuid(row.translation_id) ||
     !isNonBlankEnglishCulturalEventText(row.title) ||
-    !isNonBlankEnglishCulturalEventText(row.description)
+    !isNonBlankEnglishCulturalEventText(row.description) ||
+    !isNonBlankEnglishCulturalEventText(row.slug) ||
+    !PUBLIC_CULTURAL_EVENT_SLUG_PATTERN.test(row.slug) ||
+    !isOptionalPublicText(row.summary) ||
+    !isOptionalPublicText(row.event_type) ||
+    !isOptionalPublicText(row.date_note) ||
+    !isOptionalPublicText(row.location_name) ||
+    !isOptionalPublicText(row.address) ||
+    !isOptionalPublicText(row.organizer) ||
+    !isOptionalPublicText(row.contact_phone) ||
+    !isOptionalPublicText(row.visitor_information) ||
+    !isOptionalPublicText(row.google_maps_url) ||
+    typeof row.all_day !== "boolean" ||
+    typeof row.is_featured !== "boolean" ||
+    typeof row.start_at !== "string" ||
+    !isValidPublicTimestamp(row.start_at) ||
+    !isValidPublicTimestamp(row.end_at) ||
+    !isValidPublicTimestamp(row.published_at) ||
+    !isValidPublicTimestamp(row.translation_published_at)
   ) {
     return null;
   }
 
-  const gallery = [...images].sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder || left.id.localeCompare(right.id),
-  );
+  const latitude = parsePublicNumber(row.latitude, -90, 90, true);
+  const longitude = parsePublicNumber(row.longitude, -180, 180, true);
+  if (
+    !latitude.valid ||
+    !longitude.valid ||
+    (latitude.value === null) !== (longitude.value === null)
+  ) {
+    return null;
+  }
+
+  const gallery = images
+    .filter(isUsableSignedPublicMedia)
+    .sort(
+      (left, right) =>
+        left.displayOrder - right.displayOrder ||
+        left.id.localeCompare(right.id),
+    );
+  if (gallery.filter((image) => image.isPrimary).length > 1) return null;
 
   return {
     id: row.id,
     translationId: row.translation_id,
     slug: row.slug,
     title: row.title.trim(),
-    summary: normalizeOptionalText(row.summary),
+    summary: normalizeOptionalPublicText(row.summary),
     description: row.description.trim(),
-    eventType: normalizeOptionalText(row.event_type),
+    eventType: normalizeOptionalPublicText(row.event_type),
     startAt: row.start_at,
     endAt: row.end_at,
     allDay: row.all_day,
-    dateNote: normalizeOptionalText(row.date_note),
-    locationName: normalizeOptionalText(row.location_name),
-    address: normalizeOptionalText(row.address),
-    latitude: normalizeOptionalNumber(row.latitude),
-    longitude: normalizeOptionalNumber(row.longitude),
-    googleMapsUrl: normalizeOptionalText(row.google_maps_url),
-    organizer: normalizeOptionalText(row.organizer),
-    contactPhone: normalizeOptionalText(row.contact_phone),
-    visitorInformation: normalizeOptionalText(row.visitor_information),
+    dateNote: normalizeOptionalPublicText(row.date_note),
+    locationName: normalizeOptionalPublicText(row.location_name),
+    address: normalizeOptionalPublicText(row.address),
+    latitude: latitude.value,
+    longitude: longitude.value,
+    googleMapsUrl: normalizeOptionalPublicHttpUrl(row.google_maps_url),
+    organizer: normalizeOptionalPublicText(row.organizer),
+    contactPhone: normalizeOptionalPublicText(row.contact_phone),
+    visitorInformation: normalizeOptionalPublicText(row.visitor_information),
     isFeatured: row.is_featured,
     publishedAt: row.published_at,
     translationPublishedAt: row.translation_published_at,

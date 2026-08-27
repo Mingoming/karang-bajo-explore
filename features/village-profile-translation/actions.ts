@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateEnglishAggregatePaths } from "@/features/public-content/revalidation";
 
 import { queryAdministratorEnglishVillageProfileTranslation } from "./data";
 import {
@@ -67,6 +68,7 @@ function createDatabaseFailure(
 function revalidateTranslationPaths() {
   revalidatePath(VILLAGE_PROFILE_ADMIN_PATH);
   revalidatePath(ENGLISH_VILLAGE_PROFILE_PUBLIC_PATH);
+  revalidateEnglishAggregatePaths(false);
 }
 
 export async function manageEnglishVillageProfileTranslation(

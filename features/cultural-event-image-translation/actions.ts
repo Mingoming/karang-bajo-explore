@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidCulturalEventId } from "../cultural-events/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const CULTURAL_EVENT_ADMIN_PATH = "/admin/acara-budaya";
-const ENGLISH_CULTURAL_EVENTS_PATH = "/en/cultural-events";
 
 const IMAGE_TRANSLATION_INTENTS = [
   "save-draft",
@@ -118,6 +121,20 @@ function databaseFailureState(
   } satisfies CulturalEventImageTranslationActionState;
 }
 
+function successfulMutationRefreshState(
+  previousState: CulturalEventImageTranslationActionState,
+  message: string,
+) {
+  return {
+    ...previousState,
+    kind: "success",
+    fieldErrors: {},
+    formErrors: [],
+    message,
+    revision: previousState.revision + 1,
+  } satisfies CulturalEventImageTranslationActionState;
+}
+
 function validationFailureState(
   image: CurrentImage,
   previousState: CulturalEventImageTranslationActionState,
@@ -172,16 +189,11 @@ function revalidateCulturalEventImageTranslationPaths(
 ) {
   revalidatePath(CULTURAL_EVENT_ADMIN_PATH);
   revalidatePath(`${CULTURAL_EVENT_ADMIN_PATH}/${culturalEventId}/edit`);
-  revalidatePath(ENGLISH_CULTURAL_EVENTS_PATH);
-  revalidatePath(
-    `${ENGLISH_CULTURAL_EVENTS_PATH}/${encodeURIComponent(trustedSlug)}`,
-  );
+  revalidatePublicDomainPaths("culturalEvent", [trustedSlug]);
 }
 
 function revalidateCulturalEventDetailPath(trustedSlug: string) {
-  revalidatePath(
-    `${ENGLISH_CULTURAL_EVENTS_PATH}/${encodeURIComponent(trustedSlug)}`,
-  );
+  revalidatePublicDomainDetailPaths("culturalEvent", [trustedSlug]);
 }
 
 async function refreshAfterMutation(
@@ -202,6 +214,12 @@ async function refreshAfterMutation(
     culturalEventId,
   );
   if (!refreshed.success) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
@@ -214,6 +232,12 @@ async function refreshAfterMutation(
   }
   const image = refreshed.images.find((item) => item.source.id === imageId);
   if (!image) {
+    if (resultKind === "success") {
+      return successfulMutationRefreshState(
+        previousState,
+        "Perubahan tersimpan, tetapi gambar tidak lagi tersedia. Muat ulang halaman.",
+      );
+    }
     return databaseFailureState(
       previousState,
       "Perubahan tersimpan, tetapi gambar tidak lagi tersedia.",

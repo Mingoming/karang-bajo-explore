@@ -7,6 +7,11 @@ import {
   mapPublishedEnglishDestination,
 } from "../features/public-destinations/english-model.ts";
 import { PUBLIC_DESTINATION_SLUG_PATTERN } from "../features/public-destinations/model.ts";
+import {
+  createEnglishDestinationLoaderRuntime,
+  loadEnglishDestinationLoaders,
+  publishedDestinationImageRow,
+} from "./public-destination-loader-test-helpers.mjs";
 
 const read = (path) => readFileSync(path, "utf8");
 const loaderSource = read("features/public-destinations/english-data.ts");
@@ -118,6 +123,159 @@ test("English detail classification is fail-closed", () => {
       unavailableCase,
     );
   }
+});
+
+test("English destination metadata follows runtime detail eligibility", async () => {
+  const valid = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedDestinationImageRow(row.id)],
+    }),
+  );
+  assert.deepEqual(
+    await valid.getPublishedEnglishDestinationMetadata(row.slug),
+    {
+      name: "Bukit English",
+      summary: "An approved English summary.",
+    },
+  );
+
+  const missingPrimary = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({ parentRows: [row] }),
+  );
+  assert.equal(
+    await missingPrimary.getPublishedEnglishDestinationMetadata(row.slug),
+    null,
+  );
+
+  const malformedPrimary = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [
+        publishedDestinationImageRow(row.id, {
+          storage_path: `destination/${row.id}/../malformed.webp`,
+        }),
+      ],
+    }),
+  );
+  assert.equal(
+    await malformedPrimary.getPublishedEnglishDestinationMetadata(row.slug),
+    null,
+  );
+
+  const malformedRow = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [{ ...row, name: null }],
+      imageRows: [publishedDestinationImageRow(row.id)],
+    }),
+  );
+  assert.equal(
+    await malformedRow.getPublishedEnglishDestinationMetadata(row.slug),
+    null,
+  );
+});
+
+test("English destination loader fails closed for unknown categories and query errors", async () => {
+  const unknownCategory = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedDestinationImageRow(row.id)],
+      categoryRows: [
+        {
+          id: row.category_id,
+          slug: "unknown",
+          display_order: 0,
+        },
+      ],
+    }),
+  );
+  assert.deepEqual(await unknownCategory.getPublishedEnglishDestinations(), {
+    kind: "ready",
+    destinations: [],
+  });
+  assert.deepEqual(
+    await unknownCategory.getPublishedEnglishDestinationBySlug(row.slug),
+    { kind: "not-found" },
+  );
+  assert.equal(
+    await unknownCategory.getPublishedEnglishDestinationMetadata(row.slug),
+    null,
+  );
+
+  const parentError = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      parentError: { code: "parent-query-failed" },
+    }),
+  );
+  assert.deepEqual(await parentError.getPublishedEnglishDestinations(), {
+    kind: "error",
+  });
+
+  const categoryError = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      categoryError: { code: "category-query-failed" },
+    }),
+  );
+  assert.deepEqual(await categoryError.getPublishedEnglishDestinations(), {
+    kind: "error",
+  });
+
+  const imageError = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedDestinationImageRow(row.id)],
+      imageError: { code: "image-query-failed" },
+    }),
+  );
+  assert.deepEqual(await imageError.getPublishedEnglishDestinations(), {
+    kind: "error",
+  });
+});
+
+test("English destination list and detail loaders expose only eligible signed rows", async () => {
+  const ready = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedDestinationImageRow(row.id)],
+    }),
+  );
+  const listResult = await ready.getPublishedEnglishDestinations();
+  assert.equal(listResult.kind, "ready");
+  if (listResult.kind === "ready") {
+    assert.equal(listResult.destinations.length, 1);
+    assert.equal(listResult.destinations[0]?.slug, row.slug);
+    assert.equal(listResult.destinations[0]?.primaryImage?.isPrimary, true);
+  }
+  assert.deepEqual(
+    (await ready.getPublishedEnglishDestinationBySlug(row.slug)).kind,
+    "ready",
+  );
+
+  const empty = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime(),
+  );
+  assert.deepEqual(await empty.getPublishedEnglishDestinations(), {
+    kind: "ready",
+    destinations: [],
+  });
+
+  const signingFailure = await loadEnglishDestinationLoaders(
+    createEnglishDestinationLoaderRuntime({
+      parentRows: [row],
+      imageRows: [publishedDestinationImageRow(row.id)],
+      signingFailure: true,
+    }),
+  );
+  assert.deepEqual(await signingFailure.getPublishedEnglishDestinations(), {
+    kind: "ready",
+    destinations: [],
+  });
+  assert.deepEqual(
+    await signingFailure.getPublishedEnglishDestinationBySlug(row.slug),
+    { kind: "not-found" },
+  );
 });
 
 test("invalid slugs are rejected before an English database lookup", () => {

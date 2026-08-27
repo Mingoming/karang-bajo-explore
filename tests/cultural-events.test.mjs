@@ -16,6 +16,7 @@ import {
   validateCulturalEventInput,
   witaLocalToIso,
 } from "../features/cultural-events/model.ts";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 function validInput(overrides = {}) {
   return {
@@ -366,10 +367,13 @@ test("source mutations revalidate trusted English Cultural Event paths", () => {
     assert.notEqual(offset, -1);
   }
 
-  assert.match(helperSource, /PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH/);
   assert.match(
     helperSource,
-    /getPublicEnglishCulturalEventPath\(trustedSlug\)/,
+    /revalidatePublicDomainDetailPaths\("culturalEvent", \[trustedSlug\]\)/,
+  );
+  assert.match(
+    helperSource,
+    /revalidatePublicDomainPaths\("culturalEvent", trustedSlugs\)/,
   );
   assert.match(createSource, /\.select\("id,slug"\)/);
   assert.match(
@@ -523,6 +527,7 @@ async function loadCulturalEventActions(runtime) {
     .toString(36)
     .slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -566,6 +571,8 @@ async function loadCulturalEventActions(runtime) {
       `data:text/javascript;charset=utf-8,${encodeURIComponent(
         `const deps = globalThis.${key};
 const {
+  revalidatePublicDomainPaths,
+  revalidatePublicDomainDetailPaths,
   revalidatePath,
   getPublicEnglishCulturalEventPath,
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,

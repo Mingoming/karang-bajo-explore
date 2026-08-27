@@ -3,27 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizeMediaImage } from "./image-normalization";
-import {
-  getPublicEnglishCulturalEventPath,
-  getPublicEnglishDestinationPath,
-  getPublicEnglishHomestayPath,
-  getPublicEnglishUmkmPath,
-  getPublicEnglishTraditionalHousePath,
-  PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
-  PUBLIC_ENGLISH_DESTINATIONS_PATH,
-  PUBLIC_ENGLISH_HOMESTAYS_PATH,
-  PUBLIC_ENGLISH_UMKMS_PATH,
-  PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
-} from "@/config/public-routes";
 import { queryCulturalEventById } from "@/features/cultural-events/data";
 import { isValidCulturalEventSlug } from "@/features/cultural-events/model";
 import { queryDestinationById } from "@/features/destinations/data";
+import { isValidDestinationSlug } from "@/features/destinations/model";
 import { queryTraditionalHouseById } from "@/features/traditional-houses/data";
 import { isValidTraditionalHouseSlug } from "@/features/traditional-houses/model";
 import { queryHomestayById } from "@/features/homestays/data";
 import { isValidHomestaySlug } from "@/features/homestays/model";
 import { queryUmkmById } from "@/features/umkm/data";
 import { isValidUmkmSlug } from "@/features/umkm/model";
+import { revalidatePublicDomainPaths } from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -53,10 +43,13 @@ const LIST_PATH = "/admin/media";
 function revalidateEnglishDestinationPaths(
   trustedDestinationSlug: string | null,
 ) {
-  if (!trustedDestinationSlug) return;
-
-  revalidatePath(PUBLIC_ENGLISH_DESTINATIONS_PATH);
-  revalidatePath(getPublicEnglishDestinationPath(trustedDestinationSlug));
+  if (
+    !trustedDestinationSlug ||
+    !isValidDestinationSlug(trustedDestinationSlug)
+  ) {
+    return;
+  }
+  revalidatePublicDomainPaths("destination", [trustedDestinationSlug]);
 }
 
 function revalidateEnglishTraditionalHousePaths(
@@ -68,23 +61,23 @@ function revalidateEnglishTraditionalHousePaths(
   ) {
     return;
   }
-
-  revalidatePath(PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH);
-  revalidatePath(
-    getPublicEnglishTraditionalHousePath(trustedTraditionalHouseSlug),
-  );
+  revalidatePublicDomainPaths("traditionalHouse", [
+    trustedTraditionalHouseSlug,
+  ]);
 }
 
-function revalidateEnglishHomestayPaths(trustedHomestaySlug: string | null) {
-  if (!trustedHomestaySlug || !isValidHomestaySlug(trustedHomestaySlug)) return;
-  revalidatePath(PUBLIC_ENGLISH_HOMESTAYS_PATH);
-  revalidatePath(getPublicEnglishHomestayPath(trustedHomestaySlug));
+function revalidateHomestayPaths(trustedHomestaySlug: string | null) {
+  if (!trustedHomestaySlug || !isValidHomestaySlug(trustedHomestaySlug)) {
+    return;
+  }
+  revalidatePublicDomainPaths("homestay", [trustedHomestaySlug]);
 }
 
 function revalidateEnglishUmkmPaths(trustedUmkmSlug: string | null) {
-  if (!trustedUmkmSlug || !isValidUmkmSlug(trustedUmkmSlug)) return;
-  revalidatePath(PUBLIC_ENGLISH_UMKMS_PATH);
-  revalidatePath(getPublicEnglishUmkmPath(trustedUmkmSlug));
+  if (!trustedUmkmSlug || !isValidUmkmSlug(trustedUmkmSlug)) {
+    return;
+  }
+  revalidatePublicDomainPaths("umkm", [trustedUmkmSlug]);
 }
 
 function revalidateEnglishCulturalEventPaths(
@@ -96,9 +89,7 @@ function revalidateEnglishCulturalEventPaths(
   ) {
     return;
   }
-
-  revalidatePath(PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH);
-  revalidatePath(getPublicEnglishCulturalEventPath(trustedCulturalEventSlug));
+  revalidatePublicDomainPaths("culturalEvent", [trustedCulturalEventSlug]);
 }
 
 function nextState(
@@ -395,7 +386,7 @@ export async function createMedia(
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/kelola`);
   revalidateEnglishDestinationPaths(context.destinationSlug);
-  revalidateEnglishHomestayPaths(context.homestaySlug);
+  revalidateHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   revalidateEnglishUmkmPaths(context.umkmSlug);
@@ -497,7 +488,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
-    revalidateEnglishHomestayPaths(context.homestaySlug);
+    revalidateHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     revalidateEnglishUmkmPaths(context.umkmSlug);
@@ -577,7 +568,7 @@ export async function updateMedia(
       );
     }
     revalidateEnglishDestinationPaths(context.destinationSlug);
-    revalidateEnglishHomestayPaths(context.homestaySlug);
+    revalidateHomestayPaths(context.homestaySlug);
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     revalidateEnglishUmkmPaths(context.umkmSlug);
@@ -668,7 +659,7 @@ export async function deleteMedia(
     );
   }
   revalidateEnglishDestinationPaths(context.destinationSlug);
-  revalidateEnglishHomestayPaths(context.homestaySlug);
+  revalidateHomestayPaths(context.homestaySlug);
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   revalidateEnglishUmkmPaths(context.umkmSlug);

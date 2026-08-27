@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 import {
   createUmkmTranslationActionState,
@@ -128,6 +129,7 @@ async function loadActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__umkmTranslationDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -157,7 +159,8 @@ async function loadActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient, isValidUmkmId,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, requireAdministrator, createClient, isValidUmkmId,
   queryUmkmTranslationAdminData, createUmkmTranslationActionState,
   validateUmkmTranslationForEligibility, validateUmkmTranslationForSource,
   validateUmkmTranslationFormData } = deps;

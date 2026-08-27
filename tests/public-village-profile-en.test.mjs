@@ -45,6 +45,46 @@ test("English Village Profile mapping normalizes public-safe values", () => {
   assert.equal("slug" in profile, false);
 });
 
+test("English Village Profile mapper rejects malformed required values without throwing", () => {
+  for (const [field, values] of [
+    ["name", [null, undefined, "", "   "]],
+    ["description", [null, undefined, "", "   "]],
+  ]) {
+    for (const value of values) {
+      assert.doesNotThrow(
+        () => {
+          assert.equal(
+            mapPublishedEnglishVillageProfile({ ...row, [field]: value }),
+            null,
+          );
+        },
+        `${field}=${String(value)} must fail closed`,
+      );
+    }
+  }
+});
+
+test("English Village Profile mapper rejects malformed optional and publication fields", () => {
+  for (const field of [
+    "summary",
+    "history",
+    "vision",
+    "mission",
+    "address",
+    "google_maps_url",
+    "latitude",
+    "longitude",
+    "published_at",
+  ]) {
+    assert.doesNotThrow(() => {
+      assert.equal(
+        mapPublishedEnglishVillageProfile({ ...row, [field]: {} }),
+        null,
+      );
+    }, `${field} wrong type must fail closed`);
+  }
+});
+
 test("English Village Profile mapping rejects unsafe location values", () => {
   const invalidCoordinates = mapPublishedEnglishVillageProfile({
     ...row,
@@ -90,6 +130,13 @@ test("English Village Profile classification is fail-closed", () => {
     classifyPublishedEnglishVillageProfiles([{ ...row, description: "   " }]),
     { kind: "error" },
   );
+
+  for (const field of ["name", "description"]) {
+    assert.deepEqual(
+      classifyPublishedEnglishVillageProfiles([{ ...row, [field]: null }]),
+      { kind: "error" },
+    );
+  }
 });
 
 test("English optional text sections use localized static labels", () => {

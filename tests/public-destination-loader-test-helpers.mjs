@@ -2,14 +2,16 @@ import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
 
 import {
-  classifyPublishedEnglishUmkmDetail,
-  mapPublishedEnglishUmkm,
-  PUBLIC_UMKM_SLUG_PATTERN,
-} from "../features/public-umkms/english-model.ts";
+  classifyPublishedEnglishDestinationDetail,
+  mapPublishedEnglishDestination,
+} from "../features/public-destinations/english-model.ts";
+import { PUBLIC_DESTINATION_SLUG_PATTERN } from "../features/public-destinations/model.ts";
 import { isPublicUuid } from "../features/public-content/validation.ts";
+import { isTrustedPublicMediaReference } from "../features/public-media/model.ts";
 
-const PARENT_VIEW = "published_english_umkms";
-const IMAGE_VIEW = "published_english_umkm_images";
+const PARENT_VIEW = "published_english_destinations";
+const IMAGE_VIEW = "published_english_destination_images";
+const CATEGORY_VIEW = "destination_categories";
 
 function queryResult(runtime, query) {
   if (query.table === PARENT_VIEW) {
@@ -30,9 +32,24 @@ function queryResult(runtime, query) {
   }
 
   if (query.table === IMAGE_VIEW) {
+    const parentIds = query.filters.find(
+      ([field]) => field === "destination_id",
+    )?.[1];
+    const rows = Array.isArray(parentIds)
+      ? runtime.imageRows.filter(
+          (row) => row && parentIds.includes(row.destination_id),
+        )
+      : runtime.imageRows;
     return {
-      data: runtime.imageError ? null : runtime.imageRows,
+      data: runtime.imageError ? null : rows,
       error: runtime.imageError,
+    };
+  }
+
+  if (query.table === CATEGORY_VIEW) {
+    return {
+      data: runtime.categoryError ? null : runtime.categoryRows,
+      error: runtime.categoryError,
     };
   }
 
@@ -40,11 +57,7 @@ function queryResult(runtime, query) {
 }
 
 function createQuery(runtime, table) {
-  const query = {
-    table,
-    filters: [],
-    single: false,
-  };
+  const query = { table, filters: [], single: false };
   const chain = {
     select(columns) {
       runtime.selects.push({ table, columns });
@@ -52,6 +65,10 @@ function createQuery(runtime, table) {
     },
     order(column, options) {
       runtime.orders.push({ table, column, options });
+      return chain;
+    },
+    limit(value) {
+      runtime.limits.push({ table, value });
       return chain;
     },
     eq(field, value) {
@@ -73,19 +90,32 @@ function createQuery(runtime, table) {
   return chain;
 }
 
-export function createEnglishUmkmLoaderRuntime({
+export function createEnglishDestinationLoaderRuntime({
   parentRows = [],
   imageRows = [],
+  categoryRows = [
+    {
+      id: "10000000-0000-4000-8000-000000000001",
+      slug: "alam",
+      display_order: 0,
+    },
+  ],
   parentError = null,
   imageError = null,
+  categoryError = null,
+  signingFailure = false,
 } = {}) {
   const runtime = {
     parentRows,
     imageRows,
+    categoryRows,
     parentError,
     imageError,
+    categoryError,
+    signingFailure,
     selects: [],
     orders: [],
+    limits: [],
     tables: [],
     signedReferences: [],
     client: null,
@@ -100,24 +130,34 @@ export function createEnglishUmkmLoaderRuntime({
   return runtime;
 }
 
-export async function loadEnglishUmkmLoaders(runtime) {
-  const source = readFileSync("features/public-umkms/english-data.ts", "utf8")
+export async function loadEnglishDestinationLoaders(runtime) {
+  const source = readFileSync(
+    "features/public-destinations/english-data.ts",
+    "utf8",
+  )
     .replace(/^import\s+["']server-only["'];\s*/m, "")
     .replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];\s*/g, "");
   const stripped = stripTypeScriptTypes(source, { mode: "strip" });
-  const key = `__englishUmkmLoaderDeps_${Math.random().toString(36).slice(2)}`;
+  const key = `__englishDestinationLoaderDeps_${Math.random()
+    .toString(36)
+    .slice(2)}`;
   globalThis[key] = {
     cache: (loader) => loader,
     createClient: async () => runtime.client,
-    classifyPublishedEnglishUmkmDetail,
+    classifyPublishedEnglishDestinationDetail,
     isPublicUuid,
-    mapPublishedEnglishUmkm,
-    PUBLIC_UMKM_SLUG_PATTERN,
+    mapPublishedEnglishDestination,
+    PUBLIC_DESTINATION_SLUG_PATTERN,
     signPublishedMedia: async (_supabase, references) => {
-      runtime.signedReferences.push(...references);
-      return references.map((reference) => ({
+      const trustedReferences = references.filter((reference) =>
+        isTrustedPublicMediaReference(reference),
+      );
+      runtime.signedReferences.push(...trustedReferences);
+      return trustedReferences.map((reference) => ({
         ...reference,
-        signedUrl: `https://signed.invalid/${reference.storagePath}`,
+        signedUrl: runtime.signingFailure
+          ? null
+          : `https://signed.invalid/${reference.storagePath}`,
       }));
     },
   };
@@ -127,11 +167,11 @@ export async function loadEnglishUmkmLoaders(runtime) {
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`const deps = globalThis.${key};
 const {
   cache,
-  classifyPublishedEnglishUmkmDetail,
+  classifyPublishedEnglishDestinationDetail,
   createClient,
   isPublicUuid,
-  mapPublishedEnglishUmkm,
-  PUBLIC_UMKM_SLUG_PATTERN,
+  mapPublishedEnglishDestination,
+  PUBLIC_DESTINATION_SLUG_PATTERN,
   signPublishedMedia,
 } = deps;
 ${stripped}`)}`
@@ -141,15 +181,15 @@ ${stripped}`)}`
   }
 }
 
-export function publishedUmkmImageRow(parentId, overrides = {}) {
+export function publishedDestinationImageRow(parentId, overrides = {}) {
+  const id = "00000000-0000-4000-8000-000000000002";
   return {
-    id: "00000000-0000-4000-8000-000000000002",
-    umkm_id: parentId,
-    translation_id: "20000000-0000-4000-8000-000000000001",
+    id,
+    destination_id: parentId,
     storage_bucket: "tourism-media",
-    storage_path: `umkm/${parentId}/00000000-0000-4000-8000-000000000002.webp`,
-    alt_text: "Approved English alt text",
+    storage_path: `destination/${parentId}/${id}.webp`,
     caption: "Approved English caption",
+    alt_text: "Approved English alt text",
     display_order: 0,
     is_primary: true,
     ...overrides,

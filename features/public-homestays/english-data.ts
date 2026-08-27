@@ -16,6 +16,7 @@ import {
   type PublicEnglishHomestayDetailResult,
   type PublicEnglishHomestayListResult,
 } from "./english-model";
+import { isPublicUuid } from "../public-content/validation.ts";
 
 export const PUBLISHED_ENGLISH_HOMESTAYS_VIEW = "published_english_homestays";
 export const PUBLISHED_ENGLISH_HOMESTAY_IMAGES_VIEW =
@@ -68,31 +69,51 @@ async function queryImages(
     .order("display_order", { ascending: true })
     .order("id", { ascending: true })
     .overrideTypes<PublishedEnglishHomestayImageRow[], { merge: false }>();
-  return error ? null : data;
+  return error || !Array.isArray(data) ? null : data;
 }
 
 async function enrich(
   supabase: SupabaseClient,
   rows: PublishedEnglishHomestayRow[],
 ) {
+  if (!Array.isArray(rows)) return null;
+  const validRows = rows.filter(
+    (row): row is PublishedEnglishHomestayRow =>
+      typeof row === "object" && row !== null && typeof row.id === "string",
+  );
+
   const imageRows = await queryImages(
     supabase,
-    rows.map((row) => row.id),
+    validRows.map((row) => row.id),
   );
   if (imageRows === null) return null;
-  const references: PublicMediaReference[] = imageRows.map((image) => ({
-    id: image.id,
-    entityType: "homestay",
-    parentId: image.homestay_id,
-    bucket: image.storage_bucket as "tourism-media",
-    storagePath: image.storage_path,
-    caption: image.caption,
-    altText: image.alt_text,
-    displayOrder: image.display_order,
-    isPrimary: image.is_primary,
-  }));
+  const references: PublicMediaReference[] = imageRows.flatMap((image) => {
+    if (
+      !image ||
+      typeof image !== "object" ||
+      !isPublicUuid(image.id) ||
+      !isPublicUuid(image.homestay_id) ||
+      !isPublicUuid(image.translation_id)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id: image.id,
+        entityType: "homestay" as const,
+        parentId: image.homestay_id,
+        bucket: image.storage_bucket as "tourism-media",
+        storagePath: image.storage_path,
+        caption: image.caption,
+        altText: image.alt_text,
+        displayOrder: image.display_order,
+        isPrimary: image.is_primary,
+      },
+    ];
+  });
   const signed = await signPublishedMedia(supabase, references);
-  return rows
+  return validRows
     .map((row) =>
       mapPublishedEnglishHomestay(
         row,
@@ -144,6 +165,7 @@ async function loadDetail(
     return { kind: "error" };
   }
   if (!data) return { kind: "not-found" };
+  if (typeof data !== "object") return { kind: "error" };
   const homestays = await enrich(supabase, [data]);
   if (homestays === null) return { kind: "error" };
   return classifyPublishedEnglishHomestayDetail(homestays);
@@ -152,20 +174,12 @@ async function loadDetail(
 export const getPublishedEnglishHomestayBySlug = cache(loadDetail);
 
 async function loadMetadata(slug: string) {
-  if (!PUBLIC_HOMESTAY_SLUG_PATTERN.test(slug)) return null;
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from(PUBLISHED_ENGLISH_HOMESTAYS_VIEW)
-    .select("name,description")
-    .eq("slug", slug)
-    .maybeSingle()
-    .overrideTypes<
-      { name: string; description: string } | null,
-      { merge: false }
-    >();
-  if (error || !data || !data.name.trim() || !data.description.trim())
-    return null;
-  return { name: data.name.trim(), description: data.description.trim() };
+  const result = await loadDetail(slug);
+  if (result.kind !== "ready") return null;
+  return {
+    name: result.homestay.name,
+    description: result.homestay.description,
+  };
 }
 
 export const getPublishedEnglishHomestayMetadata = cache(loadMetadata);

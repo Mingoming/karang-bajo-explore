@@ -14,6 +14,7 @@ import {
   validateTraditionalHouseFormData,
   validateTraditionalHouseInput,
 } from "../features/traditional-houses/model.ts";
+import { createPublicRevalidationMock } from "./public-revalidation-test-helpers.mjs";
 
 const HOUSE_ID = "10000000-0000-4000-8000-000000000001";
 const TRUSTED_OLD_SLUG = "rumah-adat-lama";
@@ -428,12 +429,16 @@ async function loadTraditionalHouseActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__traditionalHouseActionDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    ...createPublicRevalidationMock(runtime),
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
     },
+    getPublicTraditionalHousePath: (slug) =>
+      `/rumah-adat/${encodeURIComponent(slug)}`,
     getPublicEnglishTraditionalHousePath: (slug) =>
       `/en/traditional-houses/${encodeURIComponent(slug)}`,
+    PUBLIC_TRADITIONAL_HOUSES_PATH: "/rumah-adat",
     PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH: "/en/traditional-houses",
     redirect: (path) => {
       runtime.events.push(`redirect:${path}`);
@@ -472,7 +477,9 @@ async function loadTraditionalHouseActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(
         `const deps = globalThis.${key};
-const { revalidatePath, getPublicEnglishTraditionalHousePath,
+const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+  revalidatePath, getPublicTraditionalHousePath,
+  getPublicEnglishTraditionalHousePath, PUBLIC_TRADITIONAL_HOUSES_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH, redirect, requireAdministrator, createClient,
   queryTraditionalHouseById, isTraditionalHouseDuplicateConstraintError,
   isValidTraditionalHouseId, isValidTraditionalHouseSlug,
@@ -532,7 +539,7 @@ async function invokeSource({
   }
 }
 
-test("Traditional House source actions revalidate only after successful writes", async () => {
+test("Traditional House create preserves committed success when post-read is unavailable", async () => {
   const created = await invokeSource({
     mode: "create",
     createdReadResponse: {
@@ -546,8 +553,12 @@ test("Traditional House source actions revalidate only after successful writes",
   );
   assert.deepEqual(sourceRuntime.paths, [
     "/admin/rumah-adat",
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    `/rumah-adat/${TRUSTED_CREATED_SLUG}`,
     `/en/traditional-houses/${TRUSTED_CREATED_SLUG}`,
   ]);
   assert.ok(
@@ -566,13 +577,37 @@ test("Traditional House source actions revalidate only after successful writes",
       error: { code: "read-failed" },
     },
   });
-  assert.equal(createdReadFailure.result.kind, "database-error");
+  assert.equal(createdReadFailure.result.kind, "success");
+  assert.match(createdReadFailure.result.message, /berhasil disimpan/);
   assert.deepEqual(sourceRuntime.paths, [
     "/admin/rumah-adat",
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
   ]);
   assert.equal(
     sourceRuntime.events.some((event) => event.startsWith("redirect:")),
+    false,
+  );
+
+  const createdRowAbsent = await invokeSource({
+    mode: "create",
+    createdReadResponse: {
+      data: null,
+      error: null,
+    },
+  });
+  assert.equal(createdRowAbsent.result.kind, "success");
+  assert.deepEqual(sourceRuntime.paths, [
+    "/admin/rumah-adat",
+    "/rumah-adat",
+    "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+  ]);
+  assert.equal(
+    sourceRuntime.paths.some((path) => path.includes(TRUSTED_CREATED_SLUG)),
     false,
   );
 
@@ -599,7 +634,11 @@ test("Traditional House updates invalidate trusted old/current slugs around refr
     `/admin/rumah-adat/${HOUSE_ID}/edit?success=updated`,
   );
   assert.deepEqual(sourceRuntime.paths, [
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${TRUSTED_OLD_SLUG}`,
     `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
@@ -626,10 +665,15 @@ test("Traditional House updates invalidate trusted old/current slugs around refr
     `/admin/rumah-adat/${HOUSE_ID}/edit?success=updated`,
   );
   assert.deepEqual(sourceRuntime.paths, [
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${TRUSTED_OLD_SLUG}`,
     `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
+    `/rumah-adat/${TRUSTED_NEW_SLUG}`,
     `/en/traditional-houses/${TRUSTED_NEW_SLUG}`,
   ]);
 
@@ -637,13 +681,38 @@ test("Traditional House updates invalidate trusted old/current slugs around refr
     mode: "update",
     refreshResponse: { success: false },
   });
-  assert.equal(refreshFailure.result.kind, "database-error");
+  assert.equal(refreshFailure.result.kind, "success");
+  assert.match(refreshFailure.result.message, /berhasil disimpan/);
   assert.deepEqual(sourceRuntime.paths, [
+    "/rumah-adat",
     "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${TRUSTED_OLD_SLUG}`,
     `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
     "/admin/rumah-adat",
     `/admin/rumah-adat/${HOUSE_ID}/edit`,
   ]);
+
+  const refreshedRowAbsent = await invokeSource({
+    mode: "update",
+    refreshResponse: { success: true, house: null },
+  });
+  assert.equal(refreshedRowAbsent.result.kind, "success");
+  assert.deepEqual(sourceRuntime.paths, [
+    "/rumah-adat",
+    "/en/traditional-houses",
+    "/en",
+    "/en/tourism-map",
+    `/rumah-adat/${TRUSTED_OLD_SLUG}`,
+    `/en/traditional-houses/${TRUSTED_OLD_SLUG}`,
+    "/admin/rumah-adat",
+    `/admin/rumah-adat/${HOUSE_ID}/edit`,
+  ]);
+  assert.equal(
+    sourceRuntime.paths.some((path) => path.includes(TRUSTED_NEW_SLUG)),
+    false,
+  );
 
   const failedUpdate = await invokeSource({
     mode: "update",

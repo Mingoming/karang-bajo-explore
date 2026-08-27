@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  revalidatePublicDomainDetailPaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
 
 import { isValidDestinationId } from "../destinations/model";
 import {
@@ -21,7 +25,6 @@ import {
 } from "./model";
 
 const DESTINATION_ADMIN_PATH = "/admin/destinasi";
-const ENGLISH_DESTINATIONS_PATH = "/en/destinations";
 
 const TRANSLATION_INTENTS = [
   "save-draft",
@@ -191,10 +194,11 @@ function revalidateDestinationTranslationPaths(
 ) {
   revalidatePath(DESTINATION_ADMIN_PATH);
   revalidatePath(`${DESTINATION_ADMIN_PATH}/${destinationId}/edit`);
-  revalidatePath(ENGLISH_DESTINATIONS_PATH);
-  revalidatePath(
-    `${ENGLISH_DESTINATIONS_PATH}/${encodeURIComponent(sourceSlug)}`,
-  );
+  revalidatePublicDomainPaths("destination", [sourceSlug]);
+}
+
+function revalidateDestinationTranslationDetailPath(sourceSlug: string) {
+  revalidatePublicDomainDetailPaths("destination", [sourceSlug]);
 }
 
 async function refreshAfterMutation(
@@ -215,6 +219,10 @@ async function refreshAfterMutation(
       previousState,
       "Perubahan tersimpan, tetapi status terbaru belum dapat dimuat. Muat ulang halaman.",
     );
+  }
+
+  if (refreshed.slug !== current.slug) {
+    revalidateDestinationTranslationDetailPath(refreshed.slug);
   }
 
   return stateFromRead(refreshed, previousState, {
@@ -238,6 +246,10 @@ async function refreshAfterPartialMutation(
 
   if (!refreshed.success) {
     return databaseFailureState(previousState, message);
+  }
+
+  if (refreshed.slug !== current.slug) {
+    revalidateDestinationTranslationDetailPath(refreshed.slug);
   }
 
   return stateFromRead(refreshed, previousState, {

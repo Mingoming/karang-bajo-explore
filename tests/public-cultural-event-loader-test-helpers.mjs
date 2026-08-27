@@ -7,6 +7,7 @@ import {
   mapPublishedEnglishCulturalEvent,
   PUBLIC_CULTURAL_EVENT_SLUG_PATTERN,
 } from "../features/public-cultural-events/english-model.ts";
+import { isPublicUuid } from "../features/public-content/validation.ts";
 
 const PARENT_VIEW = "published_english_cultural_events";
 const IMAGE_VIEW = "published_english_cultural_event_images";
@@ -18,7 +19,7 @@ function queryResult(runtime, query) {
       return {
         data:
           runtime.parentError ||
-          runtime.parentRows.find((row) => row.slug === slug) ||
+          runtime.parentRows.find((row) => row && row.slug === slug) ||
           null,
         error: runtime.parentError,
       };
@@ -34,8 +35,8 @@ function queryResult(runtime, query) {
       ([field]) => field === "cultural_event_id",
     )?.[1];
     const rows = Array.isArray(parentIds)
-      ? runtime.imageRows.filter((row) =>
-          parentIds.includes(row.cultural_event_id),
+      ? runtime.imageRows.filter(
+          (row) => row && parentIds.includes(row.cultural_event_id),
         )
       : runtime.imageRows;
     return {
@@ -130,13 +131,14 @@ export async function loadEnglishCulturalEventLoaders(runtime) {
     createClient: async () => runtime.client,
     classifyPublishedEnglishCulturalEventDetail,
     isNonBlankEnglishCulturalEventText,
+    isPublicUuid,
     mapPublishedEnglishCulturalEvent,
     PUBLIC_CULTURAL_EVENT_SLUG_PATTERN,
     signPublishedMedia: async (_supabase, references) => {
       runtime.signedReferences.push(...references);
       return references.map((reference) => ({
         ...reference,
-        signedUrl: `signed:${reference.storagePath}`,
+        signedUrl: `https://signed.invalid/${reference.storagePath}`,
       }));
     },
   };
@@ -150,6 +152,7 @@ const {
   classifyPublishedEnglishCulturalEventDetail,
   createClient,
   isNonBlankEnglishCulturalEventText,
+  isPublicUuid,
   mapPublishedEnglishCulturalEvent,
   PUBLIC_CULTURAL_EVENT_SLUG_PATTERN,
   signPublishedMedia,

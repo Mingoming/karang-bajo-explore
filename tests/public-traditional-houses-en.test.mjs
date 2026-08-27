@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   classifyPublishedEnglishTraditionalHouseDetail,
+  isNonBlankEnglishTraditionalHouseText,
   mapPublishedEnglishTraditionalHouse,
   PUBLIC_TRADITIONAL_HOUSE_SLUG_PATTERN,
 } from "../features/public-traditional-houses/english-model.ts";
@@ -108,6 +109,99 @@ test("English Traditional House public result is fail-closed", () => {
   );
 });
 
+test("English Traditional House mapping rejects malformed required content", () => {
+  for (const field of ["name", "description", "slug"]) {
+    for (const value of [null, undefined, "", "   "]) {
+      assert.equal(
+        mapPublishedEnglishTraditionalHouse({ ...row, [field]: value }, [
+          primaryImage,
+        ]),
+        null,
+        `${field}:${String(value)}`,
+      );
+    }
+  }
+  for (const slug of ["bad slug", "../x", "x/y"]) {
+    assert.equal(
+      mapPublishedEnglishTraditionalHouse({ ...row, slug }, [primaryImage]),
+      null,
+      slug,
+    );
+  }
+  assert.ok(
+    mapPublishedEnglishTraditionalHouse(
+      { ...row, slug: "valid-canonical-slug" },
+      [primaryImage],
+    ),
+  );
+  assert.equal(isNonBlankEnglishTraditionalHouseText(null), false);
+  assert.equal(isNonBlankEnglishTraditionalHouseText("  English text  "), true);
+
+  const withoutSummary = mapPublishedEnglishTraditionalHouse(
+    { ...row, summary: null },
+    [primaryImage],
+  );
+  assert.equal(withoutSummary?.summary, null);
+
+  for (const googleMapsUrl of [
+    "http://maps.example.test/place",
+    "https://maps.example.test/place",
+  ]) {
+    assert.equal(
+      mapPublishedEnglishTraditionalHouse(
+        { ...row, google_maps_url: `  ${googleMapsUrl}  ` },
+        [primaryImage],
+      )?.googleMapsUrl,
+      googleMapsUrl,
+    );
+  }
+  for (const googleMapsUrl of [
+    null,
+    "",
+    "   ",
+    "javascript:alert(1)",
+    "data:text/plain,unsafe",
+    "not-a-url",
+  ]) {
+    assert.equal(
+      mapPublishedEnglishTraditionalHouse(
+        { ...row, google_maps_url: googleMapsUrl },
+        [primaryImage],
+      )?.googleMapsUrl,
+      null,
+      String(googleMapsUrl),
+    );
+  }
+  assert.equal(
+    mapPublishedEnglishTraditionalHouse(
+      { ...row, google_maps_url: undefined },
+      [primaryImage],
+    ),
+    null,
+    "undefined Google Maps URL is a malformed projection field",
+  );
+
+  assert.equal(
+    mapPublishedEnglishTraditionalHouse({ ...row }, [
+      { ...primaryImage, signedUrl: null },
+    ])?.primaryImage,
+    null,
+  );
+  assert.deepEqual(
+    mapPublishedEnglishTraditionalHouse({ ...row }, [
+      primaryImage,
+      {
+        ...primaryImage,
+        id: "00000000-0000-4000-8000-000000000003",
+        storagePath: `traditional-house/${row.id}/00000000-0000-4000-8000-000000000003.webp`,
+        isPrimary: false,
+        signedUrl: null,
+      },
+    ])?.gallery.map((image) => image.id),
+    [primaryImage.id],
+  );
+});
+
 test("English loader reads only fail-closed Traditional House projections", () => {
   assert.match(loaderSource, /published_english_traditional_houses/);
   assert.match(loaderSource, /published_english_traditional_house_images/);
@@ -123,10 +217,7 @@ test("English loader reads only fail-closed Traditional House projections", () =
   }
   assert.match(loaderSource, /signPublishedMedia/);
   assert.match(loaderSource, /server-only/);
-  assert.match(
-    loaderSource,
-    /filter\(\(house\) => house\.primaryImage !== null\)/,
-  );
+  assert.match(loaderSource, /house !== null && house\.primaryImage !== null/);
 });
 
 test("English list route has localized empty state and no Indonesian fallback", () => {
@@ -163,7 +254,7 @@ test("English Traditional House list loader returns only eligible translated vie
       publishedTraditionalHouseImageRow(row.id),
       publishedTraditionalHouseImageRow(row.id, {
         id: "00000000-0000-4000-8000-000000000003",
-        storage_path: `${row.id}/gallery.webp`,
+        storage_path: `traditional-house/${row.id}/00000000-0000-4000-8000-000000000003.webp`,
         alt_text: "Approved English gallery alt text",
         caption: "Approved English gallery caption",
         display_order: 1,
@@ -239,6 +330,17 @@ test("English Traditional House list loader distinguishes empty, blocked, and da
   assert.deepEqual(await errorLoaders.getPublishedEnglishTraditionalHouses(), {
     kind: "error",
   });
+
+  const malformedRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [{ ...row, description: "   " }],
+    imageRows: [primaryImage],
+  });
+  const malformedLoaders =
+    await loadEnglishTraditionalHouseLoaders(malformedRuntime);
+  assert.deepEqual(
+    await malformedLoaders.getPublishedEnglishTraditionalHouses(),
+    { kind: "ready", houses: [] },
+  );
 });
 
 test("English Traditional House list loader fails closed when the primary is absent and keeps gallery optional", async () => {
@@ -271,4 +373,36 @@ test("English Traditional House list loader fails closed when the primary is abs
   if (result.kind !== "ready") return;
   assert.equal(result.houses.length, 1);
   assert.equal(result.houses[0].primaryImage?.isPrimary, true);
+});
+
+test("English Traditional House loader rejects malformed media projections at the public boundary", async () => {
+  const runtime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [row],
+    imageRows: [
+      null,
+      publishedTraditionalHouseImageRow(row.id, {
+        storage_path: null,
+      }),
+    ],
+  });
+  const loaders = await loadEnglishTraditionalHouseLoaders(runtime);
+
+  assert.deepEqual(await loaders.getPublishedEnglishTraditionalHouses(), {
+    kind: "ready",
+    houses: [],
+  });
+  assert.deepEqual(runtime.signedReferences, []);
+
+  const signingFailureRuntime = createEnglishTraditionalHouseLoaderRuntime({
+    parentRows: [row],
+    imageRows: [publishedTraditionalHouseImageRow(row.id)],
+    signingFailure: true,
+  });
+  const signingFailureLoaders = await loadEnglishTraditionalHouseLoaders(
+    signingFailureRuntime,
+  );
+  assert.deepEqual(
+    await signingFailureLoaders.getPublishedEnglishTraditionalHouses(),
+    { kind: "ready", houses: [] },
+  );
 });
