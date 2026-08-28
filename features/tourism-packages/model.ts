@@ -61,6 +61,7 @@ export type TourismPackageRecord = {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  aggregate_revision: number;
 };
 
 export type TourismPackageListItem = Pick<
