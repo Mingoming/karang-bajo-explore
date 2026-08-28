@@ -59,6 +59,7 @@ export const PUBLIC_ENGLISH_UMKMS_PATH = "/en/local-businesses" as const;
 export const PUBLIC_ENGLISH_UMKM_DETAIL_PATH =
   "/en/local-businesses/[slug]" as const;
 export const PUBLIC_ENGLISH_TOURISM_MAP_PATH = "/en/tourism-map" as const;
+export const PUBLIC_ENGLISH_CONTACT_PATH = "/en/contact" as const;
 
 export function getPublicTraditionalHousePath(slug: string): PublicRoutePath {
   return `${PUBLIC_TRADITIONAL_HOUSES_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
@@ -135,7 +136,7 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
     en: PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   },
   tourismMap: { id: "/peta-wisata", en: PUBLIC_ENGLISH_TOURISM_MAP_PATH },
-  contact: { id: "/kontak", en: null },
+  contact: { id: "/kontak", en: PUBLIC_ENGLISH_CONTACT_PATH },
 };
 
 export const PUBLIC_DETAIL_ROUTE_MANIFEST = {

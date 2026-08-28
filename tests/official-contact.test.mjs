@@ -415,7 +415,10 @@ test("public and admin integration use safe projections and server authorization
   assert.match(actions, /queryOfficialContactById/);
   assert.match(actions, /!current\.setting\.is_editable/);
   assert.match(actions, /revalidatePath\("\/\(public\)"/);
+  assert.match(actions, /PUBLIC_ENGLISH_CONTACT_PATH/);
+  assert.match(actions, /revalidatePath\(PUBLIC_ENGLISH_CONTACT_PATH\)/);
   assert.equal(existsSync("app/(public)/kontak/page.tsx"), true);
+  assert.equal(existsSync("app/en/contact/page.tsx"), true);
   assert.equal(existsSync("app/admin/kontak/page.tsx"), true);
 });
 

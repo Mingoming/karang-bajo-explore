@@ -13,6 +13,7 @@ test("English homepage exposes every supported English public route", () => {
   for (const route of [
     "PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH",
     "PUBLIC_ENGLISH_DESTINATIONS_PATH",
+    "PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH",
     "PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH",
     "PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH",
     "PUBLIC_ENGLISH_HOMESTAYS_PATH",
@@ -25,6 +26,7 @@ test("English homepage exposes every supported English public route", () => {
   for (const section of [
     "english-village-profile",
     "english-destinations",
+    "english-tourism-packages",
     "english-traditional-houses",
     "english-cultural-events",
     "english-homestays",
@@ -43,6 +45,7 @@ test("English homepage uses approved English loaders and fail-closed list result
   for (const loader of [
     "getPublishedEnglishVillageProfile",
     "getPublishedEnglishDestinations",
+    "getPublishedEnglishTourismPackages",
     "getPublishedEnglishTraditionalHouses",
     "getPublishedEnglishCulturalEvents",
     "getPublishedEnglishHomestays",
@@ -55,7 +58,7 @@ test("English homepage uses approved English loaders and fail-closed list result
   assert.match(page, /PUBLIC_ENGLISH_HOMEPAGE_[A-Z_]+_UNAVAILABLE/);
   assert.doesNotMatch(
     page,
-    /getPublished(?:VillageProfile|Destinations|Packages|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
+    /getPublished(?:VillageProfile|Destinations|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
   );
   assert.doesNotMatch(page, /\bOfficialContactCta\b/);
   assert.doesNotMatch(page, /\/kontak|\/paket-wisata|Paket Wisata/);
@@ -116,6 +119,9 @@ test("English homepage has no stale foundation copy or Indonesian card fallback"
 
   assert.match(card, /copy\?: PublicContentCardCopy/);
   assert.match(page, /copy=\{ENGLISH_CARD_COPY\}/);
+  assert.match(page, /summary: tourismPackage\.summary/);
+  assert.match(page, /primaryImage: tourismPackage\.primaryImage/);
+  assert.doesNotMatch(page, /tourismPackage\.(?:description|itinerary)/);
   assert.doesNotMatch(
     page,
     /Lihat detail|Profil Desa|Destinasi|Rumah Adat|Acara Budaya/,

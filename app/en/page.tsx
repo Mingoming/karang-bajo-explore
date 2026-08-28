@@ -11,6 +11,7 @@ import {
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_HOMESTAYS_PATH,
   PUBLIC_ENGLISH_TOURISM_MAP_PATH,
+  PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
   PUBLIC_ENGLISH_UMKMS_PATH,
   PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH,
@@ -24,6 +25,11 @@ import { getPublishedEnglishDestinations } from "@/features/public-destinations/
 import { ENGLISH_DESTINATION_COPY } from "@/features/public-destinations/english-model";
 import { getPublishedEnglishHomestays } from "@/features/public-homestays/english-data";
 import { ENGLISH_HOMESTAY_COPY } from "@/features/public-homestays/english-model";
+import { getPublishedEnglishTourismPackages } from "@/features/public-tourism-packages/english-data";
+import {
+  ENGLISH_TOURISM_PACKAGE_COPY,
+  getEnglishTourismPackageTypeLabel,
+} from "@/features/public-tourism-packages/english-model";
 import { getPublishedEnglishTraditionalHouses } from "@/features/public-traditional-houses/english-data";
 import { ENGLISH_TRADITIONAL_HOUSE_COPY } from "@/features/public-traditional-houses/english-model";
 import { getPublishedEnglishUmkms } from "@/features/public-umkms/english-data";
@@ -209,6 +215,7 @@ export default async function EnglishHomePage() {
   const [
     profileResult,
     destinationsResult,
+    tourismPackagesResult,
     traditionalHousesResult,
     culturalEventsResult,
     homestaysResult,
@@ -217,6 +224,7 @@ export default async function EnglishHomePage() {
   ] = await Promise.all([
     getPublishedEnglishVillageProfile(),
     getPublishedEnglishDestinations(),
+    getPublishedEnglishTourismPackages(),
     getPublishedEnglishTraditionalHouses(),
     getPublishedEnglishCulturalEvents(),
     getPublishedEnglishHomestays(),
@@ -250,6 +258,20 @@ export default async function EnglishHomePage() {
       summary: house.summary,
       eyebrow: ENGLISH_TRADITIONAL_HOUSE_COPY.list.eyebrow,
       primaryImage: house.primaryImage,
+    }),
+  );
+  const tourismPackages = requireEnglishItems(
+    tourismPackagesResult,
+    "packages",
+    "TOURISM_PACKAGES",
+  ).map((tourismPackage) =>
+    createEnglishHomeCard({
+      id: tourismPackage.id,
+      slug: tourismPackage.slug,
+      title: tourismPackage.name,
+      summary: tourismPackage.summary,
+      eyebrow: getEnglishTourismPackageTypeLabel(tourismPackage.packageType),
+      primaryImage: tourismPackage.primaryImage,
     }),
   );
   const culturalEvents = requireEnglishItems(
@@ -318,6 +340,20 @@ export default async function EnglishHomePage() {
           viewAllLabel: "View all destinations",
         }}
         items={destinations}
+      />
+
+      <EnglishHomeCollection
+        id="english-tourism-packages"
+        href={PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH}
+        copy={{
+          eyebrow: ENGLISH_TOURISM_PACKAGE_COPY.list.eyebrow,
+          title: ENGLISH_TOURISM_PACKAGE_COPY.list.title,
+          description: ENGLISH_TOURISM_PACKAGE_COPY.list.description,
+          emptyTitle: ENGLISH_TOURISM_PACKAGE_COPY.list.emptyTitle,
+          emptyDescription: ENGLISH_TOURISM_PACKAGE_COPY.list.emptyDescription,
+          viewAllLabel: "View all tourism packages",
+        }}
+        items={tourismPackages}
       />
 
       <EnglishHomeCollection

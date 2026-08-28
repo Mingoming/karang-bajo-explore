@@ -45,7 +45,10 @@ export function revalidateEnglishTourismPackagePaths(
   trustedSlugs: readonly unknown[],
 ) {
   let success = true;
-  const paths: string[] = [PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH];
+  const paths: string[] = [
+    PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH,
+    PUBLIC_ENGLISH_HOME_PATH,
+  ];
 
   for (const slug of new Set(trustedSlugs)) {
     if (typeof slug !== "string" || !PUBLIC_SLUG_PATTERN.test(slug)) {

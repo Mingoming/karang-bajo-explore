@@ -229,7 +229,7 @@ ${stripped}`)}`
   }
 }
 
-test("English Tourism Package revalidation never expands to the homepage or tourism map", async () => {
+test("English Tourism Package revalidation includes the homepage but never the tourism map", async () => {
   const { dependencyModule, runtime } = await loadPackageRevalidation();
   assert.equal(
     dependencyModule.revalidateEnglishTourismPackagePaths([
@@ -241,8 +241,9 @@ test("English Tourism Package revalidation never expands to the homepage or tour
   );
   assert.deepEqual(runtime.paths, [
     "/en/tourism-packages",
+    "/en",
     "/en/tourism-packages/first-package",
   ]);
-  assert.equal(runtime.paths.includes("/en"), false);
+  assert.equal(runtime.paths.includes("/en"), true);
   assert.equal(runtime.paths.includes("/en/tourism-map"), false);
 });
