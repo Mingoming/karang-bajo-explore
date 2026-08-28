@@ -41,6 +41,7 @@ const VALID_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function revalidateEnglishTourismPackagePaths(runtime, trustedSlugs) {
   push(runtime, "/en/tourism-packages");
+  push(runtime, "/en");
   for (const slug of new Set(trustedSlugs)) {
     if (typeof slug === "string" && VALID_SLUG.test(slug)) {
       push(runtime, `/en/tourism-packages/${encodeURIComponent(slug)}`);

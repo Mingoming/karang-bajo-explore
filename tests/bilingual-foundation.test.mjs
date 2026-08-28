@@ -75,7 +75,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
     },
     culturalEvents: { id: "/acara-budaya", en: "/en/cultural-events" },
     tourismMap: { id: "/peta-wisata", en: "/en/tourism-map" },
-    contact: { id: "/kontak", en: null },
+    contact: { id: "/kontak", en: "/en/contact" },
   });
 });
 
@@ -144,9 +144,9 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/peta-wisata",
   );
 
-  for (const key of ["contact"]) {
-    assert.equal(getPublicRoute(key, "en"), null, key);
-  }
+  assert.equal(getPublicRoute("contact", "en"), "/en/contact");
+  assert.equal(getEquivalentPublicRoute("/kontak", "id"), "/en/contact");
+  assert.equal(getEquivalentPublicRoute("/en/contact", "en"), "/kontak");
 
   for (const path of ["/admin", "/en/destinations"]) {
     assert.equal(getEquivalentPublicRoute(path, "id"), null, path);
@@ -268,6 +268,7 @@ test("localized navigation preserves Indonesian routes and limits English to app
       href: "/en/cultural-events",
     },
     { key: "tourismMap", label: "Tourism Map", href: "/en/tourism-map" },
+    { key: "contact", label: "Contact", href: "/en/contact" },
   ]);
 });
 
@@ -290,6 +291,7 @@ test("English homepage uses approved English projections and localized static co
   for (const loader of [
     "getPublishedEnglishVillageProfile",
     "getPublishedEnglishDestinations",
+    "getPublishedEnglishTourismPackages",
     "getPublishedEnglishTraditionalHouses",
     "getPublishedEnglishCulturalEvents",
     "getPublishedEnglishHomestays",
@@ -299,7 +301,7 @@ test("English homepage uses approved English projections and localized static co
   }
   assert.doesNotMatch(
     page,
-    /getPublished(?:VillageProfile|Destinations|Packages|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
+    /getPublished(?:VillageProfile|Destinations|Homestays|Umkms|TraditionalHouses|CulturalEvents)\(/,
   );
   assert.doesNotMatch(page, /\/kontak|\/paket-wisata|Paket Wisata/);
 });
@@ -341,7 +343,27 @@ test("English contact data returns no labels, descriptions, IDs, or phone displa
   assert.doesNotMatch(dataSource, /\.select\([^\n]*description|displayValue/);
 });
 
-test("English contact and footer have localized unavailable behavior without /kontak", () => {
+test("English contact route uses the safe loader and preserves empty versus error states", () => {
+  const page = read("app/en/contact/page.tsx");
+
+  assert.match(page, /getEnglishPublicShellData\(\)/);
+  assert.match(page, /if \(result\.kind === "error"\)/);
+  assert.match(page, /PUBLIC_ENGLISH_CONTACT_UNAVAILABLE/);
+  assert.match(page, /<EmptyContentState/);
+  assert.match(page, /<EnglishOfficialContactCta/);
+  assert.match(page, /<ExternalTourismLinksSection/);
+  assert.match(page, /<PublicShell locale="en"/);
+  assert.doesNotMatch(
+    page,
+    /getPublicOfficialContacts|published_contacts|site_settings|wa\.me|https?:\/\//,
+  );
+  assert.doesNotMatch(
+    page,
+    /Kontak Desa|Informasi resmi|Kanal utama|Hubungi WhatsApp Desa/,
+  );
+});
+
+test("English contact CTA and footer have localized unavailable behavior", () => {
   const cta = read("features/official-contact/official-contact-cta.tsx");
   const footer = read("components/public/public-footer.tsx");
   assert.match(cta, /EnglishOfficialContactCta/);
@@ -378,10 +400,10 @@ test("only approved English routes are created and Proxy excludes actual assets"
     "app/en/admin/page.tsx",
     "app/en/profile/page.tsx",
     "app/en/unsupported/page.tsx",
-    "app/en/contact/page.tsx",
   ]) {
     assert.equal(existsSync(path), false, path);
   }
+  assert.equal(existsSync("app/en/contact/page.tsx"), true);
   assert.match(proxy, /_next\/static\|_next\/image/);
   assert.match(proxy, /favicon\.ico\|images\//);
   assert.doesNotMatch(proxy, /\.\*\\\\\.\.\*/);
