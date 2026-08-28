@@ -54,7 +54,7 @@ Profile pilot.
 | Destinations | /destinasi and /destinasi/[slug] | None | /en/destinations and /en/destinations/[slug] |
 | Traditional Houses | /rumah-adat and /rumah-adat/[slug] | None | /en/traditional-houses and /en/traditional-houses/[slug] |
 | Cultural Events | /acara-budaya and /acara-budaya/[slug] | None | /en/cultural-events and /en/cultural-events/[slug] |
-| Tour Packages | /paket-wisata and /paket-wisata/[slug] | None | /en/tour-packages and /en/tour-packages/[slug] |
+| Tour Packages | /paket-wisata and /paket-wisata/[slug] | None | /en/tourism-packages and /en/tourism-packages/[slug] (supersedes the earlier /en/tour-packages recommendation) |
 | Homestays | /homestay and /homestay/[slug] | None | /en/homestays and /en/homestays/[slug] |
 | Local businesses | /umkm and /umkm/[slug] | None | /en/local-businesses and /en/local-businesses/[slug] |
 | Tourism map | /peta-wisata | None | /en/tourism-map |
@@ -216,8 +216,8 @@ relationships are still checked as supporting data.
 | Village Profile `/en/village-profile` | `/profil-desa` | `village_profiles` | Scope: `village_profile_translations`. Notes: single source; not-found when the primary source is not eligible. |
 | Destination list `/en/destinations` | `/destinasi` | `destinations`, `destination_categories`, and `destination_images` | Scope: eligible `destination_translations`, category, and media projections. Notes: derived list; omit ineligible destinations individually. |
 | Destination detail `/en/destinations/[slug]` | `/destinasi/[slug]` | `destinations`, `destination_categories`, and `destination_images` | Scope: one `destination_translation` plus category, relationship, and media projections. Notes: single source with supporting data; not-found when the destination is not eligible. |
-| Package list `/en/tour-packages` | `/paket-wisata` | `tourism_packages`, `package_destinations`, and contributing `destinations` | Scope: eligible package translations and package aggregate relationship projections. Notes: derived list; omit ineligible packages individually. |
-| Package detail `/en/tour-packages/[slug]` | `/paket-wisata/[slug]` | `tourism_packages`, `package_destinations`, and contributing `destinations` | Scope: one package translation plus eligible destination, relation-note, and media projections. Notes: single source with supporting data; relation eligibility remains required. |
+| Package list `/en/tourism-packages` | `/paket-wisata` | `tourism_packages`, `package_destinations`, and contributing `destinations` | Scope: eligible package translations and package aggregate relationship projections. Notes: derived list; omit ineligible packages individually; supersedes the earlier `/en/tour-packages` recommendation. |
+| Package detail `/en/tourism-packages/[slug]` | `/paket-wisata/[slug]` | `tourism_packages`, `package_destinations`, and contributing `destinations` | Scope: one package translation plus eligible destination and media projections. Notes: single source with supporting data; relation eligibility remains required; relation notes are not part of the public projection; supersedes the earlier `/en/tour-packages/[slug]` recommendation. |
 | Homestay list `/en/homestays` | `/homestay` | `homestays` and `homestay_images` | Scope: eligible homestay translations and media projections. Notes: derived list; omit ineligible homestays individually. |
 | Homestay detail `/en/homestays/[slug]` | `/homestay/[slug]` | `homestays` and `homestay_images` | Scope: one homestay translation plus eligible media and shared source values. Notes: single source with supporting data. |
 | `/en/traditional-houses` | `/rumah-adat` | `traditional_houses` and `traditional_house_images` | Scope: eligible `traditional_house_translations` and image projections. Notes: derived list; omit ineligible houses individually. |

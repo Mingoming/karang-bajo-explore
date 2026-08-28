@@ -39,6 +39,15 @@ const DOMAIN_PATHS = {
 
 const VALID_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+function revalidateEnglishTourismPackagePaths(runtime, trustedSlugs) {
+  push(runtime, "/en/tourism-packages");
+  for (const slug of new Set(trustedSlugs)) {
+    if (typeof slug === "string" && VALID_SLUG.test(slug)) {
+      push(runtime, `/en/tourism-packages/${encodeURIComponent(slug)}`);
+    }
+  }
+}
+
 function push(runtime, path) {
   runtime.paths.push(path);
   runtime.events?.push(`revalidate:${path}`);
@@ -64,6 +73,8 @@ export function createPublicRevalidationMock(runtime) {
       revalidateEnglishAggregatePaths(runtime, includeTourismMap),
     revalidatePublicDomainDetailPaths: (domain, trustedSlugs) =>
       revalidatePublicDomainDetailPaths(runtime, domain, trustedSlugs),
+    revalidateEnglishTourismPackagePaths: (trustedSlugs) =>
+      revalidateEnglishTourismPackagePaths(runtime, trustedSlugs),
     revalidatePublicDomainPaths: (domain, trustedSlugs) => {
       const config = DOMAIN_PATHS[domain];
       push(runtime, config.idCollection);

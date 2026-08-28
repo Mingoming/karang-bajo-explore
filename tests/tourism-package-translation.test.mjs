@@ -191,6 +191,7 @@ async function loadActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__tourismPackageTranslationDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    revalidateEnglishTourismPackagePaths: () => true,
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -225,7 +226,7 @@ async function loadActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient,
+const { revalidateEnglishTourismPackagePaths, revalidatePath, requireAdministrator, createClient,
   isValidTourismPackageId, queryTourismPackageTranslationAdminData,
   createTourismPackageTranslationActionState,
   validateTourismPackageTranslationForEligibility,
@@ -977,7 +978,7 @@ test("parent itinerary and dependency failures stay technical read errors", asyn
   translationDataRuntime.englishRows = [{ id: relation.destinationId }];
 });
 
-test("package translation files keep translation access behind admin RPCs and do not activate public routes", () => {
+test("package translation files keep translation access behind admin RPCs and revalidate the public package route", () => {
   const featureSource = [
     "features/tourism-package-translation/actions.ts",
     "features/tourism-package-translation/data.ts",
@@ -995,7 +996,7 @@ test("package translation files keep translation access behind admin RPCs and do
   assert.match(featureSource, /tourism_package_translation_review_history/);
   assert.match(featureSource, /published_english_destinations/);
   assert.match(featureSource, /queryPackageRelations/);
-  assert.doesNotMatch(featureSource, /revalidatePublicDomain/);
+  assert.match(featureSource, /revalidateEnglishTourismPackagePaths/);
   assert.match(
     read("app/admin/paket-wisata/[id]/edit/page.tsx"),
     /TourismPackageTranslationForm/,
@@ -1012,8 +1013,8 @@ test("package translation files keep translation access behind admin RPCs and do
     ),
     /name="notes"/,
   );
-  assert.doesNotMatch(
+  assert.match(
     read("config/public-routes.ts"),
-    /tourismPackages:\s*\{[^}]*en:\s*"\/en\/tourism-packages"/s,
+    /tourismPackages:\s*\{[^}]*en:\s*(?:PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH|"\/en\/tourism-packages")/s,
   );
 });

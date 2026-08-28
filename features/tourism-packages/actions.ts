@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateEnglishTourismPackagePaths } from "@/features/public-content/revalidation";
 
 import {
   queryDestinationOptions,
@@ -167,6 +168,7 @@ export async function createTourismPackage(
   }
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${id}/edit`);
+  revalidateEnglishTourismPackagePaths([slug]);
   redirect(`${LIST_PATH}/${id}/edit?success=created`);
 }
 
@@ -269,5 +271,6 @@ export async function updateTourismPackage(
   }
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${existing.id}/edit`);
+  revalidateEnglishTourismPackagePaths([existing.slug]);
   redirect(`${LIST_PATH}/${existing.id}/edit?success=updated`);
 }

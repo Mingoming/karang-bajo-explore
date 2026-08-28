@@ -26,6 +26,14 @@ export const PUBLIC_ENGLISH_DESTINATIONS_PATH = "/en/destinations" as const;
 export const PUBLIC_ENGLISH_DESTINATION_DETAIL_PATH =
   "/en/destinations/[slug]" as const;
 
+export const PUBLIC_TOURISM_PACKAGES_PATH = "/paket-wisata" as const;
+export const PUBLIC_TOURISM_PACKAGE_DETAIL_PATH =
+  "/paket-wisata/[slug]" as const;
+export const PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH =
+  "/en/tourism-packages" as const;
+export const PUBLIC_ENGLISH_TOURISM_PACKAGE_DETAIL_PATH =
+  "/en/tourism-packages/[slug]" as const;
+
 export const PUBLIC_HOMESTAYS_PATH = "/homestay" as const;
 export const PUBLIC_HOMESTAY_DETAIL_PATH = "/homestay/[slug]" as const;
 export const PUBLIC_TRADITIONAL_HOUSES_PATH = "/rumah-adat" as const;
@@ -68,6 +76,16 @@ export function getPublicDestinationPath(slug: string): PublicRoutePath {
   return `${PUBLIC_DESTINATIONS_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
 }
 
+export function getPublicTourismPackagePath(slug: string): PublicRoutePath {
+  return `${PUBLIC_TOURISM_PACKAGES_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
+}
+
+export function getPublicEnglishTourismPackagePath(
+  slug: string,
+): PublicRoutePath {
+  return `${PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH}/${encodeURIComponent(slug)}` as PublicRoutePath;
+}
+
 export function getPublicEnglishTraditionalHousePath(
   slug: string,
 ): PublicRoutePath {
@@ -102,7 +120,10 @@ export const PUBLIC_ROUTE_MANIFEST: Readonly<
   home: { id: "/", en: "/en" },
   profile: { id: "/profil-desa", en: PUBLIC_ENGLISH_VILLAGE_PROFILE_PATH },
   destinations: { id: "/destinasi", en: PUBLIC_ENGLISH_DESTINATIONS_PATH },
-  tourismPackages: { id: "/paket-wisata", en: null },
+  tourismPackages: {
+    id: PUBLIC_TOURISM_PACKAGES_PATH,
+    en: PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH,
+  },
   homestays: { id: PUBLIC_HOMESTAYS_PATH, en: PUBLIC_ENGLISH_HOMESTAYS_PATH },
   umkm: { id: "/umkm", en: PUBLIC_ENGLISH_UMKMS_PATH },
   traditionalHouses: {
@@ -121,6 +142,10 @@ export const PUBLIC_DETAIL_ROUTE_MANIFEST = {
   destinations: {
     id: PUBLIC_DESTINATION_DETAIL_PATH,
     en: PUBLIC_ENGLISH_DESTINATION_DETAIL_PATH,
+  },
+  tourismPackages: {
+    id: PUBLIC_TOURISM_PACKAGE_DETAIL_PATH,
+    en: PUBLIC_ENGLISH_TOURISM_PACKAGE_DETAIL_PATH,
   },
   homestays: {
     id: PUBLIC_HOMESTAY_DETAIL_PATH,

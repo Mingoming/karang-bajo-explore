@@ -296,6 +296,8 @@ async function loadDestinationImageActions(runtime) {
   const key = `__destinationImageActionDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
     ...createPublicRevalidationMock(runtime),
+    captureRelatedTourismPackageSlugs: async () => [],
+    revalidateRelatedTourismPackagePaths: async () => {},
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -324,7 +326,8 @@ async function loadDestinationImageActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+const { captureRelatedTourismPackageSlugs, revalidateRelatedTourismPackagePaths,
+  revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
   revalidatePath, requireAdministrator, createClient, isValidDestinationId,
   queryDestinationImageTranslationAdminData,
   createDestinationImageTranslationActionState,
