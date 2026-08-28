@@ -1,10 +1,7 @@
 import { EmptyContentState } from "@/components/public/empty-content-state";
 import { PublicContainer } from "@/components/public/public-container";
 import { PublicShell } from "@/components/public/public-shell";
-import {
-  ENGLISH_PUBLIC_MAP_COPY,
-  ENGLISH_TOURISM_MAP_PAGE_COPY,
-} from "@/features/public-map/copy";
+import { ENGLISH_TOURISM_MAP_PAGE_COPY } from "@/features/public-map/copy";
 import { getPublishedEnglishTourismMapData } from "@/features/public-map/english-data";
 import { PublicMap } from "@/features/public-map/public-map";
 import { buildPublicMetadata } from "@/features/seo/public-metadata";
@@ -48,7 +45,7 @@ export default async function EnglishTourismMapPage() {
             <PublicMap
               markers={result.markers}
               destinationCategories={result.destinationCategories}
-              copy={ENGLISH_PUBLIC_MAP_COPY}
+              locale="en"
             />
           ) : (
             <EmptyContentState

@@ -86,7 +86,9 @@ test("English tourism map route and navigation are registered", () => {
   assert.equal(existsSync("app/en/tourism-map/page.tsx"), true);
   assert.match(route, /getPublishedEnglishTourismMapData\(\)/);
   assert.match(route, /<PublicShell locale="en"/);
-  assert.match(route, /ENGLISH_PUBLIC_MAP_COPY/);
+  assert.match(route, /<PublicMap[\s\S]*locale="en"/);
+  assert.doesNotMatch(route, /ENGLISH_PUBLIC_MAP_COPY/);
+  assert.doesNotMatch(route, /copy=/);
   assert.deepEqual(
     getPublicNavigation("en", PUBLIC_DICTIONARIES.en).find(
       (item) => item.key === "tourismMap",

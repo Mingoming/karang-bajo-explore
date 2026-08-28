@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 const data = readFileSync("features/public-map/data.ts", "utf8");
 
 const page = readFileSync("app/(public)/peta-wisata/page.tsx", "utf8");
+const englishPage = readFileSync("app/en/tourism-map/page.tsx", "utf8");
 const shell = readFileSync("features/public-map/public-map.tsx", "utf8");
 const leaflet = readFileSync(
   "features/public-map/public-map-leaflet.tsx",
@@ -20,6 +21,8 @@ const {
   getPublicMapNavigationUrl,
   isValidPublicMapCoordinate,
 } = await import("../features/public-map/model.ts");
+const { ENGLISH_PUBLIC_MAP_COPY, PUBLIC_MAP_COPY_ID } =
+  await import("../features/public-map/copy.ts");
 const { PUBLIC_NAVIGATION } = await import("../config/public-navigation.ts");
 
 function mapItem(overrides = {}) {
@@ -366,6 +369,55 @@ test("Leaflet is isolated behind a client-only dynamic boundary", () => {
   assert.match(leaflet, /^"use client";/);
   assert.match(leaflet, /from "react-leaflet"/);
   assert.match(leaflet, /leaflet\/dist\/leaflet\.css/);
+});
+
+test("PublicMap keeps its Server Component boundary serializable", () => {
+  assert.match(shell, /^"use client";/);
+  assert.match(
+    shell,
+    /import type \{ PublicLocale \} from "@\/lib\/i18n\/locale";/,
+  );
+  assert.match(shell, /locale\?: PublicLocale/);
+  assert.doesNotMatch(shell, /copy\?: PublicMapCopy/);
+  assert.match(
+    shell,
+    /locale === "en" \? ENGLISH_PUBLIC_MAP_COPY : PUBLIC_MAP_COPY_ID/,
+  );
+  assert.match(
+    shell,
+    /<PublicMapLeaflet markers=\{visibleMarkers\} copy=\{copy\}/,
+  );
+  assert.doesNotMatch(shell, /"use server"/);
+});
+
+test("map routes pass only serializable props to PublicMap", () => {
+  for (const route of [page, englishPage]) {
+    const publicMapInvocation = route.match(/<PublicMap[\s\S]*?\/>/)?.[0];
+
+    assert.ok(publicMapInvocation);
+    assert.doesNotMatch(publicMapInvocation, /\bcopy\s*=/);
+  }
+
+  assert.match(englishPage, /<PublicMap[\s\S]*locale="en"/);
+  assert.doesNotMatch(page, /locale="en"/);
+});
+
+test("map copy keeps English and Indonesian pluralization behavior", () => {
+  assert.equal(ENGLISH_PUBLIC_MAP_COPY.countLabel(1), "1 location shown");
+  assert.equal(ENGLISH_PUBLIC_MAP_COPY.countLabel(2), "2 locations shown");
+  assert.equal(
+    ENGLISH_PUBLIC_MAP_COPY.multipleLocationsLabel(1),
+    "1 location at this point",
+  );
+  assert.equal(
+    ENGLISH_PUBLIC_MAP_COPY.multipleLocationsLabel(2),
+    "2 locations at this point",
+  );
+  assert.equal(PUBLIC_MAP_COPY_ID.countLabel(2), "2 lokasi ditampilkan");
+  assert.equal(
+    PUBLIC_MAP_COPY_ID.multipleLocationsLabel(2),
+    "2 lokasi pada titik ini",
+  );
 });
 
 test("interactive map supports OSM attribution, bounds, marker popups, and tile failure", () => {
