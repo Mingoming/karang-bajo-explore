@@ -14,7 +14,7 @@ import {
 } from "./model";
 
 const EDIT_COLUMNS =
-  "id,name,slug,package_type,duration_value,duration_unit,price,price_note,included_facilities,souvenir,summary,description,thumbnail_path,thumbnail_bucket,is_featured,display_order,status,published_at,created_at,updated_at";
+  "id,name,slug,package_type,duration_value,duration_unit,price,price_note,included_facilities,souvenir,summary,description,thumbnail_path,thumbnail_bucket,is_featured,display_order,status,published_at,created_at,updated_at,aggregate_revision";
 
 type ListRow = TourismPackageListItem;
 type RelationRow = {
