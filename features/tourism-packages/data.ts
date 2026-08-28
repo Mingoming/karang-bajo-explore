@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
+import { isValidDestinationId } from "../destinations/model";
 import {
   isValidTourismPackageId,
+  isValidTourismPackageSlug,
   type DestinationOption,
   type PackageDestinationValue,
   type TourismPackageListItem,
@@ -30,6 +32,8 @@ type DestinationRow = {
   name: string;
   status: TourismPackageStatus;
 };
+type PackageDestinationIdRow = { package_id: string };
+type PackageSlugRow = { id: string; slug: string };
 export type PackageRelationRecord = PackageDestinationValue & {
   id: string;
   createdAt: string;
@@ -115,6 +119,86 @@ export async function queryPackageRelations(
       createdBy: row.created_by,
     })),
   };
+}
+
+export async function queryTourismPackageSlugsByDestinationId(
+  supabase: SupabaseClient,
+  destinationId: string,
+) {
+  if (!isValidDestinationId(destinationId)) {
+    return { success: true as const, slugs: [] as string[] };
+  }
+
+  const { data: relationRows, error: relationError } = await supabase
+    .from("package_destinations")
+    .select("package_id")
+    .eq("destination_id", destinationId)
+    .overrideTypes<PackageDestinationIdRow[], { merge: false }>();
+  if (
+    relationError ||
+    !Array.isArray(relationRows) ||
+    relationRows.some(
+      (row) =>
+        typeof row !== "object" ||
+        row === null ||
+        !isValidTourismPackageId(row.package_id),
+    )
+  ) {
+    console.error("Pembacaan ketergantungan paket wisata gagal.", {
+      code: relationError?.code ?? "invalid-row-shape",
+    });
+    return { success: false as const, slugs: [] as string[] };
+  }
+
+  const packageIds = [...new Set(relationRows.map((row) => row.package_id))];
+  if (packageIds.length === 0) {
+    return { success: true as const, slugs: [] as string[] };
+  }
+
+  const { data: packageRows, error: packageError } = await supabase
+    .from("tourism_packages")
+    .select("id,slug")
+    .in("id", packageIds)
+    .overrideTypes<PackageSlugRow[], { merge: false }>();
+  const packageIdSet = new Set(packageIds);
+  if (
+    packageError ||
+    !Array.isArray(packageRows) ||
+    packageRows.some(
+      (row) =>
+        typeof row !== "object" ||
+        row === null ||
+        !isValidTourismPackageId(row.id) ||
+        !packageIdSet.has(row.id) ||
+        !isValidTourismPackageSlug(row.slug),
+    )
+  ) {
+    console.error("Pembacaan slug paket wisata terkait gagal.", {
+      code: packageError?.code ?? "invalid-row-shape",
+    });
+    return { success: false as const, slugs: [] as string[] };
+  }
+
+  const seenIds = new Set<string>();
+  const slugs: string[] = [];
+  for (const row of packageRows) {
+    if (seenIds.has(row.id)) {
+      console.error("Slug paket wisata terkait tidak valid.", {
+        code: "invalid-package-row",
+      });
+      return { success: false as const, slugs: [] as string[] };
+    }
+    seenIds.add(row.id);
+    slugs.push(row.slug);
+  }
+  if (seenIds.size !== packageIdSet.size) {
+    console.error("Paket wisata terkait tidak ditemukan.", {
+      code: "missing-package-row",
+    });
+    return { success: false as const, slugs: [] as string[] };
+  }
+
+  return { success: true as const, slugs: [...new Set(slugs)] };
 }
 
 export async function getAdministratorTourismPackageList() {

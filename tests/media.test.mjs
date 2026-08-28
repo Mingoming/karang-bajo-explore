@@ -644,6 +644,7 @@ test("media actions normalize create and replacement uploads before storage", ()
 const TRUSTED_TRADITIONAL_HOUSE_SLUG = "rumah-adat-terpercaya";
 const TRUSTED_DESTINATION_SLUG = "destinasi-terpercaya";
 const TRUSTED_CULTURAL_EVENT_SLUG = "acara-budaya-terpercaya";
+const TRUSTED_TOURISM_PACKAGE_SLUG = "paket-wisata-terpercaya";
 
 function mediaActionForm(overrides = {}) {
   const { fileMode, ...fieldOverrides } = overrides;
@@ -723,6 +724,10 @@ function createMediaActionRuntime({
       success: true,
       umkm: { slug: "usaha-karang-bajo" },
     },
+    tourismPackageResponse: {
+      success: true,
+      tourismPackage: { slug: TRUSTED_TOURISM_PACKAGE_SLUG },
+    },
     rpcResponses: new Map(),
     fileMode: "metadata",
     client: null,
@@ -755,6 +760,8 @@ async function loadMediaActions(runtime) {
 
   globalThis[key] = {
     ...createPublicRevalidationMock(runtime),
+    captureRelatedTourismPackageSlugs: async () => [],
+    revalidateRelatedTourismPackagePaths: async () => {},
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -809,11 +816,17 @@ async function loadMediaActions(runtime) {
       runtime.events.push("owner-slug-read");
       return runtime.culturalEventResponse;
     },
+    queryTourismPackageById: async () => {
+      runtime.events.push("owner-slug-read");
+      return runtime.tourismPackageResponse;
+    },
     isValidDestinationSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidCulturalEventSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidTraditionalHouseSlug,
     isValidHomestaySlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     isValidUmkmSlug: (slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
+    isValidTourismPackageSlug: (slug) =>
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug),
     requireAdministrator: async () => {
       runtime.authCalls += 1;
       runtime.events.push("authorization");
@@ -875,6 +888,7 @@ const {
   getPublicEnglishUmkmPath,
   getPublicEnglishCulturalEventPath,
   getPublicTraditionalHousePath,
+  isValidTourismPackageSlug,
   isMediaRecordOwnedBy,
   isMediaEntityType,
   isValidDestinationSlug,
@@ -901,10 +915,14 @@ const {
   queryHomestayById,
   queryUmkmById,
   queryCulturalEventById,
+  queryTourismPackageById,
+  captureRelatedTourismPackageSlugs,
   redirect,
   removeMediaObject,
   revalidatePath,
   revalidatePublicDomainPaths,
+  revalidateEnglishTourismPackagePaths,
+  revalidateRelatedTourismPackagePaths,
   requireAdministrator,
   shouldMakeMediaPrimary,
   uploadMediaObject,
@@ -1209,6 +1227,78 @@ test("UMKM media mutations invalidate trusted English local-business routes only
   assert.equal(
     failedRuntime.paths.some((path) => path.includes("usaha-karang-bajo")),
     false,
+  );
+});
+
+test("Tourism Package source media mutations invalidate the trusted English package routes", async () => {
+  const expectedEnglishPaths = [
+    "/en/tourism-packages",
+    `/en/tourism-packages/${TRUSTED_TOURISM_PACKAGE_SLUG}`,
+  ];
+
+  const createdRuntime = createMediaActionRuntime({
+    entityType: "tourism-package",
+    images: [],
+  });
+  const created = await invokeMedia(createdRuntime, "create", {
+    fileMode: "create",
+    formOverrides: { fileMode: "create", is_primary: "on" },
+  });
+  assert.ok(created.redirectPath);
+  assert.deepEqual(
+    createdRuntime.paths.filter((path) => path.startsWith("/en/")),
+    expectedEnglishPaths,
+  );
+  assert.ok(
+    createdRuntime.events.indexOf("owner-slug-read") <
+      createdRuntime.events.indexOf("mutation:media_insert"),
+  );
+
+  const updatedRuntime = createMediaActionRuntime({
+    entityType: "tourism-package",
+  });
+  const updated = await invokeMedia(updatedRuntime, "update");
+  assert.ok(updated.redirectPath);
+  assert.deepEqual(
+    updatedRuntime.paths.filter((path) => path.startsWith("/en/")),
+    expectedEnglishPaths,
+  );
+
+  const replacementRuntime = createMediaActionRuntime({
+    entityType: "tourism-package",
+  });
+  const replacement = await invokeMedia(replacementRuntime, "update", {
+    fileMode: "replacement",
+    formOverrides: { fileMode: "replacement" },
+  });
+  assert.ok(replacement.redirectPath);
+  assert.deepEqual(
+    replacementRuntime.paths.filter((path) => path.startsWith("/en/")),
+    expectedEnglishPaths,
+  );
+
+  const deletedRuntime = createMediaActionRuntime({
+    entityType: "tourism-package",
+  });
+  const deleted = await invokeMedia(deletedRuntime, "delete");
+  assert.ok(deleted.redirectPath);
+  assert.deepEqual(
+    deletedRuntime.paths.filter((path) => path.startsWith("/en/")),
+    expectedEnglishPaths,
+  );
+
+  const failedRuntime = createMediaActionRuntime({
+    entityType: "tourism-package",
+  });
+  const failed = await invokeMedia(failedRuntime, "update", {
+    rpcResponses: new Map([
+      ["media_update", { data: null, error: { code: "mutation-failed" } }],
+    ]),
+  });
+  assert.equal(failed.result.kind, "database-error");
+  assert.deepEqual(
+    failedRuntime.paths.filter((path) => path.startsWith("/en/")),
+    [],
   );
 });
 

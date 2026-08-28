@@ -66,7 +66,7 @@ test("semantic route manifest contains the ten approved keys and exact paths", (
     home: { id: "/", en: "/en" },
     profile: { id: "/profil-desa", en: "/en/village-profile" },
     destinations: { id: "/destinasi", en: "/en/destinations" },
-    tourismPackages: { id: "/paket-wisata", en: null },
+    tourismPackages: { id: "/paket-wisata", en: "/en/tourism-packages" },
     homestays: { id: "/homestay", en: "/en/homestays" },
     umkm: { id: "/umkm", en: "/en/local-businesses" },
     traditionalHouses: {
@@ -107,6 +107,16 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/destinasi",
   );
 
+  assert.equal(getPublicRoute("tourismPackages", "en"), "/en/tourism-packages");
+  assert.equal(
+    getEquivalentPublicRoute("/paket-wisata", "id"),
+    "/en/tourism-packages",
+  );
+  assert.equal(
+    getEquivalentPublicRoute("/en/tourism-packages", "en"),
+    "/paket-wisata",
+  );
+
   assert.equal(getPublicRoute("homestays", "en"), "/en/homestays");
   assert.equal(getEquivalentPublicRoute("/en/homestays", "en"), "/homestay");
 
@@ -134,7 +144,7 @@ test("home and Village Profile have reciprocal English routes", () => {
     "/peta-wisata",
   );
 
-  for (const key of ["tourismPackages", "contact"]) {
+  for (const key of ["contact"]) {
     assert.equal(getPublicRoute(key, "en"), null, key);
   }
 
@@ -148,6 +158,10 @@ test("detail language switching uses paired route descriptors and trusted slugs"
     destinations: {
       id: "/destinasi/[slug]",
       en: "/en/destinations/[slug]",
+    },
+    tourismPackages: {
+      id: "/paket-wisata/[slug]",
+      en: "/en/tourism-packages/[slug]",
     },
     homestays: {
       id: "/homestay/[slug]",
@@ -169,6 +183,7 @@ test("detail language switching uses paired route descriptors and trusted slugs"
 
   for (const [indonesianPath, englishPath] of [
     ["/destinasi/bukit-karang", "/en/destinations/bukit-karang"],
+    ["/paket-wisata/paket-karang", "/en/tourism-packages/paket-karang"],
     ["/homestay/rumah-bajo", "/en/homestays/rumah-bajo"],
     ["/umkm/tenun-bajo", "/en/local-businesses/tenun-bajo"],
     [
@@ -231,6 +246,11 @@ test("localized navigation preserves Indonesian routes and limits English to app
       href: "/en/village-profile",
     },
     { key: "destinations", label: "Destinations", href: "/en/destinations" },
+    {
+      key: "tourismPackages",
+      label: "Tourism Packages",
+      href: "/en/tourism-packages",
+    },
     { key: "homestays", label: "Homestays", href: "/en/homestays" },
     {
       key: "umkm",
@@ -357,7 +377,7 @@ test("only approved English routes are created and Proxy excludes actual assets"
     "app/id/page.tsx",
     "app/en/admin/page.tsx",
     "app/en/profile/page.tsx",
-    "app/en/tourism-packages/page.tsx",
+    "app/en/unsupported/page.tsx",
     "app/en/contact/page.tsx",
   ]) {
     assert.equal(existsSync(path), false, path);

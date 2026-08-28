@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { revalidatePublicDomainPaths } from "@/features/public-content/revalidation";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  captureRelatedTourismPackageSlugs,
+  revalidateRelatedTourismPackagePaths,
+} from "../tourism-packages/public-dependency";
 
 import { queryDestinationById, queryDestinationCategories } from "./data";
 import {
@@ -287,6 +291,11 @@ export async function updateDestination(
     return databaseFailureState(previousState, validation.values);
   }
 
+  const relatedTourismPackageSlugs = await captureRelatedTourismPackageSlugs(
+    supabase,
+    existingDestination.id,
+  );
+
   const payload: DestinationUpdatePayload = {
     ...validation.data,
     updated_by: administrator.id,
@@ -315,6 +324,11 @@ export async function updateDestination(
   revalidateEnglishDestinationPaths(
     existingDestination.slug,
     updatedDestination.slug,
+  );
+  await revalidateRelatedTourismPackagePaths(
+    supabase,
+    existingDestination.id,
+    relatedTourismPackageSlugs,
   );
   redirect(
     `${DESTINATION_LIST_PATH}/${existingDestination.id}/edit?success=updated`,

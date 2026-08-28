@@ -8,6 +8,11 @@ import {
   revalidatePublicDomainDetailPaths,
   revalidatePublicDomainPaths,
 } from "@/features/public-content/revalidation";
+import {
+  captureRelatedTourismPackageSlugs,
+  revalidateRelatedTourismPackagePaths,
+  type RelatedTourismPackageSlugs,
+} from "../tourism-packages/public-dependency";
 
 import { isValidDestinationId } from "../destinations/model";
 import {
@@ -219,10 +224,18 @@ async function refreshAfterMutation(
   previousState: DestinationImageTranslationActionState,
   message: string,
   resultKind: "success" | "database-error" = "success",
+  relatedTourismPackageSlugs?: RelatedTourismPackageSlugs,
 ) {
   revalidateDestinationImageTranslationPaths(destinationId, [
     trustedPreMutationSlug,
   ]);
+  if (relatedTourismPackageSlugs !== undefined) {
+    await revalidateRelatedTourismPackagePaths(
+      supabase,
+      destinationId,
+      relatedTourismPackageSlugs,
+    );
+  }
   const current = await queryDestinationImageTranslationAdminData(
     supabase,
     destinationId,
@@ -436,6 +449,14 @@ export async function manageDestinationImageTranslation(
       message: "Checkpoint terjemahan gambar sudah tidak berlaku.",
     });
   }
+
+  const relatedTourismPackageSlugs =
+    intent === "publish" ||
+    intent === "republish" ||
+    intent === "archive" ||
+    intent === "unpublish"
+      ? await captureRelatedTourismPackageSlugs(supabase, destinationId)
+      : undefined;
 
   if (intent === "save-draft" || intent === "review") {
     const validation = validateDestinationImageTranslationFormData(formData);
@@ -668,6 +689,8 @@ export async function manageDestinationImageTranslation(
       intent === "publish"
         ? "Terjemahan gambar Inggris berhasil diterbitkan."
         : "Terjemahan gambar Inggris berhasil diterbitkan kembali.",
+      "success",
+      relatedTourismPackageSlugs,
     );
   }
 
@@ -722,6 +745,8 @@ export async function manageDestinationImageTranslation(
       current.slug,
       previousState,
       successMessage,
+      "success",
+      intent === "restore" ? undefined : relatedTourismPackageSlugs,
     );
   }
 

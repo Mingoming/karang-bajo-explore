@@ -320,6 +320,8 @@ async function loadDestinationTranslationActions(runtime) {
     .slice(2)}`;
   globalThis[key] = {
     ...createPublicRevalidationMock(runtime),
+    captureRelatedTourismPackageSlugs: async () => [],
+    revalidateRelatedTourismPackagePaths: async () => {},
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -343,7 +345,8 @@ async function loadDestinationTranslationActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
+const { captureRelatedTourismPackageSlugs, revalidateRelatedTourismPackagePaths,
+  revalidatePublicDomainPaths, revalidatePublicDomainDetailPaths,
   revalidatePath, requireAdministrator, createClient, isValidDestinationId,
   queryDestinationTranslationAdminData, createDestinationTranslationActionState,
   destinationTranslationToMutationValues, validateDestinationTranslationForEligibility,

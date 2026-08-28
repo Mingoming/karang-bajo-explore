@@ -13,7 +13,16 @@ import { queryHomestayById } from "@/features/homestays/data";
 import { isValidHomestaySlug } from "@/features/homestays/model";
 import { queryUmkmById } from "@/features/umkm/data";
 import { isValidUmkmSlug } from "@/features/umkm/model";
-import { revalidatePublicDomainPaths } from "@/features/public-content/revalidation";
+import {
+  revalidateEnglishTourismPackagePaths,
+  revalidatePublicDomainPaths,
+} from "@/features/public-content/revalidation";
+import {
+  captureRelatedTourismPackageSlugs,
+  revalidateRelatedTourismPackagePaths,
+} from "@/features/tourism-packages/public-dependency";
+import { queryTourismPackageById } from "@/features/tourism-packages/data";
+import { isValidTourismPackageSlug } from "@/features/tourism-packages/model";
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -90,6 +99,18 @@ function revalidateEnglishCulturalEventPaths(
     return;
   }
   revalidatePublicDomainPaths("culturalEvent", [trustedCulturalEventSlug]);
+}
+
+function revalidateTourismPackagePaths(
+  trustedTourismPackageSlug: string | null,
+) {
+  if (
+    !trustedTourismPackageSlug ||
+    !isValidTourismPackageSlug(trustedTourismPackageSlug)
+  ) {
+    return;
+  }
+  revalidateEnglishTourismPackagePaths([trustedTourismPackageSlug]);
 }
 
 function nextState(
@@ -177,11 +198,17 @@ async function readTrustedContext(entityType: string, parentId: string) {
   let umkmSlug: string | null = null;
   let traditionalHouseSlug: string | null = null;
   let culturalEventSlug: string | null = null;
+  let tourismPackageSlug: string | null = null;
+  let destinationPackageSlugs: readonly string[] | null = null;
   if (entityType === "destination") {
     const destinationResult = await queryDestinationById(supabase, parent.id);
     if (!destinationResult.success) return { kind: "database-error" as const };
     if (!destinationResult.destination) return { kind: "not-found" as const };
     destinationSlug = destinationResult.destination.slug;
+    destinationPackageSlugs = await captureRelatedTourismPackageSlugs(
+      supabase,
+      parent.id,
+    );
   } else if (entityType === "homestay") {
     const homestayResult = await queryHomestayById(supabase, parent.id);
     if (!homestayResult.success) return { kind: "database-error" as const };
@@ -210,6 +237,16 @@ async function readTrustedContext(entityType: string, parentId: string) {
     if (!umkmResult.success) return { kind: "database-error" as const };
     if (!umkmResult.umkm) return { kind: "not-found" as const };
     umkmSlug = umkmResult.umkm.slug;
+  } else if (entityType === "tourism-package") {
+    const tourismPackageResult = await queryTourismPackageById(
+      supabase,
+      parent.id,
+    );
+    if (!tourismPackageResult.success)
+      return { kind: "database-error" as const };
+    if (!tourismPackageResult.tourismPackage)
+      return { kind: "not-found" as const };
+    tourismPackageSlug = tourismPackageResult.tourismPackage.slug;
   }
 
   return {
@@ -222,6 +259,8 @@ async function readTrustedContext(entityType: string, parentId: string) {
     traditionalHouseSlug,
     culturalEventSlug,
     umkmSlug,
+    tourismPackageSlug,
+    destinationPackageSlugs,
   };
 }
 
@@ -390,6 +429,14 @@ export async function createMedia(
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   revalidateEnglishUmkmPaths(context.umkmSlug);
+  revalidateTourismPackagePaths(context.tourismPackageSlug);
+  if (context.parent.entityType === "destination") {
+    await revalidateRelatedTourismPackagePaths(
+      context.supabase,
+      context.parent.id,
+      context.destinationPackageSlugs,
+    );
+  }
   redirect(
     mediaGalleryPath(context.parent.entityType, context.parent.id, "created"),
   );
@@ -492,6 +539,14 @@ export async function updateMedia(
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     revalidateEnglishUmkmPaths(context.umkmSlug);
+    revalidateTourismPackagePaths(context.tourismPackageSlug);
+    if (context.parent.entityType === "destination") {
+      await revalidateRelatedTourismPackagePaths(
+        context.supabase,
+        context.parent.id,
+        context.destinationPackageSlugs,
+      );
+    }
   } else {
     const normalized = await normalizeMediaImage(fileValidation.file);
 
@@ -572,6 +627,14 @@ export async function updateMedia(
     revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
     revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
     revalidateEnglishUmkmPaths(context.umkmSlug);
+    revalidateTourismPackagePaths(context.tourismPackageSlug);
+    if (context.parent.entityType === "destination") {
+      await revalidateRelatedTourismPackagePaths(
+        context.supabase,
+        context.parent.id,
+        context.destinationPackageSlugs,
+      );
+    }
     const oldCleanup = await removeMediaObject(context.supabase, oldPath);
     if (!oldCleanup.success) {
       logMediaStorageFailure(
@@ -663,6 +726,14 @@ export async function deleteMedia(
   revalidateEnglishTraditionalHousePaths(context.traditionalHouseSlug);
   revalidateEnglishCulturalEventPaths(context.culturalEventSlug);
   revalidateEnglishUmkmPaths(context.umkmSlug);
+  revalidateTourismPackagePaths(context.tourismPackageSlug);
+  if (context.parent.entityType === "destination") {
+    await revalidateRelatedTourismPackagePaths(
+      context.supabase,
+      context.parent.id,
+      context.destinationPackageSlugs,
+    );
+  }
   const cleanup = await removeMediaObject(context.supabase, oldPath);
   if (!cleanup.success) {
     logMediaStorageFailure(

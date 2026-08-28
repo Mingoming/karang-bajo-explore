@@ -151,6 +151,7 @@ async function loadActions(runtime) {
   const stripped = stripTypeScriptTypes(actionSource, { mode: "strip" });
   const key = `__tourismPackageImageTranslationDeps_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = {
+    revalidateEnglishTourismPackagePaths: () => true,
     revalidatePath: (path) => {
       runtime.paths.push(path);
       runtime.events.push(`revalidate:${path}`);
@@ -189,7 +190,7 @@ async function loadActions(runtime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { revalidatePath, requireAdministrator, createClient,
+const { revalidateEnglishTourismPackagePaths, revalidatePath, requireAdministrator, createClient,
   isValidTourismPackageId, isValidMediaUuid,
   queryTourismPackageImageTranslationAdminData,
   createTourismPackageImageTranslationActionState,
@@ -922,7 +923,7 @@ test("image translation feature is RPC-only and has no source media controls", (
     featureSource,
     /name=\"(?:storage_bucket|storage_path|is_primary|display_order)\"/,
   );
-  assert.doesNotMatch(featureSource, /revalidatePublicDomain/);
+  assert.match(featureSource, /revalidateEnglishTourismPackagePaths/);
   assert.match(featureSource, /package_images/);
   assert.match(featureSource, /tourism-package\/\$\{tourismPackageId\}/);
   assert.doesNotMatch(featureSource, /storage\.from\([^)]*\)\.getPublicUrl/);

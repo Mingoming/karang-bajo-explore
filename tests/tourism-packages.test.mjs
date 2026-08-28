@@ -416,6 +416,7 @@ test("Tourism Package actions use transactional RPCs without sequential table wr
     source,
     /compensat|restoreRelations|synchronizeRelations/,
   );
+  assert.match(source, /revalidateEnglishTourismPackagePaths/);
 });
 
 test("transactional RPC migration enforces authorization and least privilege", async () => {

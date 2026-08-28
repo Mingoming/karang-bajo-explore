@@ -205,8 +205,8 @@ is created in Phase 3A.
 | /rumah-adat/[slug] | /en/traditional-houses/[slug] | Recommended source-slug detail pairing. |
 | /acara-budaya | /en/cultural-events | Recommended; event terminology needs cultural-owner review. |
 | /acara-budaya/[slug] | /en/cultural-events/[slug] | Recommended source-slug detail pairing. |
-| /paket-wisata | /en/tour-packages | Recommended over the ambiguous /en/packages. |
-| /paket-wisata/[slug] | /en/tour-packages/[slug] | Recommended source-slug detail pairing. |
+| /paket-wisata | /en/tourism-packages | Supersedes the earlier /en/tour-packages recommendation; explicit tourism semantics. |
+| /paket-wisata/[slug] | /en/tourism-packages/[slug] | Supersedes the earlier /en/tour-packages/[slug] recommendation; source-slug detail pairing. |
 | /homestay | /en/homestays | Recommended plural navigation label and stable domain meaning. |
 | /homestay/[slug] | /en/homestays/[slug] | Recommended source-slug detail pairing. |
 | /umkm | /en/local-businesses | Recommended for visitor clarity; stakeholders must confirm how the official UMKM term is presented. |

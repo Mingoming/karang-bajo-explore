@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateEnglishTourismPackagePaths } from "@/features/public-content/revalidation";
 
 import { isValidTourismPackageId } from "../tourism-packages/model";
 import {
@@ -585,6 +586,7 @@ export async function manageTourismPackageTranslation(
         failureCode ?? "unexpected-row-count",
       );
     }
+    revalidateEnglishTourismPackagePaths([current.slug]);
     return refreshAfterMutation(
       supabase,
       tourismPackageId,
@@ -623,6 +625,9 @@ export async function manageTourismPackageTranslation(
       previousState,
       failureCode ?? "unexpected-row-count",
     );
+  }
+  if (intent !== "restore") {
+    revalidateEnglishTourismPackagePaths([current.slug]);
   }
   return refreshAfterMutation(
     supabase,

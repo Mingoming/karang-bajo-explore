@@ -8,6 +8,11 @@ import {
   revalidatePublicDomainDetailPaths,
   revalidatePublicDomainPaths,
 } from "@/features/public-content/revalidation";
+import {
+  captureRelatedTourismPackageSlugs,
+  revalidateRelatedTourismPackagePaths,
+  type RelatedTourismPackageSlugs,
+} from "../tourism-packages/public-dependency";
 
 import { isValidDestinationId } from "../destinations/model";
 import {
@@ -207,8 +212,16 @@ async function refreshAfterMutation(
   current: SuccessfulRead,
   previousState: DestinationTranslationActionState,
   successMessage: string,
+  relatedTourismPackageSlugs?: RelatedTourismPackageSlugs,
 ) {
   revalidateDestinationTranslationPaths(destinationId, current.slug);
+  if (relatedTourismPackageSlugs !== undefined) {
+    await revalidateRelatedTourismPackagePaths(
+      supabase,
+      destinationId,
+      relatedTourismPackageSlugs,
+    );
+  }
   const refreshed = await queryDestinationTranslationAdminData(
     supabase,
     destinationId,
@@ -411,6 +424,14 @@ export async function manageDestinationTranslation(
       message: "Checkpoint terjemahan sudah tidak berlaku.",
     });
   }
+
+  const relatedTourismPackageSlugs =
+    intent === "publish" ||
+    intent === "republish" ||
+    intent === "archive" ||
+    intent === "unpublish"
+      ? await captureRelatedTourismPackageSlugs(supabase, destinationId)
+      : undefined;
 
   if (intent === "save-draft" || intent === "review") {
     const validation = validateDestinationTranslationFormData(formData);
@@ -662,6 +683,7 @@ export async function manageDestinationTranslation(
       intent === "publish"
         ? "Terjemahan Inggris berhasil diterbitkan."
         : "Terjemahan Inggris berhasil diterbitkan kembali.",
+      relatedTourismPackageSlugs,
     );
   }
 
@@ -713,6 +735,7 @@ export async function manageDestinationTranslation(
       current,
       previousState,
       successMessage,
+      intent === "restore" ? undefined : relatedTourismPackageSlugs,
     );
   }
 
