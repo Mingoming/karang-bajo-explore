@@ -4,7 +4,13 @@ import { createContext, useContext, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
-import { PUBLIC_MAP_COPY_ID, type PublicMapCopy } from "./copy";
+import type { PublicLocale } from "@/lib/i18n/locale";
+
+import {
+  ENGLISH_PUBLIC_MAP_COPY,
+  PUBLIC_MAP_COPY_ID,
+  type PublicMapCopy,
+} from "./copy";
 import type { PublicMapDestinationCategory } from "./data";
 import {
   filterPublicMapMarkersByDestinationCategory,
@@ -36,7 +42,7 @@ const PublicMapLeaflet = dynamic(() => import("./public-map-leaflet"), {
 type PublicMapProps = {
   markers: PublicMapMarker[];
   destinationCategories: PublicMapDestinationCategory[];
-  copy?: PublicMapCopy;
+  locale?: PublicLocale;
 };
 
 function getEntityLabel(item: PublicMapItem, copy: PublicMapCopy) {
@@ -57,9 +63,10 @@ function getEntityLabel(item: PublicMapItem, copy: PublicMapCopy) {
 export function PublicMap({
   markers,
   destinationCategories,
-  copy = PUBLIC_MAP_COPY_ID,
+  locale = "id",
 }: PublicMapProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const copy = locale === "en" ? ENGLISH_PUBLIC_MAP_COPY : PUBLIC_MAP_COPY_ID;
 
   const visibleMarkers = useMemo(
     () =>
