@@ -10,7 +10,6 @@ import {
   PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH,
   PUBLIC_ENGLISH_DESTINATIONS_PATH,
   PUBLIC_ENGLISH_HOMESTAYS_PATH,
-  PUBLIC_ENGLISH_TOURISM_MAP_PATH,
   PUBLIC_ENGLISH_TOURISM_PACKAGES_PATH,
   PUBLIC_ENGLISH_TRADITIONAL_HOUSES_PATH,
   PUBLIC_ENGLISH_UMKMS_PATH,
@@ -36,8 +35,9 @@ import { getPublishedEnglishUmkms } from "@/features/public-umkms/english-data";
 import { ENGLISH_UMKM_COPY } from "@/features/public-umkms/english-model";
 import { getPublishedEnglishVillageProfile } from "@/features/public-village-profile/english-data";
 import type { PublicEnglishVillageProfileResult } from "@/features/public-village-profile/english-model";
+import { getPublishedEnglishTourismMapData } from "@/features/public-map/english-data";
+import { PublicMapEmbed } from "@/features/public-map/public-map-embed";
 import type { SignedPublicMedia } from "@/features/public-media/model";
-import { ENGLISH_TOURISM_MAP_PAGE_COPY } from "@/features/public-map/copy";
 import { buildPublicMetadata } from "@/features/seo/public-metadata";
 import { PUBLIC_DICTIONARIES } from "@/lib/i18n/dictionaries";
 
@@ -79,8 +79,6 @@ const PROFILE_COPY = {
   unavailableDescription:
     "Approved English Village Profile information will appear here when it is published.",
 } as const;
-
-const MAP_ACTION = "Open the tourism map";
 
 function createEnglishHomeCard({
   id,
@@ -221,6 +219,7 @@ export default async function EnglishHomePage() {
     homestaysResult,
     umkmsResult,
     contactResult,
+    tourismMapResult,
   ] = await Promise.all([
     getPublishedEnglishVillageProfile(),
     getPublishedEnglishDestinations(),
@@ -230,6 +229,7 @@ export default async function EnglishHomePage() {
     getPublishedEnglishHomestays(),
     getPublishedEnglishUmkms(),
     getEnglishPublicShellData(),
+    getPublishedEnglishTourismMapData(),
   ]);
 
   const destinations = requireEnglishItems(
@@ -316,6 +316,9 @@ export default async function EnglishHomePage() {
       primaryImage: umkm.primaryImage,
     }),
   );
+  if (tourismMapResult.kind === "error") {
+    throw new Error("PUBLIC_ENGLISH_HOMEPAGE_TOURISM_MAP_UNAVAILABLE");
+  }
 
   return (
     <PublicShell locale="en" englishContactData={contactResult}>
@@ -327,6 +330,15 @@ export default async function EnglishHomePage() {
       />
 
       <EnglishVillageProfileSection result={profileResult} />
+
+      <section
+        id="english-tourism-map"
+        className="scroll-mt-24 border-y border-amber-900/10 bg-amber-50 py-12 sm:py-16"
+      >
+        <PublicContainer>
+          <PublicMapEmbed markers={tourismMapResult.markers} locale="en" />
+        </PublicContainer>
+      </section>
 
       <EnglishHomeCollection
         id="english-destinations"
@@ -412,25 +424,6 @@ export default async function EnglishHomePage() {
         }}
         items={localBusinesses}
       />
-
-      <section
-        id="english-tourism-map"
-        className="scroll-mt-24 border-y border-amber-900/10 bg-amber-50 py-16 sm:py-20"
-      >
-        <PublicContainer>
-          <SectionHeading
-            eyebrow={ENGLISH_TOURISM_MAP_PAGE_COPY.eyebrow}
-            title={ENGLISH_TOURISM_MAP_PAGE_COPY.title}
-            description={ENGLISH_TOURISM_MAP_PAGE_COPY.description}
-          />
-          <Link
-            href={PUBLIC_ENGLISH_TOURISM_MAP_PATH}
-            className="mt-8 inline-flex min-h-11 items-center rounded-full bg-emerald-900 px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-emerald-700"
-          >
-            {MAP_ACTION}
-          </Link>
-        </PublicContainer>
-      </section>
 
       <ExternalTourismLinksSection
         links={

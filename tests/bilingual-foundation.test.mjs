@@ -279,6 +279,31 @@ test("language switcher uses real reciprocal links and semantic current state", 
   assert.match(source, /aria-current="page"/);
   assert.match(source, /<a[\s\S]*?href=\{equivalent\}/);
   assert.match(source, /hrefLang={targetLocale}/);
+  assert.match(
+    source,
+    /currentFlagSrc =\s*locale === "id"\s*\? "\/icons\/flags\/indonesia\.svg"\s*:\s*"\/icons\/flags\/united-kingdom\.svg"/s,
+  );
+  assert.match(
+    source,
+    /targetFlagSrc =\s*targetLocale === "id"\s*\? "\/icons\/flags\/indonesia\.svg"\s*:\s*"\/icons\/flags\/united-kingdom\.svg"/s,
+  );
+  assert.match(source, /aria-hidden="true"/);
+  assert.match(
+    source,
+    /<Image[\s\S]*?src=\{currentFlagSrc\}[\s\S]*?alt=""[\s\S]*?aria-hidden="true"[\s\S]*?width=\{24\}[\s\S]*?height=\{16\}/,
+  );
+  assert.match(
+    source,
+    /<Image[\s\S]*?src=\{targetFlagSrc\}[\s\S]*?alt=""[\s\S]*?aria-hidden="true"[\s\S]*?width=\{24\}[\s\S]*?height=\{16\}/,
+  );
+  assert.equal(source.match(/<Image\b/g)?.length, 2);
+  assert.doesNotMatch(source, />\s*\{(?:currentLabel|targetLabel)\}\s*</);
+  assert.doesNotMatch(source, />\s*(?:ID|GB)\s*</);
+  assert.doesNotMatch(source, /[\u{1f1e6}-\u{1f1ff}]/u);
+  assert.equal(PUBLIC_DICTIONARIES.id.languageSwitcher.id, "Bahasa Indonesia");
+  assert.equal(PUBLIC_DICTIONARIES.en.languageSwitcher.en, "English");
+  assert.equal(existsSync("public/icons/flags/indonesia.svg"), true);
+  assert.equal(existsSync("public/icons/flags/united-kingdom.svg"), true);
   assert.match(source, /onClick={onNavigate}/);
   assert.doesNotMatch(source, /next\/link|disabled|preventDefault/);
 });
@@ -296,6 +321,7 @@ test("English homepage uses approved English projections and localized static co
     "getPublishedEnglishCulturalEvents",
     "getPublishedEnglishHomestays",
     "getPublishedEnglishUmkms",
+    "getPublishedEnglishTourismMapData",
   ]) {
     assert.match(page, new RegExp(loader));
   }
@@ -419,6 +445,7 @@ test("Indonesian homepage keeps every existing descriptive-content loader", () =
     "getPublishedUmkms",
     "getPublishedTraditionalHouses",
     "getPublishedCulturalEvents",
+    "getPublishedPublicMapData",
   ]) {
     assert.match(page, new RegExp(loader));
   }

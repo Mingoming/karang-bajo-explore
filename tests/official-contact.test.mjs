@@ -276,6 +276,41 @@ test("public footer preserves WhatsApp and safely falls back for absent or faile
   );
 });
 
+test("public shell provides an optional localized floating WhatsApp action from safe contact data", () => {
+  const shell = readFileSync("components/public/public-shell.tsx", "utf8");
+  const floating = readFileSync(
+    "features/official-contact/official-whatsapp-floating.tsx",
+    "utf8",
+  );
+
+  assert.match(shell, /<OfficialWhatsappFloating/);
+  assert.match(floating, /getPublicOfficialContacts\(\)/);
+  assert.match(floating, /englishContactData\?\.kind === "ready"/);
+  assert.match(floating, /primaryWhatsapp\?\.href/);
+  assert.match(floating, /data\.whatsappHref/);
+  assert.match(floating, /if \(!href\) return null/);
+  assert.match(floating, /Hubungi Desa Karang Bajo melalui WhatsApp/);
+  assert.match(floating, /Contact Karang Bajo Village via WhatsApp/);
+  assert.match(floating, /target="_blank"/);
+  assert.match(floating, /rel="noopener noreferrer"/);
+  assert.match(floating, /aria-label=\{label\}/);
+  assert.match(floating, /aria-hidden="true"/);
+  assert.match(floating, /fixed right-4 bottom-4/);
+  assert.match(floating, /min-h-12 min-w-12/);
+  assert.doesNotMatch(floating, /wa\.me|628\d+/);
+
+  for (const adminPath of [
+    "app/admin/layout.tsx",
+    "app/(auth)/layout.tsx",
+    "app/(auth)/login/page.tsx",
+  ]) {
+    assert.doesNotMatch(
+      readFileSync(adminPath, "utf8"),
+      /OfficialWhatsappFloating/,
+    );
+  }
+});
+
 test("homepage external tourism section is optional, secure, and follows the internal map", () => {
   const section = readFileSync(
     "features/official-contact/external-tourism-links.tsx",
@@ -305,8 +340,9 @@ test("homepage external tourism section is optional, secure, and follows the int
   assert.ok(mapPosition >= 0);
   assert.ok(externalPosition > mapPosition);
   assert.ok(contactPosition > externalPosition);
-  assert.match(homepage, /href="\/peta-wisata"/);
-  assert.match(homepage, /Buka peta wisata/);
+  assert.match(homepage, /getPublishedPublicMapData\(\)/);
+  assert.match(homepage, /<PublicMapEmbed[\s\S]*locale="id" \/>/);
+  assert.doesNotMatch(homepage, /href="\/peta-wisata"|Buka peta wisata/);
   assert.match(homepage, /<OfficialContactCta[\s\S]*?fallbackOnError/);
   assert.doesNotMatch(section, /supabase[\\/]migrations|\.sql["']/);
 });

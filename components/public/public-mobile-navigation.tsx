@@ -11,8 +11,6 @@ import {
 import type { PublicDictionary } from "@/lib/i18n/dictionaries";
 import type { PublicLocale } from "@/lib/i18n/locale";
 
-import { LanguageSwitcher } from "./language-switcher";
-
 export function PublicMobileNavigation({
   locale,
   dictionary,
@@ -35,7 +33,7 @@ export function PublicMobileNavigation({
   }, [isOpen]);
 
   return (
-    <div className="shrink-0 xl:hidden">
+    <div className="shrink-0 min-[1600px]:hidden">
       <button
         ref={triggerRef}
         type="button"
@@ -91,13 +89,6 @@ export function PublicMobileNavigation({
               ))}
             </ul>
           </nav>
-          <div className="mt-4 border-t border-emerald-950/10 pt-4">
-            <LanguageSwitcher
-              locale={locale}
-              dictionary={dictionary}
-              onNavigate={() => setIsOpen(false)}
-            />
-          </div>
         </div>
       ) : null}
     </div>

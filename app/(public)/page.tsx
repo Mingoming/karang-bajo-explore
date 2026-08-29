@@ -22,6 +22,8 @@ import { getPublishedVillageProfile } from "@/features/public-village-profile/da
 import { getPublicVillageProfileExcerpt } from "@/features/public-village-profile/model";
 import { OfficialContactCta } from "@/features/official-contact/official-contact-cta";
 import { ExternalTourismLinks } from "@/features/official-contact/external-tourism-links";
+import { getPublishedPublicMapData } from "@/features/public-map/data";
+import { PublicMapEmbed } from "@/features/public-map/public-map-embed";
 
 export const metadata = buildPublicMetadata({
   title: PUBLIC_DICTIONARIES.id.home.metadataTitle,
@@ -94,21 +96,33 @@ function requirePublicItems<T extends PublicContentBase>(
 }
 
 export default async function HomePage() {
-  const [profile, destinations, packages, homestays, umkms, houses, events] =
-    await Promise.all([
-      getPublishedVillageProfile(),
-      getPublishedDestinations(3),
-      getPublishedPackages(3),
-      getPublishedHomestays(3),
-      getPublishedUmkms(3),
-      getPublishedTraditionalHouses(3),
-      getPublishedCulturalEvents(3),
-    ]);
+  const [
+    profile,
+    destinations,
+    packages,
+    homestays,
+    umkms,
+    houses,
+    events,
+    tourismMap,
+  ] = await Promise.all([
+    getPublishedVillageProfile(),
+    getPublishedDestinations(3),
+    getPublishedPackages(3),
+    getPublishedHomestays(3),
+    getPublishedUmkms(3),
+    getPublishedTraditionalHouses(3),
+    getPublishedCulturalEvents(3),
+    getPublishedPublicMapData(),
+  ]);
   if (profile.kind === "error") {
     throw new Error("PUBLIC_HOMEPAGE_VILLAGE_PROFILE_UNAVAILABLE");
   }
   if (destinations.kind === "error") {
     throw new Error("PUBLIC_HOMEPAGE_DESTINATIONS_UNAVAILABLE");
+  }
+  if (tourismMap.kind === "error") {
+    throw new Error("PUBLIC_HOMEPAGE_TOURISM_MAP_UNAVAILABLE");
   }
 
   const packageItems = requirePublicItems(packages, "PACKAGES");
@@ -143,6 +157,14 @@ export default async function HomePage() {
               description="Profil resmi desa belum diterbitkan."
             />
           )}
+        </PublicContainer>
+      </section>
+      <section
+        id="peta-wisata"
+        className="scroll-mt-24 border-y border-amber-900/10 bg-amber-50 py-12 sm:py-16"
+      >
+        <PublicContainer>
+          <PublicMapEmbed markers={tourismMap.markers} locale="id" />
         </PublicContainer>
       </section>
       <section
@@ -223,25 +245,6 @@ export default async function HomePage() {
         href="/acara-budaya"
         items={eventItems}
       />
-      <section
-        id="peta-wisata"
-        className="scroll-mt-24 border-y border-amber-900/10 bg-amber-50 py-16 sm:py-20"
-      >
-        <PublicContainer>
-          <SectionHeading
-            eyebrow="Lihat lokasi"
-            title="Jelajahi peta wisata Karang Bajo"
-            description="Temukan lokasi destinasi, rumah adat, homestay, dan UMKM yang telah diterbitkan."
-          />
-
-          <Link
-            href="/peta-wisata"
-            className="mt-8 inline-flex min-h-11 items-center rounded-full bg-emerald-900 px-5 py-2.5 font-bold text-white focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-emerald-700"
-          >
-            Buka peta wisata
-          </Link>
-        </PublicContainer>
-      </section>
       <ExternalTourismLinks />
       <section className="py-16 sm:py-24">
         <PublicContainer>
