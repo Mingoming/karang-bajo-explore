@@ -7,6 +7,7 @@ const data = readFileSync("features/public-map/data.ts", "utf8");
 const page = readFileSync("app/(public)/peta-wisata/page.tsx", "utf8");
 const englishPage = readFileSync("app/en/tourism-map/page.tsx", "utf8");
 const shell = readFileSync("features/public-map/public-map.tsx", "utf8");
+const embed = readFileSync("features/public-map/public-map-embed.tsx", "utf8");
 const leaflet = readFileSync(
   "features/public-map/public-map-leaflet.tsx",
   "utf8",
@@ -400,6 +401,29 @@ test("map routes pass only serializable props to PublicMap", () => {
 
   assert.match(englishPage, /<PublicMap[\s\S]*locale="en"/);
   assert.doesNotMatch(page, /locale="en"/);
+});
+
+test("homepage map embed renders only a viewport or localized empty state", () => {
+  assert.match(embed, /^"use client";/);
+  assert.match(
+    embed,
+    /dynamic\(\(\) => import\("\.\/public-map-leaflet"\)[\s\S]*?ssr: false/,
+  );
+  assert.match(embed, /markers: PublicMapMarker\[\]/);
+  assert.match(embed, /locale\?: PublicLocale/);
+  assert.match(
+    embed,
+    /locale === "en" \? ENGLISH_PUBLIC_MAP_COPY : PUBLIC_MAP_COPY_ID/,
+  );
+  assert.match(embed, /markers\.length === 0/);
+  assert.match(
+    embed,
+    /<PublicMapLeaflet markers=\{markers\} copy=\{copy\} \/>/,
+  );
+  assert.doesNotMatch(
+    embed,
+    /selectedCategory|filterPublicMapMarkersByDestinationCategory|visibleItems|countLabel|listTitle|aria-pressed/,
+  );
 });
 
 test("map copy keeps English and Indonesian pluralization behavior", () => {

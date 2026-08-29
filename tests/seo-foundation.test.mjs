@@ -44,8 +44,19 @@ test("robots allows public pages and blocks protected surfaces", () => {
 });
 
 test("homepage advertises the implemented tourism map", () => {
-  assert.match(homepage, /href="\/peta-wisata"/);
-  assert.match(homepage, />\s*Buka peta wisata\s*</);
+  const profilePosition = homepage.indexOf('id="profil-desa"');
+  const mapPosition = homepage.indexOf('id="peta-wisata"');
+  const destinationsPosition = homepage.indexOf('id="destinasi"');
+
+  assert.ok(profilePosition >= 0);
+  assert.ok(mapPosition > profilePosition);
+  assert.ok(destinationsPosition > mapPosition);
+  assert.match(homepage, /getPublishedPublicMapData\(\)/);
+  assert.match(
+    homepage,
+    /<PublicMapEmbed[\s\S]*markers=\{tourismMap\.markers\}[\s\S]*locale="id" \/>/,
+  );
+  assert.doesNotMatch(homepage, /href="\/peta-wisata"|Buka peta wisata/);
 
   assert.doesNotMatch(homepage, /Peta wisata belum tersedia/);
   assert.doesNotMatch(homepage, /Peta interaktif tetap ditunda/);

@@ -8,6 +8,7 @@ const page = read("app/en/page.tsx");
 const dictionary = read("lib/i18n/dictionaries.ts");
 const hero = read("components/public/public-hero.tsx");
 const card = read("components/public/public-content-card.tsx");
+const mapEmbed = read("features/public-map/public-map-embed.tsx");
 
 test("English homepage exposes every supported English public route", () => {
   for (const route of [
@@ -18,7 +19,6 @@ test("English homepage exposes every supported English public route", () => {
     "PUBLIC_ENGLISH_CULTURAL_EVENTS_PATH",
     "PUBLIC_ENGLISH_HOMESTAYS_PATH",
     "PUBLIC_ENGLISH_UMKMS_PATH",
-    "PUBLIC_ENGLISH_TOURISM_MAP_PATH",
   ]) {
     assert.match(page, new RegExp(route));
   }
@@ -50,6 +50,7 @@ test("English homepage uses approved English loaders and fail-closed list result
     "getPublishedEnglishCulturalEvents",
     "getPublishedEnglishHomestays",
     "getPublishedEnglishUmkms",
+    "getPublishedEnglishTourismMapData",
   ]) {
     assert.match(page, new RegExp(loader));
   }
@@ -65,6 +66,28 @@ test("English homepage uses approved English loaders and fail-closed list result
   assert.doesNotMatch(
     page,
     /from\(["'](?:destinations|traditional_houses|cultural_events|homestays|umkms)["']\)/,
+  );
+});
+
+test("English homepage embeds the map directly after the profile without full map UI", () => {
+  const profilePosition = page.indexOf("<EnglishVillageProfileSection");
+  const mapPosition = page.indexOf('id="english-tourism-map"');
+  const destinationsPosition = page.indexOf('id="english-destinations"');
+
+  assert.ok(profilePosition >= 0);
+  assert.ok(mapPosition > profilePosition);
+  assert.ok(destinationsPosition > mapPosition);
+  assert.match(
+    page,
+    /<PublicMapEmbed[\s\S]*markers=\{tourismMapResult\.markers\}[\s\S]*locale="en"/,
+  );
+  assert.doesNotMatch(
+    page,
+    /MAP_ACTION|Open the tourism map|PUBLIC_ENGLISH_TOURISM_MAP_PATH/,
+  );
+  assert.doesNotMatch(
+    mapEmbed,
+    /selectedCategory|filterPublicMapMarkersByDestinationCategory|visibleItems|countLabel|listTitle|aria-pressed/,
   );
 });
 

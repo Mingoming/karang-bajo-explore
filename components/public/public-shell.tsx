@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { EnglishPublicShellDataResult } from "@/features/official-contact/public-shell-data";
+import { OfficialWhatsappFloating } from "@/features/official-contact/official-whatsapp-floating";
 import { getPublicDictionary } from "@/lib/i18n/dictionaries";
 import type { PublicLocale } from "@/lib/i18n/locale";
 
@@ -28,6 +29,10 @@ export function PublicShell({
         {dictionary.shell.skipLink}
       </a>
       <PublicHeader locale={locale} dictionary={dictionary} />
+      <OfficialWhatsappFloating
+        locale={locale}
+        englishContactData={englishContactData}
+      />
       <main
         id={mainContentId}
         tabIndex={-1}
