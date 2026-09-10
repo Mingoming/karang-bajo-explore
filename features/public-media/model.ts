@@ -1,3 +1,5 @@
+import { isValidMediaStoragePath, isValidMediaUuid } from "../media/model.ts";
+
 export const PUBLIC_MEDIA_BUCKET = "tourism-media" as const;
 export const PUBLIC_MEDIA_TTL_SECONDS = 600;
 
@@ -70,10 +72,6 @@ export type PublicMediaSigningResult = {
   error?: unknown;
 };
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const SUPPORTED_IMAGE_EXTENSION_PATTERN = /^(jpg|png|webp)$/;
-
 export function isPublicMediaEntityType(
   value: string,
 ): value is PublicMediaEntityType {
@@ -98,8 +96,8 @@ export function isTrustedPublicMediaReference(
     typeof reference.isPrimary !== "boolean" ||
     !isPublicMediaEntityType(reference.entityType) ||
     reference.bucket !== PUBLIC_MEDIA_BUCKET ||
-    !UUID_PATTERN.test(reference.parentId) ||
-    !UUID_PATTERN.test(reference.id)
+    !isValidMediaUuid(reference.parentId) ||
+    !isValidMediaUuid(reference.id)
   ) {
     return false;
   }
@@ -115,19 +113,10 @@ export function isTrustedPublicMediaReference(
     return false;
   }
 
-  const prefix = PUBLIC_MEDIA_ENTITY_CONFIG[reference.entityType].pathPrefix;
-  const expectedPrefix = `${prefix}/${reference.parentId}/`;
-  if (!reference.storagePath.startsWith(expectedPrefix)) return false;
-
-  const filename = reference.storagePath.slice(expectedPrefix.length);
-  const [storageObjectId, extension, extra] = filename.split(".");
-  return (
-    !reference.storagePath.includes("\\") &&
-    !reference.storagePath.includes("%") &&
-    !reference.storagePath.includes("..") &&
-    extra === undefined &&
-    UUID_PATTERN.test(storageObjectId ?? "") &&
-    SUPPORTED_IMAGE_EXTENSION_PATTERN.test(extension ?? "")
+  return isValidMediaStoragePath(
+    reference.entityType,
+    reference.parentId,
+    reference.storagePath,
   );
 }
 

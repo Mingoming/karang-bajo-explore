@@ -179,13 +179,18 @@ from (values
 set local role anon;
 select is(
   (select count(*) from storage.objects where bucket_id = 'tourism-media'),
-  6::bigint,
-  'anonymous sees exactly one published referenced object for every Media entity'
+  7::bigint,
+  'anonymous sees every published referenced object across the six Media entities'
 );
 select results_eq(
-  $$select split_part(name, '/', 1) from storage.objects where bucket_id = 'tourism-media' order by 1$$,
+  $$select distinct split_part(name, '/', 1) from storage.objects where bucket_id = 'tourism-media' order by 1$$,
   $$values ('cultural-event'::text), ('destination'), ('homestay'), ('tourism-package'), ('traditional-house'), ('umkm')$$,
   'all six exact published entity prefixes are anonymously selectable'
+);
+select is(
+  (select count(*) from storage.objects where name = 'destination/f1000000-0000-4000-8000-000000000001/f1100000-0000-4000-8000-000000000097.jpg'),
+  1::bigint,
+  'an independently named replacement object remains anonymously selectable when its image row and parent are valid'
 );
 select is(
   (select count(*) from storage.objects where name ~ '/00000000[23]/'),
@@ -198,9 +203,9 @@ select is(
   'orphan objects for all six entities are rejected'
 );
 select is(
-  (select count(*) from storage.objects where name like '/%' or name like 'homestay/f100%' or name like '%2F%' or name like '%5C%' or name like '%..%' or name like '%//%' or name like '%\\%' or name like '%/extra/%' or name like '%.JPG' or name like '%jpg/' or name like '%000000000097.jpg'),
+  (select count(*) from storage.objects where name like '/%' or name like 'homestay/f100%' or name like '%2F%' or name like '%5C%' or name like '%..%' or name like '%//%' or name like '%\\%' or name like '%/extra/%' or name like '%.JPG' or name like '%jpg/'),
   0::bigint,
-  'leading, trailing, duplicate, encoded, backslash, traversal, uppercase, extra-segment, wrong-prefix, and cross-entity paths are rejected'
+  'leading, trailing, duplicate, encoded, backslash, traversal, uppercase, extra-segment, wrong-prefix, and cross-parent paths are rejected'
 );
 select throws_ok(
   $$insert into storage.objects (id, bucket_id, name) values ('f9000000-0000-4000-8000-000000000001', 'tourism-media', 'destination/f1000000-0000-4000-8000-000000000001/f1100000-0000-4000-8000-000000000009.jpg')$$,
@@ -234,8 +239,8 @@ update private.app_config set administrator_user_id = null;
 set local role authenticated;
 select is(
   (select count(*) from storage.objects where bucket_id = 'tourism-media'),
-  6::bigint,
-  'non-administrator authenticated callers receive the same six published objects'
+  7::bigint,
+  'non-administrator authenticated callers receive the same published objects'
 );
 reset role;
 

@@ -89,6 +89,7 @@ export const EMPTY_MEDIA_VALUES: MediaFormValues = {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const INTEGER_PATTERN = /^\d+$/;
+const SUPPORTED_MEDIA_EXTENSION_PATTERN = /^(jpg|png|webp)$/;
 const ALLOWED_FIELDS = new Set([
   "entity_type",
   "parent_id",
@@ -105,6 +106,35 @@ export function isMediaEntityType(value: string): value is MediaEntityType {
 
 export function isValidMediaUuid(value: string) {
   return UUID_PATTERN.test(value);
+}
+
+export function isValidMediaStoragePath(
+  entityType: MediaEntityType,
+  parentId: string,
+  storagePath: string,
+) {
+  if (
+    !isMediaEntityType(entityType) ||
+    !isValidMediaUuid(parentId) ||
+    typeof storagePath !== "string"
+  ) {
+    return false;
+  }
+
+  const expectedPrefix = `${entityType}/${parentId}/`;
+  if (!storagePath.startsWith(expectedPrefix)) return false;
+
+  const [storageObjectId, extension, extra] = storagePath
+    .slice(expectedPrefix.length)
+    .split(".");
+  return (
+    !storagePath.includes("\\") &&
+    !storagePath.includes("%") &&
+    !storagePath.includes("..") &&
+    extra === undefined &&
+    isValidMediaUuid(storageObjectId ?? "") &&
+    SUPPORTED_MEDIA_EXTENSION_PATTERN.test(extension ?? "")
+  );
 }
 
 export function parseMediaRouteIdentity(

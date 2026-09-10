@@ -4,6 +4,7 @@ import { requireAdministrator } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import {
+  isValidMediaStoragePath,
   isValidMediaUuid,
   MEDIA_BUCKET,
   type MediaImageRecord,
@@ -58,16 +59,13 @@ function isTrustedPackageImageRow(
   const id = value.id;
   const packageId = value.package_id;
   const storagePath = value.storage_path;
-  const expectedPathPrefix = `tourism-package/${tourismPackageId}/${id}.`;
   return (
     typeof id === "string" &&
     isValidMediaUuid(id) &&
     packageId === tourismPackageId &&
     value.storage_bucket === MEDIA_BUCKET &&
     typeof storagePath === "string" &&
-    ["jpg", "png", "webp"].some(
-      (extension) => storagePath === `${expectedPathPrefix}${extension}`,
-    ) &&
+    isValidMediaStoragePath("tourism-package", tourismPackageId, storagePath) &&
     (value.caption === null || typeof value.caption === "string") &&
     typeof value.alt_text === "string" &&
     value.alt_text.trim() !== "" &&
@@ -99,6 +97,7 @@ async function queryPackageImages(
   ) {
     console.error("Pembacaan gambar paket wisata gagal.", {
       code: result.error?.code ?? "malformed-source-media",
+      reason: result.error ? "database-query" : "source-media-contract",
     });
     return null;
   }

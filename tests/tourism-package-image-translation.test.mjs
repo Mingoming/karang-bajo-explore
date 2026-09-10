@@ -11,10 +11,12 @@ import {
   validateTourismPackageImageTranslationForSource,
   validateTourismPackageImageTranslationInput,
 } from "../features/tourism-package-image-translation/model.ts";
+import { isValidMediaStoragePath } from "../features/media/model.ts";
 
 const read = (path) => readFileSync(path, "utf8");
 const PACKAGE_ID = "10000000-0000-4000-8000-000000000001";
 const IMAGE_ID = "40000000-0000-4000-8000-000000000001";
+const REPLACEMENT_OBJECT_ID = "70000000-0000-4000-8000-000000000001";
 const TRANSLATION_ID = "50000000-0000-4000-8000-000000000001";
 const REVISION = 4;
 const TRUSTED_SLUG = "paket-jelajah-karang-bajo";
@@ -332,6 +334,7 @@ async function loadImageData(dataRuntime) {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         value,
       ),
+    isValidMediaStoragePath,
     MEDIA_BUCKET: "tourism-media",
     createAdministratorPreviewUrl: async (_supabase, path) => {
       dataRuntime.previewCalls.push(path);
@@ -354,7 +357,8 @@ async function loadImageData(dataRuntime) {
     return await import(
       `data:text/javascript;charset=utf-8,${encodeURIComponent(`
 const deps = globalThis.${key};
-const { requireAdministrator, createClient, isValidMediaUuid, MEDIA_BUCKET,
+const { requireAdministrator, createClient, isValidMediaUuid,
+  isValidMediaStoragePath, MEDIA_BUCKET,
   createAdministratorPreviewUrl, queryTourismPackageById,
   isValidTourismPackageId, isTourismPackageImageTranslationRecord } = deps;
 ${stripped}`)}`
@@ -735,6 +739,31 @@ test("image admin data reads trusted source media and strips private history fie
   );
 });
 
+test("image admin data accepts a replacement object UUID independent of the image row ID", async () => {
+  const loader = await imageData;
+  imageDataRuntime.sourceRows = [
+    dataImage({
+      storage_path: `tourism-package/${PACKAGE_ID}/${REPLACEMENT_OBJECT_ID}.webp`,
+    }),
+  ];
+  imageDataRuntime.previewCalls = [];
+
+  const result = await loader.queryTourismPackageImageTranslationAdminData(
+    imageDataRuntime.client,
+    PACKAGE_ID,
+  );
+  assert.equal(result.success, true);
+  if (!result.success) return;
+  assert.equal(result.images[0].source.id, IMAGE_ID);
+  assert.equal(
+    result.images[0].source.previewUrl,
+    `https://storage.example/tourism-package/${PACKAGE_ID}/${REPLACEMENT_OBJECT_ID}.webp`,
+  );
+  assert.deepEqual(imageDataRuntime.previewCalls, [
+    `tourism-package/${PACKAGE_ID}/${REPLACEMENT_OBJECT_ID}.webp`,
+  ]);
+});
+
 test("image admin data fails closed for missing source, malformed media, duplicate primary, query, history, and signer errors", async () => {
   const loader = await imageData;
   imageDataRuntime.packageResult = {
@@ -925,6 +954,9 @@ test("image translation feature is RPC-only and has no source media controls", (
   );
   assert.match(featureSource, /revalidateEnglishTourismPackagePaths/);
   assert.match(featureSource, /package_images/);
-  assert.match(featureSource, /tourism-package\/\$\{tourismPackageId\}/);
+  assert.match(
+    featureSource,
+    /isValidMediaStoragePath\(\s*"tourism-package",\s*tourismPackageId/,
+  );
   assert.doesNotMatch(featureSource, /storage\.from\([^)]*\)\.getPublicUrl/);
 });
