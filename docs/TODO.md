@@ -1,20 +1,31 @@
 # TODO — Karang Bajo Explore
 
-## Current Release Authority
+## Release Snapshot Used for This Reconciliation
 
-Bagian ini adalah sumber status saat ini. Checklist fase di bawah dipertahankan sebagai catatan implementasi historis; checklist tersebut bukan otorisasi deployment dan tidak menggantikan [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](PRODUCTION_DEPLOYMENT_RUNBOOK.md). Item `☐`, `◐`, dan `⚠` di dalam checklist historis bukan current release blocker atau task assignment kecuali disalin ke bagian aktif dengan evidence terbaru.
+Snapshot ini dibuat pada 2026-09-11 untuk rekonsiliasi dokumentasi PR #51, sebelum PR dokumentasi tersebut digabung. Snapshot ini bersifat historis dan bukan current release authority setelah merge atau perubahan berikutnya. Jangan gunakan nilai di bawah sebagai asumsi reusable.
 
-- **Release source:** protected `main` pada `ef171a60a1f1097930411d456c98f2f9d38df57d`.
-- **Release history:** PR #50 telah di-merge.
-- **Baseline produksi yang diberikan untuk rekonsiliasi ini:** migration `20260910090000_bilingual_media_replacement_path_contract.sql` telah diterapkan ke hosted Supabase dan pending migrations setelah deployment adalah `0`.
-- **Media incident:** media replacement-path incident berstatus `CLOSED`; tidak diperlukan mutation content atau Storage untuk incident tersebut.
-- **Repository boundary:** CI `Quality` menjalankan `npm ci` dan `npm run check`; CI tidak menerapkan Supabase migrations dan tidak membuktikan application deployment.
-- **Deployment boundary:** application deployment dan hosted database migration deployment adalah langkah terpisah.
-- **Dokumentasi:** status release dan runbook direkonsiliasi pada branch ini; hosted facts di atas berasal dari release evidence yang diberikan, bukan dari akses hosted oleh audit ini.
+Status release yang berlaku harus diperoleh saat eksekusi dari:
+
+- current `origin/main`;
+- current pull-request, review, dan merge evidence;
+- current CI result untuk commit yang sedang diperiksa;
+- current application deployment evidence;
+- current authorized hosted migration inspection;
+- [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+
+Fakta yang dicatat dalam snapshot baseline ini:
+
+- **Reviewed source at snapshot time:** protected `main` pada `ef171a60a1f1097930411d456c98f2f9d38df57d`.
+- **Release history at snapshot time:** PR #50 telah di-merge.
+- **Supplied production baseline for this reconciliation:** migration `20260910090000_bilingual_media_replacement_path_contract.sql` telah dinyatakan diterapkan ke hosted Supabase dan pending migrations setelah deployment tersebut adalah `0`.
+- **Media incident evidence at snapshot time:** media replacement-path incident berstatus `CLOSED`; tidak diperlukan mutation content atau Storage untuk incident tersebut.
+- **Repository boundary recorded in the snapshot:** CI `Quality` menjalankan `npm ci` dan `npm run check`; CI tidak menerapkan Supabase migrations dan tidak membuktikan application deployment.
+- **Deployment boundary recorded in the snapshot:** application deployment dan hosted database migration deployment adalah langkah terpisah.
+- **Documentation context:** rekonsiliasi PR #51 disiapkan pada feature branch; status setelah merge atau perubahan berikutnya harus diambil dari evidence saat eksekusi.
 
 ## Current Open Work
 
-- Jalankan `npm.cmd run check` dan validasi focused/database/browser yang relevan untuk setiap perubahan berikutnya; gunakan suite dan inventory saat ini, bukan angka tetap historis.
+- Jalankan `npm.cmd run check` dan validasi focused/database/browser yang relevan untuk setiap perubahan berikutnya; gunakan suite dan inventory yang berlaku pada release yang sedang diperiksa, bukan angka tetap historis.
 - Simpan release evidence untuk owner produksi, backup/recovery, canonical origin dan aset SEO, verifikasi content, acceptance administrator, dan browser smoke bila evidence tersebut belum tercatat di tempat yang disetujui.
 - Reconcile checklist historis lain hanya ketika ada evidence baru; jangan membuka kembali blocker lama tanpa reproduksi atau keputusan release yang baru.
 
@@ -24,14 +35,14 @@ Bagian ini adalah sumber status saat ini. Checklist fase di bawah dipertahankan 
 - Review English translation against approved source material; jangan menganggap route atau migration availability sebagai content approval.
 - Jangan mengarang atau memperbaiki production content maupun Storage tanpa root-cause evidence, authorization, dan publication decision yang sesuai.
 
-## Status Proyek
+## Status Proyek pada Snapshot Rekonsiliasi
 
 - **Nama Proyek:** Karang Bajo Explore
-- **Fase Saat Ini:** Release baseline dan post-deployment closeout
-- **Branch Dasar Pengembangan:** protected `main`
-- **Progress Implementasi:** Core public domains, administration modules, GIS, media delivery, SEO foundation, kontak resmi terpusat, automated tests, bilingual workflows, dan CI quality gate tersedia pada `main`.
-- **Status Dokumentasi:** ☑ Release documentation direkonsiliasi pada branch ini
-- **Status deployment:** Baseline produksi di atas telah diberikan sebagai deployed; future release tetap mengikuti runbook dan approval gates.
+- **Fase yang tercatat pada snapshot:** Release baseline dan post-deployment closeout
+- **Branch baseline yang diperiksa pada snapshot:** protected `main`
+- **Progress implementasi yang tercatat pada baseline yang diperiksa:** Core public domains, administration modules, GIS, media delivery, SEO foundation, kontak resmi terpusat, automated tests, bilingual workflows, dan CI quality gate tersedia.
+- **Status dokumentasi pada snapshot:** ☑ Rekonsiliasi release documentation untuk PR #51 disiapkan untuk review
+- **Status deployment pada snapshot:** Baseline produksi yang diberikan dinyatakan deployed; future release tetap mengikuti runbook dan approval gates.
 
 ## Legenda Status
 
@@ -40,25 +51,25 @@ Bagian ini adalah sumber status saat ini. Checklist fase di bawah dipertahankan 
 - ☑ Completed
 - ⚠ Blocked
 
-## Superseded Release Blockers
+## Superseded Release Blockers (Historical Snapshot)
 
-Daftar blocker pre-production sebelumnya dihapus dari status aktif karena bertentangan dengan baseline produksi yang diberikan. Jangan menganggap owner, domain, backup, content acceptance, atau approval status selesai maupun belum selesai tanpa release evidence terbaru yang disetujui.
+Daftar blocker pre-production sebelumnya dicatat sebagai superseded dalam snapshot rekonsiliasi karena baseline produksi diberikan sebagai evidence untuk snapshot tersebut. Jangan menganggap owner, domain, backup, content acceptance, atau approval status selesai maupun belum selesai tanpa release evidence terbaru yang disetujui.
 
-## Completed Release Work on `main`
+## Completed Release Work Recorded in Reconciliation Snapshot
 
-- ☑ Protected `main` berada pada release source yang diberikan dan PR #50 telah di-merge.
-- ☑ Migration `20260910090000_bilingual_media_replacement_path_contract.sql` termasuk dalam applied production baseline yang diberikan; hosted pending migrations setelah deployment adalah `0`.
-- ☑ Media replacement-path incident ditutup; tidak ada corrective source, data, atau Storage mutation yang diperlukan untuk incident tersebut.
-- ☑ Public domains, administrator workflows, bilingual workflows, media delivery, GIS, SEO foundation, automated tests, dan CI quality gate tersedia pada current `main`.
-- ☑ Dedicated production deployment runbook tersedia di `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
+- ☑ Protected `main` berada pada release source yang diperiksa dalam snapshot dan PR #50 telah di-merge pada saat snapshot.
+- ☑ Migration `20260910090000_bilingual_media_replacement_path_contract.sql` termasuk dalam applied production baseline yang diberikan untuk snapshot; hosted pending migrations setelah deployment tersebut adalah `0`.
+- ☑ Media replacement-path incident dicatat ditutup pada snapshot; tidak ada corrective source, data, atau Storage mutation yang diperlukan untuk incident tersebut.
+- ☑ Public domains, administrator workflows, bilingual workflows, media delivery, GIS, SEO foundation, automated tests, dan CI quality gate tersedia pada baseline yang diperiksa.
+- ☑ Dedicated production deployment runbook tersedia pada baseline yang diperiksa di `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
 
-PR lama seperti PR #1–#4 dan PR #12–#14 tetap dapat ditelusuri melalui Git history sebagai milestone historis; PR tersebut bukan batas release saat ini.
+PR lama seperti PR #1–#4 dan PR #12–#14 tetap dapat ditelusuri melalui Git history sebagai milestone historis; PR tersebut bukan batas release yang berlaku untuk merge atau release berikutnya.
 
 ---
 
 ## Historical Implementation Checklist (Non-Actionable)
 
-Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementasi lama. Unchecked items di dalamnya tidak boleh dibaca sebagai blocker release saat ini; current active work berada pada `Current Open Work`, `Content and Data Follow-up`, follow-up Phase 8, dan bagian `Deferred / Future`.
+Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementasi lama. Unchecked items di dalamnya tidak boleh dibaca sebagai release blocker dengan sendirinya; active follow-up berada pada `Current Open Work`, `Content and Data Follow-up`, follow-up Phase 8, dan bagian `Deferred / Future`.
 
 # Phase 1 — Project Foundation
 
@@ -143,7 +154,7 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 - ☑ Uji sole-administrator authorization dan denied identities
 - ☑ Uji anonymous published-only exposure dan private-field isolation
 - ☑ Uji lifecycle, slug, coordinates, prices, events, media, consent, packages, dan seed
-- ☑ Local pgTAP database suite mencakup private Storage, RPC-only mutation Media, transactional Tourism Package RPC, official-contact dan site-setting RLS, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, federated published-media access, dan English Village Profile; jalankan current suite sebelum release berikutnya.
+- ☑ Local pgTAP database suite mencakup private Storage, RPC-only mutation Media, transactional Tourism Package RPC, official-contact dan site-setting RLS, penolakan direct table mutation, atomic rollback, sinkronisasi thumbnail, fallback primary, batas 10 gambar, federated published-media access, dan English Village Profile; jalankan suite yang berlaku sebelum release berikutnya.
 - ☑ Database lint untuk schema `public` dan `private` lulus tanpa error
 
 ## Phase 2C.1 — Coordinate Integrity Correction and Test Completion
@@ -151,7 +162,7 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 - ☑ Perbaiki seluruh nullable latitude/longitude pair constraints pada initial migration
 - ☑ Verifikasi both-null, complete pair, half-null, dan coordinate ranges melalui pgTAP
 - ☑ Terapkan initial migration dan seed dari database lokal kosong
-- ☑ Selesaikan pgTAP suite yang relevan dengan current schema contract; gunakan hasil suite saat ini pada setiap release.
+- ☑ Selesaikan pgTAP suite yang relevan dengan schema contract yang ditinjau; gunakan hasil suite yang tercatat pada setiap release.
 
 ## Phase 2 Completion Gate
 
@@ -268,7 +279,7 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 - ☑ Metadata list/detail menggunakan nama dan ringkasan terverifikasi tanpa signed URL sementara sebagai Open Graph image.
 - ☑ Integrasi data destinasi dan signed media pada homepage.
 - ☑ Federated public-media authorization dan batch signing digunakan oleh route publik enam jenis parent.
-- ☑ Federated public-media migration `20260730094319_federated_public_media_delivery.sql` termasuk dalam migration history current `main`; status hosted mengikuti applied baseline dan pending list pada release evidence.
+- ☑ Federated public-media migration `20260730094319_federated_public_media_delivery.sql` termasuk dalam migration history yang ditinjau pada snapshot; status hosted harus ditetapkan dari release evidence saat eksekusi.
 
 ## Phase 4 Completion Gate
 
@@ -392,8 +403,8 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 - ☑ Tourism Package ordered destination association dengan pencegahan duplikasi dan normalisasi urutan
 - ☑ Transactional `tourism_package_create` dan `tourism_package_update` RPC dengan sole-admin authorization, row locking, complete-set validation, dan atomic rollback
 - ☑ Direct mutation `tourism_packages` dan `package_destinations` dicabut dari `authenticated`; aplikasi menggunakan RPC untuk seluruh create dan edit
-- ☑ Tourism Package focused application dan pgTAP coverage tersedia pada current suite.
-- ☑ Transactional Tourism Package migration `20260730044746_tourism_package_transactional_rpcs.sql` termasuk dalam current migration history; hosted status mengikuti release evidence.
+- ☑ Tourism Package focused application dan pgTAP coverage tersedia pada repository suite.
+- ☑ Transactional Tourism Package migration `20260730044746_tourism_package_transactional_rpcs.sql` termasuk dalam migration history yang ditinjau pada snapshot; status hosted harus ditetapkan dari release evidence saat eksekusi.
 - ◐ Credential-backed hosted administrator, non-administrator, dan atomic-rollback validation harus ditautkan ke release record yang disetujui; audit dokumentasi ini tidak menjalankannya.
 
 ### Tourism Package Credential-Backed Browser Validation
@@ -507,9 +518,9 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 - ☑ Remove image, fallback primary, dan thumbnail clearing
 - ☐ Missing-image warning
 - ◐ Orphan-file cleanup dicatat aman saat Storage cleanup gagal; maintenance cleanup belum dibuat
-- ☑ Federated public signed-URL delivery untuk parent dan consumer yang didukung tersedia pada current `main`; hosted status mengikuti release evidence.
-- ☑ Media tests dan focused pgTAP Storage/RPC coverage tersedia pada current suite; jangan gunakan total historis tetap.
-- ☑ Media replacement-path contract tersedia pada current `main`; supplied production incident untuk `/homestay/kaki-rinjani` telah ditutup tanpa data atau Storage correction.
+- ☑ Federated public signed-URL delivery untuk parent dan consumer yang didukung tersedia pada baseline yang ditinjau; hosted status mengikuti release evidence saat eksekusi.
+- ☑ Media tests dan focused pgTAP Storage/RPC coverage tersedia pada repository suite; jangan gunakan total historis tetap.
+- ☑ Media replacement-path contract tersedia pada baseline yang ditinjau; supplied production incident untuk `/homestay/kaki-rinjani` dicatat telah ditutup dalam snapshot tanpa data atau Storage correction.
 
 ### Media Credential-Backed Browser Validation
 
@@ -673,12 +684,12 @@ Bagian Phase 1–7 di bawah hanya untuk traceability terhadap rencana implementa
 
 # Phase 8 — Deployment and Handover
 
-Checklist deployment lama yang menyatakan pre-production setup telah disupersede. Status deployment saat ini hanya boleh diambil dari current release authority dan evidence record pada runbook.
+Checklist deployment lama yang menyatakan pre-production setup telah disupersede. Status deployment jangan disimpulkan dari checklist ini; ambil dari release evidence yang diperoleh saat eksekusi dan dari runbook.
 
-## Current release evidence
+## Release Evidence Requirements
 
-- ☑ Release source, PR #50, latest migration, hosted pending state, dan media-incident closeout dicatat pada bagian `Current Release Authority`.
-- ☑ Application deployment dan hosted database migration deployment diperlakukan sebagai langkah terpisah.
+- ☐ Sebelum release, catat approved application commit, current PR/review/merge evidence, migration inventory dan pending list, application deployment evidence, serta incident/closeout evidence yang berlaku.
+- ☑ Application deployment dan hosted database migration deployment diperlakukan sebagai langkah terpisah dalam runbook.
 - ◐ Exact application deployment identity, production owner, target classification, backup/recovery owner, dan handover acceptance harus ditautkan ke release record; TODO ini tidak mengarang nilainya.
 
 ## SEO and Content follow-ups
@@ -717,7 +728,7 @@ Checklist deployment lama yang menyatakan pre-production setup telah disupersede
 
 ## Dependency Audit Status
 
-- ◐ Dependency and quality status must be refreshed from the current lockfile, `npm.cmd run check`, CI `Quality`, and the release evidence for the relevant commit; old baseline SHAs, fixed test totals, and historical audit findings are not current release authority.
+- ◐ Dependency and quality status must be refreshed at execution time from the applicable lockfile, `npm.cmd run check`, CI `Quality`, and the release evidence for the relevant commit; old baseline SHAs, fixed test totals, and historical audit findings are not release authority.
 - ⚠ Future audits may change as the npm advisory database changes; dependency monitoring remains ongoing maintenance.
 - ⚠ `npm audit fix --force` remains prohibited because it can propose incompatible breaking changes.
 
@@ -760,26 +771,26 @@ Checklist deployment lama yang menyatakan pre-production setup telah disupersede
 - ☑ Dictionary-parity, route-manifest, metadata, no-fallback, admin-isolation, and Indonesian-regression tests added.
 - ☑ Server-rendered `<html lang="id">` and `<html lang="en">` validated through local HTTP responses.
 
-## English Public Content and Bilingual Rollout — Current `main`
+## English Public Content and Bilingual Rollout — Recorded in Reviewed Baseline
 
-- ☑ Database-backed English content, explicit per-domain translation contracts, lifecycle validation, RLS boundaries, and no-fallback behavior are implemented on current `main`.
-- ☑ The current implementation covers Village Profile plus destination, tourism package, homestay, UMKM/local-business, traditional-house, and cultural-event public route families.
-- ☑ The current implementation includes the applicable administrator source, English translation, and English image-translation workflows; Village Profile remains a singleton translation workflow without media translation.
-- ☑ PR #12, PR #13, and PR #14 remain useful historical milestones for the Village Profile rollout, not the current bilingual scope boundary.
-- ☑ The supplied production baseline states that the latest bilingual media migration is applied and that hosted pending migrations after deployment are `0`.
+- ☑ Database-backed English content, explicit per-domain translation contracts, lifecycle validation, RLS boundaries, and no-fallback behavior were implemented in the reviewed baseline.
+- ☑ The reviewed implementation covers Village Profile plus destination, tourism package, homestay, UMKM/local-business, traditional-house, and cultural-event public route families.
+- ☑ The reviewed implementation includes the applicable administrator source, English translation, and English image-translation workflows; Village Profile remains a singleton translation workflow without media translation.
+- ☑ PR #12, PR #13, and PR #14 remain useful historical milestones for the Village Profile rollout, not a boundary for later releases.
+- ☑ The reconciliation snapshot records the supplied production evidence for the bilingual media migration; later migration and pending status must be rechecked at execution time.
 - ◐ Domain-by-domain English content verification, translation freshness, publication approval, administrator acceptance, browser smoke, and SEO evidence must be recorded in the approved release record.
 
-This section records implemented delivery, not permission to publish content or mutate a hosted target. Future scope outside the current implementation remains subject to stakeholder approval and the separate gates in [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+This section records implemented delivery in the reviewed baseline, not permission to publish content or mutate a hosted target. Future scope outside the reviewed implementation remains subject to stakeholder approval and the separate gates in [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](PRODUCTION_DEPLOYMENT_RUNBOOK.md).
 
 ---
 
 # Bilingual Public Rollout — Implemented Delivery and Content Gate
 
-The rollout implementation is present on current `main`; the former “proposed implementation authorization” wording is obsolete. Availability of routes, schema, or workflows does not by itself authorize production migration, content publication, or a future-scope commitment.
+The rollout implementation was present in the reviewed baseline; the former “proposed implementation authorization” wording was obsolete for that snapshot. Availability of routes, schema, or workflows does not by itself authorize production migration, content publication, or a future-scope commitment.
 
-- ☑ Route pairs, localized shell behavior, terminology contracts, and no-fallback policy are implemented in the current route/configuration surface.
-- ☑ Per-domain schema, RLS, publication, stale-source, deletion, and media contracts are represented by the current migrations and application workflows.
-- ☑ The phased implementation has repository-backed application and database tests; run the current relevant suite for each future release.
+- ☑ Route pairs, localized shell behavior, terminology contracts, and no-fallback policy are implemented in the reviewed route/configuration surface.
+- ☑ Per-domain schema, RLS, publication, stale-source, deletion, and media contracts are represented by the reviewed migrations and application workflows.
+- ☑ The phased implementation has repository-backed application and database tests; run the relevant suite for each release.
 - ◐ English content owners and review responsibilities must be assigned for every public domain before publication.
 - ◐ Each route family must pass its database, application, browser, rendering, SEO, and regression gates for the release in scope.
 - ◐ Production content publication and post-deployment validation remain separately authorized release activities.
