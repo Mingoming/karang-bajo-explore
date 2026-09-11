@@ -512,6 +512,80 @@ select (public.destination_image_translation_review(:'image_translation_id', :'i
 select (public.destination_image_translation_republish(:'image_translation_id', :'image_re_reviewed_edit_revision')).edit_revision \gset image_republished_
 select is((select count(*) from public.published_english_destination_images where id = 'b1200000-0000-4000-8000-000000000001'), 1::bigint, 'freshly reviewed image translation can republish and restore eligibility');
 
+insert into storage.objects (id, bucket_id, name, owner_id)
+values (
+  'b1300000-0000-4000-8000-000000000097',
+  'tourism-media',
+  'destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp',
+  'b1000000-0000-4000-8000-000000000001'
+);
+select is(
+  public.media_replace(
+    'destination',
+    'b1100000-0000-4000-8000-000000000001',
+    'b1200000-0000-4000-8000-000000000001',
+    'destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp',
+    'Alt replacement destination',
+    'Replacement destination caption',
+    0,
+    true,
+    array['b1200000-0000-4000-8000-000000000001']::uuid[]
+  ),
+  'destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000001.jpg',
+  'destination media_replace accepts an object UUID independent from the image row ID'
+);
+select ok(
+  private.destination_source_is_eligible(
+    (select source from public.destinations as source where source.id = 'b1100000-0000-4000-8000-000000000001')
+  ),
+  'destination source eligibility accepts an independent replacement object UUID'
+);
+select is(
+  public.can_read_published_media('destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp'),
+  true,
+  'published-media policy accepts a destination replacement object UUID path'
+);
+select is(
+  (select count(*) from public.published_english_destination_images where id = 'b1200000-0000-4000-8000-000000000001'),
+  0::bigint,
+  'destination replacement suppresses the stale English image until it is freshly reviewed'
+);
+select throws_ok(
+  $$select public.media_replace('destination', 'b1100000-0000-4000-8000-000000000001', 'b1200000-0000-4000-8000-000000000001', 'destination/b1700000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp', 'Alt replacement destination', null, 0, true, array['b1200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'destination replacement rejects a path under the wrong parent UUID'
+);
+select throws_ok(
+  $$select public.media_replace('destination', 'b1100000-0000-4000-8000-000000000001', 'b1200000-0000-4000-8000-000000000001', 'homestay/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp', 'Alt replacement destination', null, 0, true, array['b1200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'destination replacement rejects a path under the wrong entity prefix'
+);
+select throws_ok(
+  $$select public.media_replace('destination', 'b1100000-0000-4000-8000-000000000001', 'b1200000-0000-4000-8000-000000000001', 'destination/b1100000-0000-4000-8000-000000000001/not-a-uuid.webp', 'Alt replacement destination', null, 0, true, array['b1200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'destination replacement rejects a malformed object UUID'
+);
+select throws_ok(
+  $$select public.media_replace('destination', 'b1100000-0000-4000-8000-000000000001', 'b1200000-0000-4000-8000-000000000001', 'destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.gif', 'Alt replacement destination', null, 0, true, array['b1200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'destination replacement rejects an unsupported extension'
+);
+select (public.destination_translation_unpublish(:'translation_id', :'published_edit_revision')).edit_revision \gset replacement_parent_withdrawn_
+select (public.destination_translation_review(:'translation_id', :'replacement_parent_withdrawn_edit_revision')).edit_revision \gset replacement_parent_reviewed_
+select (public.destination_translation_republish(:'translation_id', :'replacement_parent_reviewed_edit_revision')).edit_revision \gset published_
+select (public.destination_image_translation_unpublish(:'image_translation_id', :'image_republished_edit_revision')).edit_revision \gset replacement_image_withdrawn_
+select (public.destination_image_translation_review(:'image_translation_id', :'replacement_image_withdrawn_edit_revision')).edit_revision \gset replacement_image_reviewed_
+select (public.destination_image_translation_republish(:'image_translation_id', :'replacement_image_reviewed_edit_revision')).edit_revision \gset image_republished_
+select is(
+  (select storage_path from public.published_english_destination_images where id = 'b1200000-0000-4000-8000-000000000001'),
+  'destination/b1100000-0000-4000-8000-000000000001/b1200000-0000-4000-8000-000000000097.webp',
+  'fresh destination review publishes the replacement object path'
+);
+
 select (public.destination_translation_save_draft(
   'b1100000-0000-4000-8000-000000000001', :'published_edit_revision',
   'Bilingual Destination', 'Source summary in English', 'Source description in English',

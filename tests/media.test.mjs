@@ -20,6 +20,7 @@ import {
   getUploadCompensationDecision,
   isMediaRecordOwnedBy,
   isMediaEntityType,
+  isValidMediaStoragePath,
   isValidMediaUuid,
   moveMediaImageToOrder,
   parseMediaRouteIdentity,
@@ -38,6 +39,7 @@ import { isValidTraditionalHouseSlug } from "../features/traditional-houses/mode
 const parentId = "10000000-0000-4000-8000-000000000001";
 const imageId = "20000000-0000-4000-8000-000000000001";
 const otherParentId = "10000000-0000-4000-8000-000000000002";
+const replacementObjectId = "30000000-0000-4000-8000-000000000001";
 
 function trustedForm(overrides = {}) {
   const formData = new FormData();
@@ -73,6 +75,47 @@ test("entity allowlist and route UUID validation reject untrusted identifiers", 
   assert.equal(isMediaEntityType("gallery"), false);
   assert.equal(isValidMediaUuid(parentId), true);
   assert.equal(isValidMediaUuid("../rahasia"), false);
+});
+
+test("managed media paths accept independent object UUIDs and reject unsafe shapes", () => {
+  for (const entityType of [
+    "destination",
+    "tourism-package",
+    "homestay",
+    "umkm",
+    "traditional-house",
+    "cultural-event",
+  ]) {
+    assert.equal(
+      isValidMediaStoragePath(
+        entityType,
+        parentId,
+        `${entityType}/${parentId}/${imageId}.jpg`,
+      ),
+      true,
+    );
+    assert.equal(
+      isValidMediaStoragePath(
+        entityType,
+        parentId,
+        `${entityType}/${parentId}/${replacementObjectId}.webp`,
+      ),
+      true,
+    );
+  }
+
+  for (const storagePath of [
+    `destination/${otherParentId}/${replacementObjectId}.jpg`,
+    `homestay/${parentId}/${replacementObjectId}.jpg`,
+    `destination/${parentId}/not-a-uuid.jpg`,
+    `destination/${parentId}/${replacementObjectId}.gif`,
+    `destination/${parentId}/../${replacementObjectId}.jpg`,
+  ]) {
+    assert.equal(
+      isValidMediaStoragePath("destination", parentId, storagePath),
+      false,
+    );
+  }
 });
 
 test("metadata normalization trims required text and nulls an empty caption", () => {

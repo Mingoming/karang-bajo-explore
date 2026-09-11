@@ -629,6 +629,80 @@ select throws_ok(
 );
 
 reset role;
+select set_config('request.jwt.claim.sub', 'd2000000-0000-4000-8000-000000000001', true);
+set local role authenticated;
+select lives_ok(
+  $$update public.homestays
+    set status = 'published',
+        updated_by = 'd2000000-0000-4000-8000-000000000001'
+    where id = 'd2100000-0000-4000-8000-000000000001'$$,
+  'Homestay source can be republished for replacement-path coverage'
+);
+reset role;
+insert into storage.objects (id, bucket_id, name, owner_id)
+values (
+  'd2300000-0000-4000-8000-000000000009',
+  'tourism-media',
+  'homestay/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp',
+  'd2000000-0000-4000-8000-000000000001'
+);
+set local role authenticated;
+select is(
+  public.media_replace(
+    'homestay',
+    'd2100000-0000-4000-8000-000000000001',
+    'd2200000-0000-4000-8000-000000000001',
+    'homestay/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp',
+    'Replacement primary alt', 'Replacement primary caption', 0, true,
+    array[
+      'd2200000-0000-4000-8000-000000000001'::uuid,
+      'd2200000-0000-4000-8000-000000000002'::uuid
+    ]
+  ),
+  'homestay/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000001.jpg',
+  'Homestay media_replace accepts a replacement object UUID independent of the image row ID'
+);
+reset role;
+select ok(
+  private.homestay_source_is_eligible(source),
+  'Homestay source eligibility remains true after replacing the primary media object'
+)
+from public.homestays as source
+where source.id = 'd2100000-0000-4000-8000-000000000001'::uuid;
+set local role authenticated;
+select ok(
+  public.can_read_published_media(
+    'homestay/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp'
+  ),
+  'published Storage policy accepts the Homestay replacement object path'
+);
+select ok(
+  (select count(*) = 1 and bool_and(review_eligibility)
+   from public.homestay_image_translation_admin_read(
+     'd2200000-0000-4000-8000-000000000001'::uuid
+   )),
+  'Homestay image admin read accepts the replaced source media for review'
+);
+select id, edit_revision
+from public.homestay_image_translation_admin_read(
+  'd2200000-0000-4000-8000-000000000001'::uuid
+) \gset homestay_replacement_current_
+select (public.homestay_image_translation_unpublish(
+  :'homestay_replacement_current_id'::uuid,
+  :'homestay_replacement_current_edit_revision'::bigint
+)).edit_revision as edit_revision \gset homestay_replacement_withdrawn_
+select (public.homestay_image_translation_review(
+  :'homestay_replacement_current_id'::uuid,
+  :'homestay_replacement_withdrawn_edit_revision'::bigint,
+  true
+)).edit_revision as edit_revision \gset homestay_replacement_reviewed_
+select is(
+  (select review_state from public.homestay_image_translation_admin_read(
+     'd2200000-0000-4000-8000-000000000001'::uuid
+   ) limit 1),
+  'reviewed'::text,
+  'Homestay image review succeeds after media_replace with an independent object UUID'
+);
 
 select * from finish();
 rollback;

@@ -1251,7 +1251,7 @@ insert into storage.objects (id, bucket_id, name, owner_id)
 values (
   'e2300000-0000-4000-8000-000000000003',
   'tourism-media',
-  'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000001.png',
+  'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000009.webp',
   'e8000000-0000-4000-8000-000000000001'
 );
 select aggregate_revision as aggregate_revision,
@@ -1264,7 +1264,7 @@ select is(
     'tourism-package',
     :'package_id'::uuid,
     'e2200000-0000-4000-8000-000000000001'::uuid,
-    'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000001.png',
+    'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000009.webp',
     'Replacement primary alt', 'Replacement primary caption', 0, true,
     array[
       'e2200000-0000-4000-8000-000000000001'::uuid,
@@ -1287,10 +1287,62 @@ select is(
 );
 select is(
   (select thumbnail_path from public.tourism_packages where id = :'package_id'),
-  'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000001.png',
+  'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000009.webp',
   'primary media replacement synchronizes the source thumbnail path'
 );
 reset role;
+
+set local role authenticated;
+select public.tourism_package_update(
+  :'package_id'::uuid, 'Paket Indonesia', 'standard', 2, 'hari', 125,
+  'Per orang', array['Pemandu', 'Makan']::text[], 'Kerajinan lokal',
+  'Ringkasan paket Indonesia', 'Deskripsi paket Indonesia', true, 4, 'published',
+  '[
+    {"destination_id":"e8100000-0000-4000-8000-000000000002","display_order":0,"notes":"Catatan itinerary baru"},
+    {"destination_id":"e8100000-0000-4000-8000-000000000001","display_order":1,"notes":null}
+  ]'::jsonb
+);
+reset role;
+select ok(
+  private.tourism_package_source_is_eligible(source),
+  'Tourism Package source eligibility accepts a replacement object UUID independent of the image row ID'
+)
+from public.tourism_packages as source
+where source.id = :'package_id'::uuid;
+set local role authenticated;
+select ok(
+  public.can_read_published_media(
+    'tourism-package/' || :'package_id' || '/e2200000-0000-4000-8000-000000000009.webp'
+  ),
+  'published Storage policy accepts the Tourism Package replacement object path'
+);
+select ok(
+  (select count(*) = 1 and bool_and(review_eligibility)
+   from public.tourism_package_image_translation_admin_read(
+     'e2200000-0000-4000-8000-000000000001'::uuid
+   )),
+  'Tourism Package image admin read accepts the replaced source media for review'
+);
+select edit_revision
+from public.tourism_package_image_translation_admin_read(
+  'e2200000-0000-4000-8000-000000000001'::uuid
+) \gset package_replacement_current_
+select (public.tourism_package_image_translation_unpublish(
+  :'primary_image_translation_id'::uuid,
+  :'package_replacement_current_edit_revision'::bigint
+)).edit_revision as edit_revision \gset package_replacement_withdrawn_
+select (public.tourism_package_image_translation_review(
+  :'primary_image_translation_id'::uuid,
+  :'package_replacement_withdrawn_edit_revision'::bigint,
+  true
+)).edit_revision as edit_revision \gset package_replacement_reviewed_
+select is(
+  (select review_state from public.tourism_package_image_translation_admin_read(
+     'e2200000-0000-4000-8000-000000000001'::uuid
+   ) limit 1),
+  'reviewed'::text,
+  'Tourism Package image review succeeds after media_replace with an independent object UUID'
+);
 
 reset role;
 select throws_ok(

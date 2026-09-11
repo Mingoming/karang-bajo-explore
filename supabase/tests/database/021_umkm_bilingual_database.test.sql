@@ -391,6 +391,106 @@ select is(
   'optional translated gallery image is independently public'
 );
 
+insert into storage.objects (id, bucket_id, name, owner_id)
+values (
+  'd2300000-0000-4000-8000-000000000009',
+  'tourism-media',
+  'umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp',
+  'd2000000-0000-4000-8000-000000000001'
+);
+select is(
+  public.media_replace(
+    'umkm',
+    'd2100000-0000-4000-8000-000000000001',
+    'd2200000-0000-4000-8000-000000000001',
+    'umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp',
+    'Alt UMKM replacement',
+    'UMKM replacement caption',
+    0,
+    true,
+    array['d2200000-0000-4000-8000-000000000001','d2200000-0000-4000-8000-000000000002']::uuid[]
+  ),
+  'umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000001.jpg',
+  'UMKM media_replace accepts an object UUID independent from the image row ID'
+);
+reset role;
+select ok(
+  private.umkm_source_is_eligible(
+    (select source from public.umkms as source where source.id = 'd2100000-0000-4000-8000-000000000001')
+  ),
+  'UMKM source eligibility accepts an independent replacement object UUID'
+);
+set local role authenticated;
+select is(
+  (select review_eligibility from public.umkm_image_translation_admin_read('d2200000-0000-4000-8000-000000000001')),
+  true,
+  'UMKM image admin derived state accepts the replacement object path for review'
+);
+select is(
+  public.can_read_published_media('umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp'),
+  true,
+  'published-media policy accepts an UMKM replacement object UUID path'
+);
+select is(
+  (select count(*) from public.published_english_umkm_images
+    where id = 'd2200000-0000-4000-8000-000000000001'),
+  0::bigint,
+  'UMKM replacement suppresses the stale English primary image until fresh review'
+);
+select is(
+  (select count(*) from public.published_english_umkms
+    where id = 'd2100000-0000-4000-8000-000000000001'),
+  0::bigint,
+  'UMKM replacement suppresses the stale English parent thumbnail until fresh review'
+);
+select throws_ok(
+  $$select public.media_replace('umkm', 'd2100000-0000-4000-8000-000000000001', 'd2200000-0000-4000-8000-000000000001', 'umkm/d2100000-0000-4000-8000-000000000002/d2200000-0000-4000-8000-000000000009.webp', 'Alt UMKM replacement', null, 0, true, array['d2200000-0000-4000-8000-000000000001','d2200000-0000-4000-8000-000000000002']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'UMKM replacement rejects a path under the wrong parent UUID'
+);
+select throws_ok(
+  $$select public.media_replace('umkm', 'd2100000-0000-4000-8000-000000000001', 'd2200000-0000-4000-8000-000000000001', 'homestay/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp', 'Alt UMKM replacement', null, 0, true, array['d2200000-0000-4000-8000-000000000001','d2200000-0000-4000-8000-000000000002']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'UMKM replacement rejects a path under the wrong entity prefix'
+);
+select throws_ok(
+  $$select public.media_replace('umkm', 'd2100000-0000-4000-8000-000000000001', 'd2200000-0000-4000-8000-000000000001', 'umkm/d2100000-0000-4000-8000-000000000001/not-a-uuid.webp', 'Alt UMKM replacement', null, 0, true, array['d2200000-0000-4000-8000-000000000001','d2200000-0000-4000-8000-000000000002']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'UMKM replacement rejects a malformed object UUID'
+);
+select throws_ok(
+  $$select public.media_replace('umkm', 'd2100000-0000-4000-8000-000000000001', 'd2200000-0000-4000-8000-000000000001', 'umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.gif', 'Alt UMKM replacement', null, 0, true, array['d2200000-0000-4000-8000-000000000001','d2200000-0000-4000-8000-000000000002']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'UMKM replacement rejects an unsupported extension'
+);
+select (public.umkm_image_translation_unpublish(
+  :'h_primary_draft_id', :'h_primary_published_edit_revision'
+)).edit_revision \gset h_primary_replacement_withdrawn_
+select (public.umkm_image_translation_review(
+  :'h_primary_draft_id', :'h_primary_replacement_withdrawn_edit_revision', true
+)).edit_revision \gset h_primary_replacement_reviewed_
+select (public.umkm_image_translation_republish(
+  :'h_primary_draft_id', :'h_primary_replacement_reviewed_edit_revision'
+)).edit_revision \gset h_primary_published_
+select (public.umkm_translation_unpublish(
+  :'h_parent_draft_id', :'h_parent_published_edit_revision'
+)).edit_revision \gset h_parent_replacement_withdrawn_
+select (public.umkm_translation_review(
+  :'h_parent_draft_id', :'h_parent_replacement_withdrawn_edit_revision', true
+)).edit_revision \gset h_parent_replacement_reviewed_
+select (public.umkm_translation_republish(
+  :'h_parent_draft_id', :'h_parent_replacement_reviewed_edit_revision'
+)).edit_revision \gset h_parent_published_
+select is(
+  (select storage_path from public.published_english_umkm_images where id = 'd2200000-0000-4000-8000-000000000001'),
+  'umkm/d2100000-0000-4000-8000-000000000001/d2200000-0000-4000-8000-000000000009.webp',
+  'fresh UMKM review publishes the replacement object path'
+);
+
 select lives_ok(
   $$update public.umkms
     set latitude = -8.1, longitude = 116.5,

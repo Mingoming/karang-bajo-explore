@@ -1684,17 +1684,57 @@ select (public.traditional_house_translation_republish(:'parent_id', :'parent_fa
 select is((select count(*) from public.published_english_traditional_houses where id = 'f3100000-0000-4000-8000-000000000001'), 1::bigint, 'fresh parent review restores publication after primary deletion fallback');
 insert into storage.objects (id, bucket_id, name, owner_id)
 values (
-  'f3300000-0000-0000-8000-000000000003',
+  'f3300000-0000-0000-8000-000000000009',
   'tourism-media',
-  'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000002.png',
+  'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.webp',
   'f3000000-0000-4000-8000-000000000001'
 );
 select lives_ok(
-  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000002.png', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
+  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.webp', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
   'binary media replacement remains supported by the existing generic media RPC'
+);
+select ok(
+  private.traditional_house_source_is_eligible(
+    (select source from public.traditional_houses as source where source.id = 'f3100000-0000-4000-8000-000000000001')
+  ),
+  'traditional house source eligibility accepts an independent replacement object UUID'
+);
+select is(
+  (select review_eligibility from public.traditional_house_image_translation_admin_read('f3200000-0000-4000-8000-000000000002')),
+  true,
+  'traditional house image admin derived state accepts the replacement object path for review'
+);
+select is(
+  public.can_read_published_media('traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.webp'),
+  true,
+  'published-media policy accepts a traditional house replacement object UUID path'
 );
 select is((select binary_revision from public.traditional_house_images where id = 'f3200000-0000-4000-8000-000000000002'), 2::bigint, 'supported binary replacement increments the non-primary image revision');
 select is((select count(*) from public.published_english_traditional_house_images where id = 'f3200000-0000-4000-8000-000000000002'), 0::bigint, 'binary replacement suppresses the stale non-primary English image');
+select throws_ok(
+  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'traditional-house/f3100000-0000-4000-8000-000000000002/f3200000-0000-4000-8000-000000000009.webp', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'traditional house replacement rejects a path under the wrong parent UUID'
+);
+select throws_ok(
+  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'homestay/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.webp', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'traditional house replacement rejects a path under the wrong entity prefix'
+);
+select throws_ok(
+  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'traditional-house/f3100000-0000-4000-8000-000000000001/not-a-uuid.webp', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'traditional house replacement rejects a malformed object UUID'
+);
+select throws_ok(
+  $$select public.media_replace('traditional-house', 'f3100000-0000-4000-8000-000000000001', 'f3200000-0000-4000-8000-000000000002', 'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.gif', 'Alt sumber galeri diganti', null, 0, true, array['f3200000-0000-4000-8000-000000000002','f3200000-0000-4000-8000-000000000001']::uuid[])$$,
+  '22023'::char(5),
+  'invalid media storage path',
+  'traditional house replacement rejects an unsupported extension'
+);
 select (public.traditional_house_image_translation_unpublish(:'gallery_image_translation_id', :'gallery_image_published_edit_revision')).edit_revision \gset gallery_replace_withdrawn_
 select (public.traditional_house_image_translation_review(:'gallery_image_translation_id', :'gallery_replace_withdrawn_edit_revision', true)).edit_revision \gset gallery_replace_reviewed_
 select (public.traditional_house_image_translation_republish(:'gallery_image_translation_id', :'gallery_replace_reviewed_edit_revision')).edit_revision \gset gallery_replace_republished_
@@ -1703,6 +1743,11 @@ select (public.traditional_house_translation_review(:'parent_id', :'parent_galle
 select (public.traditional_house_translation_republish(:'parent_id', :'parent_gallery_replace_reviewed_edit_revision')).edit_revision \gset parent_gallery_replace_republished_
 select is((select count(*) from public.published_english_traditional_house_images where id = 'f3200000-0000-4000-8000-000000000002'), 1::bigint, 'fresh child review and republish restores replaced gallery media');
 select is((select count(*) from public.published_english_traditional_houses where id = 'f3100000-0000-4000-8000-000000000001'), 1::bigint, 'fresh parent review restores publication after replacing the current primary gallery media');
+select is(
+  (select storage_path from public.published_english_traditional_house_images where id = 'f3200000-0000-4000-8000-000000000002'),
+  'traditional-house/f3100000-0000-4000-8000-000000000001/f3200000-0000-4000-8000-000000000009.webp',
+  'fresh traditional house review publishes the replacement object path'
+);
 insert into storage.objects (id, bucket_id, name, owner_id)
 values (
   'f3300000-0000-0000-8000-000000000004',
