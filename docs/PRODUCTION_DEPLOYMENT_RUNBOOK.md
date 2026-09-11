@@ -44,6 +44,7 @@ Do not turn a previous release record, migration list, test result, CI run, depl
 16. Do not use destructive dependency remediation such as `npm audit fix --force`.
 17. Stop immediately when evidence conflicts with the approved release scope.
 18. Deployment operators must not combine approval, execution, and final acceptance into one unreviewed role.
+19. Do not use direct SQL deletion, manual Storage deletion, or destructive database operations for content containment.
 
 ## 3. Release scope and accountable roles
 
@@ -97,10 +98,17 @@ After review:
 3. Wait for the required `Quality` check and final pull-request review. A failed CI check, unexpected pull-request diff, or changed reviewed head is a STOP condition.
 4. Merge through the protected `main` workflow. Never push a direct `main` commit.
 5. Verify the merged commit SHA before deployment.
-6. Deploy the approved application commit through the approved application platform and record the non-sensitive deployment identifier and timestamp. An application deployment failure is a STOP condition.
-7. After application deployment, perform the pending-migration decision in Section 4C.
+6. Before application deployment, complete a non-secret production environment and backend target-binding review:
+   - confirm the expected names `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are present in the approved deployment configuration inventory and deployment environment;
+   - confirm the deployment uses the approved production configuration set, not preview or development configuration;
+   - confirm the configured backend target classification matches the intended approved production Supabase target;
+   - record no secret values, keys, URLs, project identifiers, or credentials in release evidence;
+   - record the target-binding result only as `MATCH` / `VERIFIED` or an equivalent non-sensitive result.
+   If target confirmation requires hosted inspection, obtain explicit read-only authorization before inspecting; that authorization does not permit database, Storage, configuration, user, or content mutation and does not replace the separate Section 4C database gate. If the environment review or target binding is `UNKNOWN` or mismatched, STOP; application deployment must not proceed.
+7. Deploy the approved application commit through the approved application platform and record the non-sensitive deployment identifier and timestamp. An application deployment failure is a STOP condition.
+8. After application deployment, perform the pending-migration decision in Section 4C.
 
-CI and merge do not imply that Supabase migrations were applied. The repository CI workflow does not perform that operation. Likewise, an application-platform deployment does not prove database deployment.
+CI success, Vercel success, merge, and application-platform success do not by themselves prove production environment correctness or backend target binding. CI and merge do not imply that Supabase migrations were applied. The repository CI workflow does not perform that operation. Likewise, an application-platform deployment does not prove database deployment.
 
 If the application requires a schema state that is not yet validated, stage or hold application traffic according to the approved release plan until Section 4C succeeds. Do not use an application deployment to bypass the database gate.
 
@@ -190,7 +198,22 @@ Never invent a down migration. Never use remote `migration repair` as a generic 
 
 ### Data, Storage, or content issue
 
-Stop the affected publication path and preserve evidence. Diagnose the application, schema, authorization, and media-path contract first. Any data or Storage correction requires a proven root cause and its own explicit authorization; do not use it as a substitute for a code/schema root-cause fix. Factual content corrections require the approved administrator lifecycle, an authorized source, verification, and a new publication decision.
+#### Ordinary factual/content correction
+
+For an ordinary factual or content correction that is not an already-public unauthorized, private, or sensitive-content incident, stop the affected publication path and preserve the minimum necessary evidence. Use the approved administrator lifecycle only after obtaining an authorized source, verification, and a new publication decision. Any data or Storage correction requires a proven root cause and its own explicit authorization; do not use it as a substitute for a code/schema root-cause fix or invent replacement data.
+
+#### Already-public unauthorized/private/sensitive content incident
+
+Treat already-public unauthorized, private, or sensitive content as an urgent containment incident. Do not leave it publicly exposed merely because root-cause investigation is still ongoing:
+
+1. Preserve the minimum necessary evidence without unnecessarily reproducing the sensitive content.
+2. Obtain the appropriate explicit emergency/content mutation authorization for the containment action, scope, operator, and verifier.
+3. Use the existing approved publication lifecycle to unpublish or archive the affected content.
+4. Do not delete underlying database records or Storage objects as the default response. Do not use direct SQL deletion, manual Storage deletion, or destructive database operations.
+5. Verify through the public projection and affected page that the content is no longer exposed.
+6. Verify relevant rendered or cached surfaces no longer expose it where the platform provides an approved verification or invalidation method.
+7. Only after containment, continue root-cause investigation and correction.
+8. Corrected content must come from an authorized source and requires verification and a new publication decision.
 
 ## 5. Content publication gate
 
@@ -214,6 +237,8 @@ Immediately stop and declare `NO-GO` when any of the following occurs:
 - `CI FAIL` -> `STOP`;
 - unexpected pull-request diff or changed reviewed head -> `STOP`;
 - application deployment FAIL -> `STOP`;
+- production environment configuration review FAIL -> `STOP`;
+- application/backend target binding is `UNKNOWN` or mismatched -> `STOP`;
 - the branch, commit, or release scope differs from the approved baseline -> `STOP`;
 - an unexpected diff, secret, sensitive identifier, or policy weakening appears -> `STOP`;
 - the target cannot be proven to be the approved production candidate -> `STOP`;
@@ -258,6 +283,7 @@ Create one release evidence record containing:
 | Mutation approval | Separate approval reference and timestamp, if a push occurs |
 | Database verification | Read-only post-deployment outcome |
 | Application deployment | Approved commit, non-sensitive deployment identifier, and timestamp |
+| Production environment/target binding | Non-secret environment review and `MATCH` / `VERIFIED` target-binding result |
 | Content verification | Indonesian/English outcome and verifier |
 | Smoke matrix | Per-row `PASS`, `FAIL`, or `NOT RUN` evidence |
 | Rollback readiness | Last known-good application and recovery readiness |
@@ -284,6 +310,9 @@ For any recurring image incident, add the Section 6 browser/network fields to th
 - [ ] Exact approved commit is merged to protected `main`.
 - [ ] Application deployment uses that exact commit and the approved platform.
 - [ ] Application deployment identity and timestamp are recorded without secrets.
+- [ ] Production environment-variable names and production configuration-set review pass without recording values.
+- [ ] Application/backend target binding is recorded as `MATCH` / `VERIFIED`; `UNKNOWN` or mismatch blocks deployment.
+- [ ] CI, Vercel, or platform success has not been treated as environment or target-binding proof.
 - [ ] CI/app deployment has not been treated as database deployment.
 
 #### C. Hosted database migration deployment
